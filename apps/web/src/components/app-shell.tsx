@@ -10,6 +10,7 @@ import {
   FileText,
   Inbox,
   LayoutDashboard,
+  LogOut,
   Moon,
   Plus,
   Search,
@@ -20,6 +21,7 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
+import { signOut } from "@/app/auth/actions";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
@@ -43,9 +45,9 @@ const commands = [
   { label: "Create opportunity", shortcut: "C", icon: Plus, href: "/jobs?create=opportunity" },
   { label: "Import job", shortcut: "I", icon: Inbox, href: "/jobs?import=true" },
   { label: "Search jobs", shortcut: "/", icon: Search, href: "/jobs?search=true" },
-  { label: "Prepare application", icon: FileText, href: "/opportunities/RLW-024?tab=application" },
-  { label: "Analyze this job", icon: Target, href: "/jobs" },
-  { label: "Research company", icon: BriefcaseBusiness, href: "/opportunities/RLW-024?tab=research" },
+  { label: "Review applications", icon: FileText, href: "/opportunities" },
+  { label: "Analyze a job", icon: Target, href: "/jobs" },
+  { label: "Research a company", icon: BriefcaseBusiness, href: "/opportunities" },
   { label: "Create preparation plan", icon: CalendarClock, href: "/preparation" },
   { label: "Find stale applications", icon: Bell, href: "/today" },
   { label: "Ask agent", shortcut: "A", icon: Bot, href: "/agent" },
@@ -102,7 +104,7 @@ function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void 
   );
 }
 
-export function AppShell({ children }: { children: ReactNode }) {
+export function AppShell({ children, user }: { children: ReactNode; user: { name: string; email: string } }) {
   const pathname = usePathname();
   const router = useRouter();
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -154,7 +156,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <nav className="nav-group">{primaryNav.map((item) => <NavItem key={item.href} item={item} pathname={pathname} />)}</nav>
         <div className="nav-spacer" />
         <nav className="nav-group">{lowerNav.map((item) => <NavItem key={item.href} item={item} pathname={pathname} />)}</nav>
-        <div className="sidebar-user"><span className="avatar">AV</span><span className="user-copy"><span className="user-name">Alex Rivera</span><span className="user-state">Search active</span></span></div>
+        <div className="sidebar-user"><span className="avatar">{user.name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase()}</span><span className="user-copy"><span className="user-name">{user.name}</span><span className="user-state">{user.email}</span></span><form action={signOut}><button className="icon-button" aria-label="Sign out" title="Sign out"><LogOut /></button></form></div>
       </aside>
       <main className="main">
         <header className="topbar">

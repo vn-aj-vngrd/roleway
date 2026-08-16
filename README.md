@@ -28,11 +28,11 @@ COREPACK_ENABLE_PROJECT_SPEC=0 pnpm install
 COREPACK_ENABLE_PROJECT_SPEC=0 pnpm dev
 ```
 
-Open http://localhost:3003. The current product slice includes the responsive shell, Today command center, keyboard-operable Jobs inbox, Opportunity Kanban, full Opportunity workspace, Documents, Preparation, Insights, contextual Agent run, profile/preferences, provider configuration, dark mode, command palette, domain schemas, and core permission/transition tests.
+Open http://localhost:3003. Create an account with email and password, confirm the email, complete the one-step search onboarding, then add Jobs and track them as Opportunities. Today, pipeline stages, next actions, tasks, notes, interviews, documents, profile settings, preferences, and insights all read and write the authenticated user's Supabase data.
 
 ## Environment
 
-Copy `.env.example` to `.env.local`. Non-AI tracking is designed to work with no AI provider. Provider credentials remain server-only; production adapters must encrypt them with `CREDENTIAL_ENCRYPTION_KEY` and return only a redacted fingerprint.
+Copy `.env.example` to `apps/web/.env.local` and provide the Supabase URL and anon key. Link the Supabase CLI and run `supabase db push` to apply the migrations. Non-AI tracking works without an AI provider; unconfigured AI surfaces show an honest empty state rather than generated sample output.
 
 ## Commands
 
@@ -45,11 +45,11 @@ pnpm build
 
 ## Self-hosting
 
-`docker compose up` starts PostgreSQL and the web application. For production, use Supabase PostgreSQL/Auth/Storage or self-hosted Supabase, apply Drizzle migrations, terminate TLS in front of the web service, and supply secrets through your deployment environment.
+The production application uses Supabase PostgreSQL and Auth. Apply `supabase/migrations`, configure the production Site URL and callback allow-list, terminate TLS in front of the web service, and supply secrets through the deployment environment. The included Docker Compose file remains useful for PostgreSQL development, but Supabase Auth is required for the current application flow.
 
 ## Security posture
 
-All private resources are owner-scoped server-side and should be mirrored by Supabase RLS. Agent tools dispatch from an allow-list with validated arguments. External actions are not implemented in V1 and are modeled as always requiring explicit approval. Never expose service-role or provider keys to browser bundles.
+Every workspace table enforces ownership through Supabase Row Level Security, while Server Actions independently authenticate the caller and constrain mutations by `user_id`. Sessions use HttpOnly Supabase cookies refreshed by middleware. The service-role and provider keys are never imported by browser code.
 
 ## License
 

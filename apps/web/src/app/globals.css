@@ -281,6 +281,73 @@ h3 { font-size: 14px; line-height: 1.35; font-weight: 620; }
 .command-item svg { width: 16px; color: var(--muted); }
 .command-item span { flex: 1; }
 
+/* Authentication and first run */
+.auth-page { min-height: 100dvh; display: grid; grid-template-columns: minmax(320px, .85fr) minmax(420px, 1.15fr); background: var(--canvas); }
+.auth-intro { padding: 32px clamp(28px, 6vw, 76px); background: var(--sidebar); border-right: 1px solid var(--line); display: flex; flex-direction: column; justify-content: space-between; }
+.auth-brand { padding: 0; }
+.auth-intro h1 { max-width: 13ch; font-size: 38px; letter-spacing: -.035em; }
+.auth-intro p { max-width: 48ch; color: var(--muted); line-height: 1.65; }
+.auth-foot { font-size: 12px; }
+.auth-form-panel { display: grid; place-items: center; padding: 32px; }
+.auth-form-wrap { width: min(400px, 100%); display: grid; gap: 24px; }
+.auth-form { display: grid; }
+.auth-submit { width: 100%; margin-top: 8px; }
+.form-alert { margin: 14px 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); font-size: 12px; }
+.form-alert.error { color: var(--danger); background: var(--danger-soft); border-color: color-mix(in oklch, var(--danger) 25%, var(--line)); }
+.form-alert.success { color: var(--primary); background: var(--primary-soft); border-color: color-mix(in oklch, var(--primary) 25%, var(--line)); }
+.onboarding-page { min-height: 100dvh; background: var(--canvas); }
+.onboarding-head { height: 58px; padding: 0 24px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 9px; font-weight: 650; }
+.onboarding-step { margin-left: auto; color: var(--muted); font-size: 12px; font-weight: 450; }
+.onboarding-content { width: min(760px, calc(100% - 36px)); margin: 0 auto; padding: 54px 0 90px; }
+.onboarding-copy { margin-bottom: 34px; }
+.onboarding-copy h1 { font-size: 28px; }
+.onboarding-copy p { max-width: 62ch; color: var(--muted); }
+.onboarding-form .form-section { padding-bottom: 32px; margin-bottom: 32px; }
+.field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.onboarding-actions { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+
+/* Live workspace records */
+.empty-state { min-height: 320px; padding: 54px 24px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.empty-state.compact { min-height: 250px; }
+.empty-state p { max-width: 52ch; margin: 7px 0 18px; color: var(--muted); }
+.empty-icon { width: 38px; height: 38px; margin-bottom: 14px; border: 1px solid var(--line); border-radius: 9px; display: grid; place-items: center; color: var(--muted); background: var(--surface); }
+.empty-icon svg { width: 18px; }
+.empty-inline { padding: 16px 0; color: var(--muted); font-size: 12px; border-bottom: 1px solid var(--line); }
+.inline-create { margin-bottom: 28px; padding: 20px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+.inline-create.compact-form { display: grid; gap: 18px; }
+.job-description-input { min-height: 190px; }
+.form-actions { display: flex; justify-content: flex-end; }
+.job-record-list { border-top: 1px solid var(--line); }
+.job-record { padding: 20px 2px; border-bottom: 1px solid var(--line); display: flex; gap: 18px; align-items: flex-start; }
+.job-record-main { min-width: 0; flex: 1; }
+.job-record-main h2 { margin-top: 3px; }
+.job-excerpt { max-width: 72ch; margin: 12px 0 0; color: var(--muted); font-size: 12px; line-height: 1.6; }
+.job-record-actions { margin-top: 15px; display: flex; gap: 7px; flex-wrap: wrap; }
+.job-record-actions form { display: inline-flex; }
+.stage-save { width: 100%; margin-top: 4px; min-height: 27px; font-size: 11px; }
+.stage-form { display: flex; align-items: center; gap: 8px; }
+.stage-form .input { width: 130px; }
+.quick-add { display: grid; grid-template-columns: minmax(0,1fr) 190px auto; gap: 8px; align-items: end; }
+.interview-form { margin-top: 18px; }
+.interview-form > .button { margin-top: 4px; }
+.note-form { margin-top: 14px; display: grid; gap: 8px; justify-items: start; }
+.note-list article { padding: 14px 0; border-bottom: 1px solid var(--line); }
+.note-list p { margin: 0 0 6px; white-space: pre-wrap; }
+.note-list time, .activity-list time { display: block; color: var(--muted); font-size: 11px; }
+.activity-list { margin: 14px 0 0; padding: 0; list-style: none; }
+.activity-list li { min-height: 49px; display: flex; align-items: flex-start; gap: 10px; border-bottom: 1px solid var(--line); padding: 10px 0; }
+.activity-list .status-dot { margin-top: 6px; }
+.activity-list strong { font-size: 12px; text-transform: capitalize; }
+.task-item form { width: 100%; }
+.task-item .task-check.checked { background: var(--primary); border-color: var(--primary); }
+.task-done { color: var(--muted); text-decoration: line-through; }
+.job-description { margin-top: 24px; white-space: pre-wrap; }
+.welcome-banner { margin-bottom: 26px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 9px; background: var(--primary-soft); display: flex; align-items: center; gap: 12px; }
+.welcome-banner > svg { color: var(--primary); flex: 0 0 auto; }
+.welcome-banner div { min-width: 0; flex: 1; }
+.welcome-banner p { margin: 2px 0 0; color: var(--muted); font-size: 12px; }
+.provider-support-list { border-top: 1px solid var(--line); }
+
 @media (max-width: 980px) {
   :root { --sidebar-width: 190px; }
   .workspace-grid { grid-template-columns: minmax(0,1fr) 280px; }
@@ -291,6 +358,19 @@ h3 { font-size: 14px; line-height: 1.35; font-weight: 620; }
 
 @media (max-width: 760px) {
   :root { --sidebar-width: 0px; }
+  .auth-page { display: block; }
+  .auth-intro { min-height: 270px; padding: 24px; border-right: 0; border-bottom: 1px solid var(--line); }
+  .auth-intro h1 { margin-top: 44px; font-size: 30px; }
+  .auth-foot { display: none; }
+  .auth-form-panel { padding: 32px 20px 56px; }
+  .onboarding-content { padding-top: 34px; }
+  .field-grid { grid-template-columns: 1fr; gap: 0; }
+  .onboarding-actions { align-items: stretch; flex-direction: column; }
+  .quick-add { grid-template-columns: 1fr; }
+  .job-record { align-items: stretch; flex-direction: column; }
+  .stage-form { width: 100%; }
+  .stage-form .input { min-width: 0; flex: 1; }
+  .welcome-banner { align-items: flex-start; flex-wrap: wrap; }
   .sidebar { display: none; }
   .main { margin-left: 0; padding-bottom: 60px; }
   .topbar { height: 48px; padding: 0 14px; }

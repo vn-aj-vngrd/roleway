@@ -12,6 +12,8 @@
   "dependencies": {
     "@roleway/core": "workspace:*",
     "@roleway/schemas": "workspace:*",
+    "@supabase/ssr": "^0.12.4",
+    "@supabase/supabase-js": "^2.112.3",
     "lucide-react": "^0.468.0",
     "next": "^15.3.3",
     "react": "^19.1.0",
