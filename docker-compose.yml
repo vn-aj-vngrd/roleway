@@ -1,0 +1,31 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: roleway
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - roleway-postgres:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d roleway"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+  web:
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/roleway
+      NEXT_PUBLIC_SUPABASE_URL: http://localhost:54321
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: local-development
+      SUPABASE_SERVICE_ROLE_KEY: local-development-only
+      CREDENTIAL_ENCRYPTION_KEY: local-only-change-this-32-character-key
+    ports:
+      - "3003:3003"
+volumes:
+  roleway-postgres:

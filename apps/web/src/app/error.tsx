@@ -1,0 +1,2 @@
+"use client";
+export default function ErrorPage({ reset }: { error: Error & { digest?: string }; reset: () => void }) { return <div className="page narrow"><div style={{ padding: "48px 0", borderBottom: "1px solid var(--line)" }}><h1>This workspace could not be loaded</h1><p className="page-subtitle">Your data was not changed. Check the connection and try again.</p><button className="button primary" style={{ marginTop: 18 }} onClick={reset}>Try again</button></div></div>; }
