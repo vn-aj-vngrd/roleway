@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { completeOnboarding } from "./actions";
+import { LogoMark } from "@/components/logo";
 import { requireUser } from "@/lib/supabase/server";
 
 export const metadata = { title: "Set up your search" };
@@ -13,7 +14,7 @@ export default async function OnboardingPage({ searchParams }: { searchParams: P
 
   return (
     <main className="onboarding-page">
-      <header className="onboarding-head"><span className="brand-mark">R</span><span>Roleway</span><span className="onboarding-step">Step 1 of 1</span></header>
+      <header className="onboarding-head"><LogoMark /><span>Roleway</span><span className="onboarding-step">Step 1 of 1</span></header>
       <section className="onboarding-content">
         <div className="onboarding-copy"><h1>Set your search direction</h1><p>Roleway uses this information to organize opportunities around what you actually want. You can change everything later.</p></div>
         {query.error ? <div className="form-alert error" role="alert">{query.error}</div> : null}

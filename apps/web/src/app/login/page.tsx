@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { signIn, signUp } from "@/app/auth/actions";
+import { LogoMark } from "@/components/logo";
 import { requireUser } from "@/lib/supabase/server";
 
 export const metadata = { title: "Sign in" };
@@ -12,7 +13,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   return (
     <main className="auth-page">
       <section className="auth-intro">
-        <Link href="/" className="brand auth-brand"><span className="brand-mark">R</span><span>Roleway</span></Link>
+        <Link href="/" className="brand auth-brand"><LogoMark size={24} /><span>Roleway</span></Link>
         <div>
           <h1>Move every opportunity forward.</h1>
           <p>Organize your search, prepare stronger applications, and know what to do next—without giving up control.</p>

@@ -54,7 +54,10 @@ button { color: inherit; }
 .app-shell { min-height: 100dvh; }
 .sidebar { position: fixed; inset: 0 auto 0 0; z-index: var(--z-sticky); width: var(--sidebar-width); padding: 14px 12px; background: var(--sidebar); border-right: 1px solid var(--line); display: flex; flex-direction: column; }
 .brand { display: flex; align-items: center; gap: 9px; padding: 7px 8px 18px; font-weight: 650; letter-spacing: -0.02em; }
-.brand-mark { width: 20px; height: 20px; display: grid; place-items: center; border: 1px solid var(--ink); border-radius: 5px; font: 650 10px/1 var(--font-mono), monospace; }
+.logo-mark { display: block; flex: 0 0 auto; }
+.logo-mark__tile { fill: var(--ink); }
+.logo-mark__route { stroke: var(--canvas); }
+.logo-mark__waypoint { fill: var(--primary); stroke: var(--ink); stroke-width: .5px; }
 .nav-group { display: grid; gap: 2px; }
 .nav-spacer { flex: 1; }
 .nav-link { height: 34px; padding: 0 9px; border-radius: 6px; display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 13px; font-weight: 480; }

@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { signOut } from "@/app/auth/actions";
+import { LogoMark } from "@/components/logo";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
@@ -152,7 +153,7 @@ export function AppShell({ children, user }: { children: ReactNode; user: { name
   return (
     <div className="app-shell">
       <aside className="sidebar" aria-label="Main navigation">
-        <Link href="/today" className="brand"><span className="brand-mark">R</span><span>Roleway</span></Link>
+        <Link href="/today" className="brand"><LogoMark /><span>Roleway</span></Link>
         <nav className="nav-group">{primaryNav.map((item) => <NavItem key={item.href} item={item} pathname={pathname} />)}</nav>
         <div className="nav-spacer" />
         <nav className="nav-group">{lowerNav.map((item) => <NavItem key={item.href} item={item} pathname={pathname} />)}</nav>

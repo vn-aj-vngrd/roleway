@@ -6,6 +6,10 @@ Roleway is a desktop-first productivity workspace designed for a person working 
 
 The signature is the **action line**: a thin, continuous route through Today and Opportunity views that connects time, status, and the next concrete action. It makes the product feel like an operating plan rather than a dashboard.
 
+## Logo
+
+The Roleway mark is a compact geometric **R drawn as a route**. Its terminal moss waypoint represents the next action—the product’s central organizing idea. The near-square tile uses the current ink color and reverses in dark mode; the route uses the current canvas color. Keep the mark flat, unshadowed, and paired with the Roleway wordmark in product navigation. Use the standalone fixed-color SVG for favicons and external surfaces.
+
 ## Color
 
 All application colors use OKLCH.
