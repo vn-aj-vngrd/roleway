@@ -8,7 +8,7 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
 
   const { data: profile } = await auth.supabase
     .from("profiles")
-    .select("full_name, onboarding_completed")
+    .select("full_name, onboarding_completed, tour_completed")
     .eq("user_id", auth.user.id)
     .maybeSingle();
 
@@ -20,6 +20,7 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
         name: profile.full_name || auth.user.email?.split("@")[0] || "Roleway user",
         email: auth.user.email || "",
       }}
+      showTour={!profile.tour_completed}
     >
       {children}
     </AppShell>

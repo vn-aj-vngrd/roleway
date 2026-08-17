@@ -1,6 +1,5 @@
 "use server";
 
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
@@ -28,15 +27,11 @@ export async function signUp(formData: FormData) {
   const parsed = credentialsSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) redirect(loginUrl("error", parsed.error.issues[0]?.message ?? "Check your details."));
 
-  const origin = (await headers()).get("origin") ?? process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3003";
   const supabase = await createClient();
-  const { data, error } = await supabase.auth.signUp({
-    ...parsed.data,
-    options: { emailRedirectTo: `${origin}/auth/callback` },
-  });
+  const { data, error } = await supabase.auth.signUp(parsed.data);
   if (error) redirect(loginUrl("error", error.message));
-  if (data.session) redirect("/onboarding");
-  redirect(loginUrl("message", "Check your email to confirm your account, then sign in."));
+  if (!data.session) redirect(loginUrl("error", "Your account was created, but sign-in could not start. Try signing in."));
+  redirect("/onboarding");
 }
 
 export async function signOut() {

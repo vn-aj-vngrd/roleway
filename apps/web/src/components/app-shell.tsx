@@ -23,6 +23,7 @@ import {
 import Link from "next/link";
 import { signOut } from "@/app/auth/actions";
 import { LogoMark } from "@/components/logo";
+import { ProductTour } from "@/components/product-tour";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
@@ -58,7 +59,7 @@ function NavItem({ item, pathname }: { item: (typeof primaryNav)[number]; pathna
   const active = pathname === item.href || (item.href !== "/today" && pathname.startsWith(item.href));
   const Icon = item.icon;
   return (
-    <Link href={item.href} className={`nav-link ${active ? "active" : ""}`} aria-current={active ? "page" : undefined}>
+    <Link href={item.href} data-tour={item.href === "/today" ? "today" : item.href === "/jobs" ? "jobs" : item.href === "/opportunities" ? "opportunities" : undefined} className={`nav-link ${active ? "active" : ""}`} aria-current={active ? "page" : undefined}>
       <Icon aria-hidden="true" />
       <span>{item.label}</span>
     </Link>
@@ -105,7 +106,7 @@ function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void 
   );
 }
 
-export function AppShell({ children, user }: { children: ReactNode; user: { name: string; email: string } }) {
+export function AppShell({ children, user, showTour }: { children: ReactNode; user: { name: string; email: string }; showTour: boolean }) {
   const pathname = usePathname();
   const router = useRouter();
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -163,7 +164,7 @@ export function AppShell({ children, user }: { children: ReactNode; user: { name
         <header className="topbar">
           <div className="breadcrumb"><strong>{title}</strong>{pathname.split("/").filter(Boolean)[1] ? <><span>/</span><span className="mono">{pathname.split("/")[2]}</span></> : null}</div>
           <div className="topbar-spacer" />
-          <button className="search-trigger" aria-label="Search or run a command" onClick={() => setPaletteOpen(true)}><Search aria-hidden="true" /><span>Search or run a command</span><kbd>⌘ K</kbd></button>
+          <button className="search-trigger" data-tour="commands" aria-label="Search or run a command" onClick={() => setPaletteOpen(true)}><Search aria-hidden="true" /><span>Search or run a command</span><kbd>⌘ K</kbd></button>
           <button className="icon-button" onClick={toggleTheme} aria-label={dark ? "Use light theme" : "Use dark theme"}>{dark ? <Sun /> : <Moon />}</button>
           <button className="icon-button" aria-label="Notifications"><Bell /><span className="sr-only">2 unread</span></button>
         </header>
@@ -171,6 +172,7 @@ export function AppShell({ children, user }: { children: ReactNode; user: { name
       </main>
       <nav className="mobile-nav" aria-label="Mobile navigation">{mobileNav.map((item) => <NavItem key={item.href} item={item} pathname={pathname} />)}</nav>
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
+      <ProductTour open={showTour} />
     </div>
   );
 }

@@ -24,7 +24,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         <div className="auth-form-wrap">
           <div>
             <h2>Sign in or create an account</h2>
-            <p className="page-subtitle">Use your email and a password of at least 8 characters.</p>
+            <p className="page-subtitle">Use your email and a password of at least 8 characters. New accounts sign in immediately.</p>
           </div>
           {query.error ? <div className="form-alert error" role="alert">{query.error}</div> : null}
           {query.message ? <div className="form-alert success" role="status">{query.message}</div> : null}

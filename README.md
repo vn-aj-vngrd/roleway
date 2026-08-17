@@ -28,7 +28,7 @@ COREPACK_ENABLE_PROJECT_SPEC=0 pnpm install
 COREPACK_ENABLE_PROJECT_SPEC=0 pnpm dev
 ```
 
-Open http://localhost:3003. Create an account with email and password, confirm the email, complete the one-step search onboarding, then add Jobs and track them as Opportunities. Today, pipeline stages, next actions, tasks, notes, interviews, documents, profile settings, preferences, and insights all read and write the authenticated user's Supabase data.
+Open http://localhost:3003. Create an account with email and password and the session starts immediately—no magic link or email delivery. Complete the short profile-and-preferences setup, follow the optional four-step product tour, then add Jobs and track them as Opportunities. Today, pipeline stages, next actions, tasks, notes, interviews, documents, profile settings, preferences, and insights all read and write the authenticated user's Supabase data.
 
 ## Environment
 
@@ -45,7 +45,7 @@ pnpm build
 
 ## Self-hosting
 
-The production application uses Supabase PostgreSQL and Auth. Apply `supabase/migrations`, configure the production Site URL and callback allow-list, terminate TLS in front of the web service, and supply secrets through the deployment environment. The included Docker Compose file remains useful for PostgreSQL development, but Supabase Auth is required for the current application flow.
+The production application uses Supabase PostgreSQL and password-based Auth. Apply `supabase/migrations`, configure the production Site URL, terminate TLS in front of the web service, and supply secrets through the deployment environment. The included Docker Compose file remains useful for PostgreSQL development, but Supabase Auth is required for the current application flow.
 
 ## Security posture
 

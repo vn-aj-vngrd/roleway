@@ -309,6 +309,41 @@ h3 { font-size: 14px; line-height: 1.35; font-weight: 620; }
 .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .onboarding-actions { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
 
+/* Onboarding wizard */
+.wizard-form { display: grid; gap: 30px; }
+.wizard-progress { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.wizard-progress-item { position: relative; display: flex; align-items: center; gap: 8px; color: var(--faint); font-size: 11px; }
+.wizard-progress-item::after { content: ""; position: absolute; left: 0; right: 0; top: -9px; height: 2px; background: var(--line); }
+.wizard-progress-item.active { color: var(--ink); }
+.wizard-progress-item.active::after { background: var(--primary); }
+.wizard-progress-item span { width: 20px; height: 20px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 50%; font: 10px var(--font-mono), monospace; }
+.wizard-progress-item.active span { border-color: var(--primary); color: var(--primary); }
+.wizard-progress-item svg { width: 11px; }
+.wizard-panel[hidden] { display: none; }
+.wizard-time { margin-bottom: 10px; color: var(--primary); font-size: 12px; font-weight: 600; }
+.field-note, .field-hint { display: block; margin: 6px 0 0; color: var(--muted); font-size: 11px; }
+.workflow-preview { border-top: 1px solid var(--line); }
+.workflow-preview > div { min-height: 76px; padding: 14px 2px; display: flex; align-items: flex-start; gap: 13px; border-bottom: 1px solid var(--line); }
+.workflow-preview > div > span { width: 30px; height: 30px; border: 1px solid var(--line); border-radius: 7px; display: grid; place-items: center; color: var(--primary); background: var(--surface); }
+.workflow-preview svg { width: 15px; }
+.workflow-preview p { margin: 3px 0 0; color: var(--muted); font-size: 12px; }
+.tour-preview-note { padding: 14px 16px; background: var(--primary-soft); border-radius: 8px; display: flex; flex-direction: column; gap: 2px; font-size: 12px; }
+.tour-preview-note span { color: var(--muted); }
+.wizard-actions { padding-top: 18px; border-top: 1px solid var(--line); }
+
+/* Product tour */
+.tour-layer { position: fixed; inset: 0; z-index: var(--z-overlay); pointer-events: none; }
+.tour-scrim { position: absolute; inset: 0; background: oklch(0.08 0 0 / .28); }
+.tour-card { position: absolute; right: 22px; bottom: 22px; width: min(390px, calc(100vw - 32px)); padding: 18px; color: var(--ink); background: var(--canvas); border: 1px solid var(--line-strong); border-radius: 10px; box-shadow: 0 6px 12px oklch(0 0 0 / .14); pointer-events: auto; }
+.tour-card header, .tour-card footer { display: flex; align-items: center; }
+.tour-card header { color: var(--muted); font-size: 11px; }
+.tour-card header .icon-button { margin-left: auto; }
+.tour-card h2 { margin-top: 8px; font-size: 17px; }
+.tour-card p { margin: 7px 0 18px; color: var(--muted); line-height: 1.6; }
+.tour-card footer { justify-content: space-between; gap: 8px; }
+.tour-target { position: relative; outline: 2px solid var(--primary); outline-offset: 3px; background: var(--canvas) !important; }
+.sidebar:has(.tour-target), .topbar:has(.tour-target), .mobile-nav:has(.tour-target) { z-index: calc(var(--z-overlay) + 1); }
+
 /* Live workspace records */
 .empty-state { min-height: 320px; padding: 54px 24px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
 .empty-state.compact { min-height: 250px; }
@@ -369,6 +404,9 @@ h3 { font-size: 14px; line-height: 1.35; font-weight: 620; }
   .onboarding-content { padding-top: 34px; }
   .field-grid { grid-template-columns: 1fr; gap: 0; }
   .onboarding-actions { align-items: stretch; flex-direction: column; }
+  .wizard-progress-item b { display: none; }
+  .wizard-progress-item { justify-content: center; }
+  .tour-card { right: 16px; bottom: 72px; }
   .quick-add { grid-template-columns: 1fr; }
   .job-record { align-items: stretch; flex-direction: column; }
   .stage-form { width: 100%; }
