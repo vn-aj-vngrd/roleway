@@ -1,9 +1,11 @@
 node_modules
-.next
+.next*
 .turbo
 *.tsbuildinfo
 dist
 coverage
+playwright-report
+test-results
 .env
 .env.local
 .env.*

@@ -18,7 +18,7 @@ packages/ui    Shared primitives as they earn reuse
 packages/config Typed server environment
 ```
 
-Product and architecture decisions are captured in [`PRODUCT.md`](PRODUCT.md), [`DESIGN.md`](DESIGN.md), [`CONTEXT.md`](CONTEXT.md), and [`docs/PLANNING.md`](docs/PLANNING.md).
+Product and architecture decisions are captured in [`PRODUCT.md`](PRODUCT.md), [`DESIGN.md`](DESIGN.md), [`CONTEXT.md`](CONTEXT.md), and [`docs/PLANNING.md`](docs/PLANNING.md). The current quality baseline and market research live in [`docs/PRODUCT-AUDIT.md`](docs/PRODUCT-AUDIT.md) and [`docs/COMPETITIVE-ASSESSMENT.md`](docs/COMPETITIVE-ASSESSMENT.md).
 
 ## Start locally
 
@@ -40,6 +40,8 @@ Copy `.env.example` to `apps/web/.env.local` and provide the Supabase URL and an
 pnpm dev
 pnpm typecheck
 pnpm test
+pnpm --filter @roleway/web test:e2e
+pnpm lint
 pnpm build
 ```
 

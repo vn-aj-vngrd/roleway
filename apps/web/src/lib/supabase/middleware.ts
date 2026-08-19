@@ -18,6 +18,19 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
-  await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
+  const pathname = request.nextUrl.pathname;
+  const isPublic = pathname === "/" || pathname === "/login" || pathname === "/privacy" || pathname === "/icon.svg" || pathname.startsWith("/_next/");
+
+  if (!user && !isPublic) {
+    const url = request.nextUrl.clone();
+    const intendedPath = `${pathname}${request.nextUrl.search}`;
+    url.pathname = "/login";
+    url.search = `?next=${encodeURIComponent(intendedPath)}`;
+    const redirect = NextResponse.redirect(url);
+    response.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie));
+    return redirect;
+  }
+
   return response;
 }

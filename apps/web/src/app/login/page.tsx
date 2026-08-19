@@ -2,16 +2,17 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { signIn, signUp } from "@/app/auth/actions";
 import { LogoMark } from "@/components/logo";
+import { SubmitButton } from "@/components/submit-button";
 import { requireUser } from "@/lib/supabase/server";
 
 export const metadata = { title: "Sign in" };
 
-export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string; message?: string }> }) {
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string; message?: string; next?: string }> }) {
   const [auth, query] = await Promise.all([requireUser(), searchParams]);
   if (auth) redirect("/today");
 
   return (
-    <main className="auth-page">
+    <main className="auth-page" id="main-content">
       <section className="auth-intro">
         <Link href="/" className="brand auth-brand"><LogoMark size={24} /><span>Roleway</span></Link>
         <div>
@@ -29,10 +30,11 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           {query.error ? <div className="form-alert error" role="alert">{query.error}</div> : null}
           {query.message ? <div className="form-alert success" role="status">{query.message}</div> : null}
           <form className="auth-form">
+            <input type="hidden" name="next" value={query.next ?? ""} />
             <div className="field"><label htmlFor="email">Email</label><input className="input" id="email" name="email" type="email" autoComplete="email" required placeholder="you@example.com" /></div>
             <div className="field"><label htmlFor="password">Password</label><input className="input" id="password" name="password" type="password" autoComplete="current-password" minLength={8} required /></div>
-            <button className="button primary auth-submit" formAction={signIn}>Sign in</button>
-            <button className="button secondary auth-submit" formAction={signUp}>Create account</button>
+            <SubmitButton className="button primary auth-submit" pendingLabel="Signing in…" formAction={signIn}>Sign in</SubmitButton>
+            <SubmitButton className="button secondary auth-submit" pendingLabel="Creating account…" formAction={signUp}>Create account</SubmitButton>
           </form>
           <p className="muted small">By continuing, you agree to store your job-search data in your configured Roleway workspace.</p>
         </div>

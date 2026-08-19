@@ -3,6 +3,7 @@
 import { Check, Inbox, Target } from "lucide-react";
 import { useRef, useState } from "react";
 import { completeOnboarding } from "./actions";
+import { SubmitButton } from "@/components/submit-button";
 
 const steps = ["Profile", "Preferences", "Workflow"] as const;
 
@@ -48,7 +49,7 @@ export function OnboardingWizard({ email }: { email: string }) {
 
       <div className="onboarding-actions wizard-actions">
         {step > 0 ? <button className="button ghost" type="button" onClick={() => setStep((current) => current - 1)}>Back</button> : <span className="muted small">Private by default · Editable later</span>}
-        {step < steps.length - 1 ? <button className="button primary" type="button" onClick={continueToNext}>Continue</button> : <button className="button primary" type="submit">Open my workspace</button>}
+        {step < steps.length - 1 ? <button className="button primary" type="button" onClick={continueToNext}>Continue</button> : <SubmitButton pendingLabel="Creating workspace…">Open my workspace</SubmitButton>}
       </div>
     </form>
   );

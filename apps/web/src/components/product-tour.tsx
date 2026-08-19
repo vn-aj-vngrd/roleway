@@ -37,7 +37,7 @@ export function ProductTour({ open }: { open: boolean }) {
     target?.classList.add("tour-target");
     primaryRef.current?.focus();
     return () => target?.classList.remove("tour-target");
-  }, [step, visible]);
+  }, [current.target, visible]);
 
   useEffect(() => {
     if (!visible) return;

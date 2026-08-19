@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { requireUser } from "@/lib/supabase/server";
 
@@ -13,6 +14,19 @@ export async function updateProfile(formData: FormData) {
   const auth = await requireUser(); if (!auth) redirect("/login");
   await auth.supabase.from("profiles").update({ full_name: parsed.data.fullName, headline: parsed.data.headline, summary: parsed.data.summary }).eq("user_id", auth.user.id);
   revalidatePath("/settings/profile"); revalidatePath("/today");
+}
+
+export async function deleteAccount(formData: FormData) {
+  const confirmation = z.literal("DELETE").safeParse(formData.get("confirmation"));
+  if (!confirmation.success) redirect("/settings/privacy?error=Type%20DELETE%20to%20confirm%20account%20deletion.");
+  const auth = await requireUser(); if (!auth) redirect("/login");
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !serviceKey) redirect("/settings/privacy?error=Account%20deletion%20is%20not%20configured.");
+  const admin = createClient(url, serviceKey, { auth: { persistSession: false } });
+  const { error } = await admin.auth.admin.deleteUser(auth.user.id);
+  if (error) redirect("/settings/privacy?error=Your%20account%20could%20not%20be%20deleted.%20Try%20again.");
+  redirect("/login?message=Your%20Roleway%20account%20and%20workspace%20were%20deleted.");
 }
 
 export async function updatePreferences(formData: FormData) {

@@ -13,7 +13,7 @@ export default async function OnboardingPage({ searchParams }: { searchParams: P
   if (profile?.onboarding_completed) redirect("/today");
 
   return (
-    <main className="onboarding-page">
+    <main className="onboarding-page" id="main-content">
       <header className="onboarding-head"><LogoMark /><span>Roleway</span><span className="onboarding-step">Workspace setup</span></header>
       <section className="onboarding-content">
         {query.error ? <div className="form-alert error" role="alert">{query.error}</div> : null}
