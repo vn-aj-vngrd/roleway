@@ -19,7 +19,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           <h1>Move every opportunity forward.</h1>
           <p>Organize your search, prepare stronger applications, and know what to do next—without giving up control.</p>
         </div>
-        <p className="auth-foot">Open source · Your data stays yours</p>
+        <p className="auth-foot">Private by default · Your decisions stay yours</p>
       </section>
       <section className="auth-form-panel">
         <div className="auth-form-wrap">

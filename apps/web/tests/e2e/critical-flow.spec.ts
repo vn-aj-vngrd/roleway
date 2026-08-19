@@ -29,7 +29,7 @@ test.describe.serial("critical product journey", () => {
   test("public landing is keyboard and mobile friendly", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/");
-    await expect(page.getByRole("heading", { name: "Every opportunity. One clear next step." })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Keep every promising role moving." })).toBeVisible();
     await page.locator(".marketing-showcase").focus();
     await page.keyboard.press("ArrowRight");
     await expect(page.getByRole("heading", { name: "Review before you commit" })).toBeVisible();
@@ -39,8 +39,8 @@ test.describe.serial("critical product journey", () => {
 
   test("landing → login → onboarding → opportunity → logout protection", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByRole("heading", { name: "Every opportunity. One clear next step." })).toBeVisible();
-    const getStarted = page.locator('a[href="/login"]', { hasText: "Get started" }).first();
+    await expect(page.getByRole("heading", { name: "Keep every promising role moving." })).toBeVisible();
+    const getStarted = page.locator('a[href="/login"]', { hasText: "Start your search" }).first();
     await expect(getStarted).toHaveAttribute("href", "/login");
     await getStarted.click();
     await page.waitForURL("**/login");
@@ -80,6 +80,11 @@ test.describe.serial("critical product journey", () => {
     await page.getByLabel("Opportunity stage").selectOption("preparing");
     await page.getByRole("button", { name: "Update stage" }).click();
     await expect(page.getByLabel("Opportunity stage")).toHaveValue("preparing");
+
+    await page.goto("/notifications");
+    await expect(page.getByText("Opportunity moved to Preparing")).toBeVisible();
+    await page.goto("/settings/notifications");
+    await expect(page.getByRole("heading", { name: "Workspace notifications" })).toBeVisible();
 
     await page.goto("/settings/privacy");
     const downloadPromise = page.waitForEvent("download");

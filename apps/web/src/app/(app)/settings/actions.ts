@@ -12,8 +12,10 @@ export async function updateProfile(formData: FormData) {
   const parsed = z.object({ fullName: z.string().trim().min(2).max(120), headline: z.string().trim().max(180), summary: z.string().trim().max(2000) }).safeParse(Object.fromEntries(formData));
   if (!parsed.success) return;
   const auth = await requireUser(); if (!auth) redirect("/login");
-  await auth.supabase.from("profiles").update({ full_name: parsed.data.fullName, headline: parsed.data.headline, summary: parsed.data.summary }).eq("user_id", auth.user.id);
+  const { error } = await auth.supabase.from("profiles").update({ full_name: parsed.data.fullName, headline: parsed.data.headline, summary: parsed.data.summary }).eq("user_id", auth.user.id);
+  if (error) redirect("/settings/profile?error=Your%20profile%20could%20not%20be%20saved.");
   revalidatePath("/settings/profile"); revalidatePath("/today");
+  redirect("/settings/profile?saved=true");
 }
 
 export async function deleteAccount(formData: FormData) {
@@ -30,9 +32,25 @@ export async function deleteAccount(formData: FormData) {
 }
 
 export async function updatePreferences(formData: FormData) {
-  const parsed = z.object({ targetTitles: z.string(), technologies: z.string(), remotePreference: z.enum(["required", "preferred", "flexible"]), locations: z.string(), minimumCompensation: z.coerce.number().int().min(0).optional(), excludedCriteria: z.string() }).safeParse(Object.fromEntries(formData));
+  const parsed = z.object({ targetTitles: z.string(), technologies: z.string(), remotePreference: z.enum(["required", "preferred", "flexible"]), locations: z.string(), minimumCompensation: z.union([z.literal(""), z.coerce.number().int().min(0)]), currency: z.string().trim().length(3), excludedCriteria: z.string() }).safeParse(Object.fromEntries(formData));
   if (!parsed.success) return;
   const auth = await requireUser(); if (!auth) redirect("/login");
-  await auth.supabase.from("career_preferences").upsert({ user_id: auth.user.id, target_titles: list(parsed.data.targetTitles), preferred_technologies: list(parsed.data.technologies), remote_preference: parsed.data.remotePreference, allowed_locations: list(parsed.data.locations), minimum_compensation: parsed.data.minimumCompensation ?? null, excluded_criteria: list(parsed.data.excludedCriteria) });
+  const { error } = await auth.supabase.from("career_preferences").upsert({ user_id: auth.user.id, target_titles: list(parsed.data.targetTitles), preferred_technologies: list(parsed.data.technologies), remote_preference: parsed.data.remotePreference, allowed_locations: list(parsed.data.locations), minimum_compensation: parsed.data.minimumCompensation === "" ? null : parsed.data.minimumCompensation, currency: parsed.data.currency.toUpperCase(), excluded_criteria: list(parsed.data.excludedCriteria) });
+  if (error) redirect("/settings/preferences?error=Your%20preferences%20could%20not%20be%20saved.");
   revalidatePath("/settings/preferences");
+  redirect("/settings/preferences?saved=true");
+}
+
+export async function updateNotificationPreferences(formData: FormData) {
+  const auth = await requireUser(); if (!auth) redirect("/login");
+  const enabled = (name: string) => formData.get(name) === "on";
+  const { error } = await auth.supabase.from("notification_preferences").upsert({
+    user_id: auth.user.id,
+    task_reminders: enabled("taskReminders"),
+    interview_reminders: enabled("interviewReminders"),
+    pipeline_updates: enabled("pipelineUpdates"),
+  });
+  if (error) redirect("/settings/notifications?error=Notification%20preferences%20could%20not%20be%20saved.");
+  revalidatePath("/settings/notifications");
+  redirect("/settings/notifications?saved=true");
 }

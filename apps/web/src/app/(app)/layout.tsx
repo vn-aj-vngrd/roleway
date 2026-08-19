@@ -6,11 +6,11 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
   const auth = await requireUser();
   if (!auth) redirect("/login");
 
-  const { data: profile } = await auth.supabase
-    .from("profiles")
-    .select("full_name, onboarding_completed, tour_completed")
-    .eq("user_id", auth.user.id)
-    .maybeSingle();
+  const [profileResult, notificationsResult] = await Promise.all([
+    auth.supabase.from("profiles").select("full_name, onboarding_completed, tour_completed").eq("user_id", auth.user.id).maybeSingle(),
+    auth.supabase.from("notifications").select("id", { count: "exact", head: true }).eq("user_id", auth.user.id).is("read_at", null),
+  ]);
+  const profile = profileResult.data;
 
   if (!profile?.onboarding_completed) redirect("/onboarding");
 
@@ -21,6 +21,8 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
         email: auth.user.email || "",
       }}
       showTour={!profile.tour_completed}
+      notificationCount={notificationsResult.count ?? 0}
+      isAdmin={auth.user.email?.toLowerCase() === "vanajvanguardia@gmail.com"}
     >
       {children}
     </AppShell>

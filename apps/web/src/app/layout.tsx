@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { SmoothScroll } from "@/components/smooth-scroll";
 import "./globals.css";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-geist", display: "swap" });
@@ -21,7 +22,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" suppressHydrationWarning className={`${geist.variable} ${mono.variable}`}>
-      <body><a className="skip-link" href="#main-content">Skip to main content</a>{children}</body>
+      <body><SmoothScroll><a className="skip-link" href="#main-content">Skip to main content</a>{children}</SmoothScroll></body>
     </html>
   );
 }

@@ -82,3 +82,15 @@ State transitions use 160–200ms ease-out. Kanban movement, panel entry, and di
 ## Accessibility
 
 Visible 2px focus rings with offset, 44px mobile tap targets, semantic landmarks and headings, live announcements after status changes, and alternative stage-move controls on every opportunity card.
+
+## Continuous quality loop
+
+UI quality is a product goal, not a launch task. Every meaningful interface change repeats the same loop:
+
+1. Walk the complete capture → review → track → act → follow-up flow with real records.
+2. Inspect landing, Today, one dense workspace, notifications, and settings at desktop and mobile widths.
+3. Fix the highest-friction issue first: unclear next action, broken hierarchy, inconsistent control, spacing defect, or inaccessible state.
+4. Verify keyboard flow, reduced motion, loading, empty, error, and destructive states.
+5. Run lint, unit tests, production build, and critical browser tests before release.
+
+Prefer small systemic improvements to isolated decoration. A token, component, or navigation correction should improve every route that uses it.

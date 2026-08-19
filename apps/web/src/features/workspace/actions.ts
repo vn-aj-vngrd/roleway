@@ -67,6 +67,7 @@ export async function updateOpportunityStage(formData: FormData) {
   }
   revalidatePath("/opportunities");
   revalidatePath(`/opportunities/${parsed.data.opportunityId}`);
+  revalidatePath("/", "layout");
 }
 
 export async function updateNextAction(formData: FormData) {
@@ -87,6 +88,7 @@ export async function createTask(formData: FormData) {
   if (error) redirect(`/opportunities/${parsed.data.opportunityId}?error=The%20task%20could%20not%20be%20created.`);
   revalidatePath(`/opportunities/${parsed.data.opportunityId}`);
   revalidatePath("/today");
+  revalidatePath("/", "layout");
 }
 
 export async function toggleTask(formData: FormData) {
@@ -140,6 +142,7 @@ export async function createInterview(formData: FormData) {
   if (error) redirect("/preparation?error=The%20interview%20could%20not%20be%20scheduled.");
   revalidatePath("/preparation");
   revalidatePath("/today");
+  revalidatePath("/", "layout");
   redirect("/preparation?created=true");
 }
 

@@ -7,7 +7,7 @@ const features = [
   { key: "today", label: "Today", title: "Know what deserves attention", description: "See interviews, overdue tasks, follow-ups, and unreviewed jobs in one restrained daily queue—not a dashboard full of vanity metrics." },
   { key: "inbox", label: "Job inbox", title: "Review before you commit", description: "Capture a listing first. Track it as an Opportunity only after it clears your preferences and deserves preparation time." },
   { key: "workspace", label: "Opportunity", title: "Keep the whole story together", description: "The role, next action, tasks, notes, interviews, source listing, and activity history stay attached to one durable workspace." },
-  { key: "control", label: "Control", title: "Your search stays yours", description: "Every record is owner-scoped in Supabase. The core workflow works without AI, and no external action is taken on your behalf." },
+  { key: "control", label: "Control", title: "Your search stays yours", description: "Your workspace is private by default. Roleway keeps the workflow focused, and no external action is taken on your behalf." },
 ] as const;
 
 export function MarketingFeatureShowcase() {
