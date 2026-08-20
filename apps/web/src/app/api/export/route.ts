@@ -5,7 +5,7 @@ export async function GET() {
   const auth = await requireUser();
   if (!auth) return NextResponse.json({ error: "Authentication required." }, { status: 401 });
 
-  const tables = ["profiles", "career_preferences", "jobs", "opportunities", "tasks", "opportunity_notes", "opportunity_events", "interviews", "documents", "notifications"] as const;
+  const tables = ["profiles", "career_preferences", "jobs", "opportunities", "tasks", "opportunity_notes", "opportunity_events", "interviews", "documents", "notifications", "ai_runs"] as const;
   const results = await Promise.all(tables.map(async (table) => {
     const { data, error } = await auth.supabase.from(table).select("*");
     return [table, { data: data ?? [], error: error?.message }] as const;

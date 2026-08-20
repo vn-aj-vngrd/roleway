@@ -20,7 +20,16 @@ export async function updateSession(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
   const pathname = request.nextUrl.pathname;
-  const isPublic = pathname === "/" || pathname === "/login" || pathname === "/privacy" || pathname === "/icon.svg" || pathname.startsWith("/_next/");
+  const isPublic = pathname === "/"
+    || pathname === "/login"
+    || pathname === "/privacy"
+    || pathname === "/icon.svg"
+    || pathname === "/manifest.webmanifest"
+    || pathname === "/sw.js"
+    || pathname === "/offline.html"
+    || pathname === "/roleway-mark.svg"
+    || pathname.startsWith("/icons/")
+    || pathname.startsWith("/_next/");
 
   if (!user && !isPublic) {
     const url = request.nextUrl.clone();

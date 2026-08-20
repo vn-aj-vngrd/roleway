@@ -16,16 +16,16 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
       <section className="auth-intro">
         <Link href="/" className="brand auth-brand"><LogoMark size={24} /><span>Roleway</span></Link>
         <div>
-          <h1>Move every opportunity forward.</h1>
-          <p>Organize your search, prepare stronger applications, and know what to do next—without giving up control.</p>
+          <h1>Keep your job search in one place.</h1>
+          <p>Track jobs, tasks, follow-ups, interviews, and notes. See what needs your attention next.</p>
         </div>
-        <p className="auth-foot">Private by default · Your decisions stay yours</p>
+        <p className="auth-foot">Your data stays private.</p>
       </section>
       <section className="auth-form-panel">
         <div className="auth-form-wrap">
           <div>
-            <h2>Sign in or create an account</h2>
-            <p className="page-subtitle">Use your email and a password of at least 8 characters. New accounts sign in immediately.</p>
+            <h2>Welcome to Roleway</h2>
+            <p className="page-subtitle">Enter your email and password. New here? Choose Create account.</p>
           </div>
           {query.error ? <div className="form-alert error" role="alert">{query.error}</div> : null}
           {query.message ? <div className="form-alert success" role="status">{query.message}</div> : null}
@@ -36,7 +36,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
             <SubmitButton className="button primary auth-submit" pendingLabel="Signing in…" formAction={signIn}>Sign in</SubmitButton>
             <SubmitButton className="button secondary auth-submit" pendingLabel="Creating account…" formAction={signUp}>Create account</SubmitButton>
           </form>
-          <p className="muted small">By continuing, you agree to store your job-search data in your configured Roleway workspace.</p>
+          <p className="muted small">Your job-search data stays in your Roleway account.</p>
         </div>
       </section>
     </main>

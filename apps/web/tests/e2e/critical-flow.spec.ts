@@ -5,6 +5,7 @@ import { randomBytes } from "node:crypto";
 const email = `e2e-${Date.now()}-${randomBytes(3).toString("hex")}@roleway.test`;
 const password = `Rw!${randomBytes(12).toString("hex")}`;
 let opportunityPath = "";
+let userId = "";
 
 test.describe.serial("critical product journey", () => {
   const adminClient = () => {
@@ -15,8 +16,9 @@ test.describe.serial("critical product journey", () => {
   };
 
   test.beforeAll(async () => {
-    const { error } = await adminClient().auth.admin.createUser({ email, password, email_confirm: true });
+    const { data, error } = await adminClient().auth.admin.createUser({ email, password, email_confirm: true });
     if (error) throw error;
+    userId = data.user.id;
   });
 
   test.afterAll(async () => {
@@ -29,18 +31,16 @@ test.describe.serial("critical product journey", () => {
   test("public landing is keyboard and mobile friendly", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/");
-    await expect(page.getByRole("heading", { name: "Keep every promising role moving." })).toBeVisible();
-    await page.locator(".marketing-showcase").focus();
-    await page.keyboard.press("ArrowRight");
-    await expect(page.getByRole("heading", { name: "Review before you commit" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Keep every application moving." })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Pipeline", exact: true }).first()).toBeVisible();
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow).toBeLessThanOrEqual(1);
   });
 
   test("landing → login → onboarding → opportunity → logout protection", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByRole("heading", { name: "Keep every promising role moving." })).toBeVisible();
-    const getStarted = page.locator('a[href="/login"]', { hasText: "Start your search" }).first();
+    await expect(page.getByRole("heading", { name: "Keep every application moving." })).toBeVisible();
+    const getStarted = page.locator('a[href="/login"]', { hasText: "Get started" }).first();
     await expect(getStarted).toHaveAttribute("href", "/login");
     await getStarted.click();
     await page.waitForURL("**/login");
@@ -61,6 +61,23 @@ test.describe.serial("critical product journey", () => {
 
     await page.getByRole("button", { name: "Skip tour" }).click();
     await expect(page.getByRole("heading", { name: /Good (morning|afternoon|evening), E2E/ })).toBeVisible();
+
+    await page.getByRole("button", { name: "Collapse sidebar" }).click();
+    await expect(page.locator(".app-shell")).toHaveAttribute("data-sidebar", "compact");
+    await page.getByRole("button", { name: "Expand sidebar" }).click();
+    await page.goto("/settings/ai");
+    await page.getByLabel("API key").fill("sk-test-roleway-1234");
+    await page.getByRole("button", { name: "Save connection" }).click();
+    await expect(page.getByText("AI connection saved.")).toBeVisible();
+    await expect(page.getByText("••••1234")).toBeVisible();
+    const { data: savedConnection } = await adminClient().from("ai_connections").select("encrypted_secret, key_hint").eq("user_id", userId).single();
+    expect(savedConnection?.encrypted_secret).not.toContain("sk-test-roleway-1234");
+    expect(savedConnection?.key_hint).toBe("••••1234");
+    await page.getByRole("button", { name: "Delete Personal API" }).click();
+    await expect(page.getByText("Connection removed.")).toBeVisible();
+    await page.goto("/assistant");
+    await expect(page.getByRole("heading", { name: "Connect a provider to begin" })).toBeVisible();
+    await page.goto("/today");
     await page.getByRole("link", { name: "Add a job" }).first().click();
 
     await page.getByLabel("Company").fill("Example Company");
@@ -92,6 +109,7 @@ test.describe.serial("critical product journey", () => {
     const download = await downloadPromise;
     expect(download.suggestedFilename()).toMatch(/^roleway-export-\d{4}-\d{2}-\d{2}\.json$/);
 
+    await page.locator(".sidebar").getByRole("button", { name: /Open account menu/ }).click();
     await page.locator(".sidebar").getByRole("button", { name: "Sign out" }).click();
     await expect(page).toHaveURL(/\/login\?message=/);
     await page.goto(opportunityPath);

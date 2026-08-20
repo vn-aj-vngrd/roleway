@@ -28,11 +28,11 @@ COREPACK_ENABLE_PROJECT_SPEC=0 pnpm install
 COREPACK_ENABLE_PROJECT_SPEC=0 pnpm dev
 ```
 
-Open http://localhost:3003. Create an account with email and password and the session starts immediately—no magic link or email delivery. Complete the short profile-and-preferences setup, follow the optional four-step product tour, then add Jobs and track them as Opportunities. Today, pipeline stages, next actions, tasks, notes, interviews, documents, profile settings, preferences, and insights all read and write the authenticated user's Supabase data.
+Open http://localhost:3003. Create an account with email and password and the session starts immediately—no magic link or email delivery. Complete the short profile-and-preferences setup, follow the optional four-step product tour, then add Jobs and track them as Opportunities. Today, pipeline stages, next actions, tasks, notes, interviews, documents, notifications, profile settings, preferences, and insights all read and write the authenticated user's workspace. Optional Assist runs can use OpenAI, Anthropic, Gemini, OpenRouter, or a compatible API with a user-supplied key.
 
 ## Environment
 
-Copy `.env.example` to `apps/web/.env.local` and provide the Supabase URL and anon key. Link the Supabase CLI and run `supabase db push` to apply the migrations. Non-AI tracking works without an AI provider; unconfigured AI surfaces show an honest empty state rather than generated sample output.
+Copy `.env.example` to `apps/web/.env.local` and provide the Supabase URL, anon key, service-role key, and a base64-encoded 32-byte `AI_CREDENTIAL_ENCRYPTION_KEY`. Link the Supabase CLI and run `supabase db push` to apply the migrations. Core tracking works without an AI provider; Assist remains empty until the user saves and tests a provider connection. Provider behavior and security decisions are documented in [`docs/AI-PROVIDER-INTEGRATION.md`](docs/AI-PROVIDER-INTEGRATION.md).
 
 ## Commands
 
@@ -44,6 +44,12 @@ pnpm --filter @roleway/web test:e2e
 pnpm lint
 pnpm build
 ```
+
+## Progressive web app
+
+Production builds are installable as a PWA. The manifest includes regular, maskable, and Apple icons plus shortcuts to Today, Pipeline, and Add job. The service worker caches only versioned static assets; authenticated pages and API responses always use the network. If the network is unavailable, navigation shows a static offline page instead of storing private workspace content.
+
+PWA installation requires HTTPS. Service-worker registration is disabled during local development.
 
 ## Self-hosting
 
