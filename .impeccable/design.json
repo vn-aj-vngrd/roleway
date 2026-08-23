@@ -1,0 +1,101 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-21T22:00:00Z",
+  "title": "Design System: Roleway",
+  "extensions": {
+    "colorMeta": {
+      "roleway-blue": { "role": "primary", "displayName": "Roleway Blue", "canonical": "oklch(0.55 0.19 255)", "tonalRamp": ["oklch(0.18 0.08 255)", "oklch(0.28 0.12 255)", "oklch(0.38 0.16 255)", "oklch(0.49 0.185 255)", "oklch(0.55 0.19 255)", "oklch(0.68 0.15 255)", "oklch(0.82 0.09 255)", "oklch(0.94 0.035 255)"] },
+      "paper": { "role": "neutral", "displayName": "Paper", "canonical": "oklch(0.995 0.002 90)", "tonalRamp": ["oklch(0.15 0.002 90)", "oklch(0.28 0.002 90)", "oklch(0.42 0.002 90)", "oklch(0.58 0.002 90)", "oklch(0.72 0.002 90)", "oklch(0.84 0.002 90)", "oklch(0.93 0.002 90)", "oklch(0.995 0.002 90)"] },
+      "warm-stone": { "role": "neutral", "displayName": "Warm Stone", "canonical": "oklch(0.967 0.003 90)", "tonalRamp": ["oklch(0.15 0.003 90)", "oklch(0.27 0.003 90)", "oklch(0.40 0.003 90)", "oklch(0.54 0.003 90)", "oklch(0.68 0.003 90)", "oklch(0.80 0.003 90)", "oklch(0.90 0.003 90)", "oklch(0.967 0.003 90)"] },
+      "graphite": { "role": "neutral", "displayName": "Graphite", "canonical": "oklch(0.22 0.006 90)", "tonalRamp": ["oklch(0.15 0.006 90)", "oklch(0.22 0.006 90)", "oklch(0.32 0.006 90)", "oklch(0.44 0.006 90)", "oklch(0.57 0.006 90)", "oklch(0.70 0.006 90)", "oklch(0.83 0.006 90)", "oklch(0.94 0.006 90)"] }
+    },
+    "typographyMeta": {
+      "headline": { "displayName": "Page Headline", "purpose": "Primary authenticated page titles and Today greeting." },
+      "title": { "displayName": "Working Title", "purpose": "Section headings, record names, and empty-state headings." },
+      "body": { "displayName": "Interface Body", "purpose": "Working copy, descriptions, and form content." },
+      "label": { "displayName": "Control Label", "purpose": "Navigation, controls, and compact metadata." },
+      "utility": { "displayName": "Utility Data", "purpose": "IDs, shortcuts, dates, and tabular values only." }
+    },
+    "shadows": [
+      { "name": "main-island", "value": "0 1px 2px oklch(.20 .01 90 / .06), 0 10px 28px oklch(.20 .01 90 / .065)", "purpose": "Separates the single main work island from the warm-stone application backdrop." },
+      { "name": "dialog", "value": "0 18px 54px oklch(.18 .01 90 / .20)", "purpose": "Commands, search, and account overlays." },
+      { "name": "record-hover", "value": "0 2px 6px oklch(.20 .01 90 / .07)", "purpose": "Movable opportunity cards on hover." }
+    ],
+    "motion": [
+      { "name": "state-fast", "value": "150ms ease-out", "purpose": "Navigation, list, and control state changes." },
+      { "name": "state-standard", "value": "180ms ease-out", "purpose": "Disclosure and panel transitions." }
+    ],
+    "breakpoints": [
+      { "name": "mobile", "value": "760px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The single saturated action voice for creation, saving, and forward progress.",
+      "html": "<button class=\"ds-btn-primary\">Add a job</button>",
+      "css": ".ds-btn-primary{height:34px;padding:0 12px;border:1px solid color-mix(in oklch,var(--primary) 85%,black);border-radius:6px;color:white;background:var(--primary);font:590 12px/1.4 var(--font-geist);box-shadow:0 1px 2px oklch(.25 .05 255/.14),inset 0 1px oklch(1 0 0/.12);cursor:pointer}.ds-btn-primary:hover{background:var(--primary-hover)}.ds-btn-primary:focus-visible{outline:2px solid var(--primary);outline-offset:2px}"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "A quiet bounded action for navigation and reversible choices.",
+      "html": "<button class=\"ds-btn-secondary\">Open pipeline</button>",
+      "css": ".ds-btn-secondary{height:34px;padding:0 12px;border:1px solid var(--line-strong);border-radius:6px;color:var(--ink);background:var(--canvas);font:590 12px/1.4 var(--font-geist);cursor:pointer}.ds-btn-secondary:hover{background:var(--surface)}.ds-btn-secondary:focus-visible{outline:2px solid var(--primary);outline-offset:2px}"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "A labeled warm-neutral field with an exact blue focus state.",
+      "html": "<label class=\"ds-field\">Professional headline<input value=\"Product Engineer\" /></label>",
+      "css": ".ds-field{display:grid;gap:6px;color:var(--ink);font:570 12px/1.4 var(--font-geist)}.ds-field input{height:36px;padding:0 10px;border:1px solid var(--line-strong);border-radius:6px;color:var(--ink);background:var(--surface);font:400 14px/1.45 var(--font-geist)}.ds-field input:focus{border-color:var(--primary);box-shadow:0 0 0 3px color-mix(in oklch,var(--primary) 12%,transparent);outline:0}"
+    },
+    {
+      "name": "Navigation Row",
+      "kind": "nav",
+      "refersTo": "navigation-active",
+      "description": "Neutral selected fill with the icon carrying Roleway blue.",
+      "html": "<a class=\"ds-nav-active\" href=\"#\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"9\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\"/><circle cx=\"12\" cy=\"12\" r=\"3\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\"/></svg><span>Pipeline</span></a>",
+      "css": ".ds-nav-active{height:32px;padding:0 8px;border-radius:6px;color:var(--ink);background:var(--surface-2);display:flex;align-items:center;gap:10px;font:470 12px/1.4 var(--font-geist);text-decoration:none}.ds-nav-active svg{width:16px;height:16px;color:var(--primary)}.ds-nav-active:focus-visible{outline:2px solid var(--primary);outline-offset:2px}"
+    },
+    {
+      "name": "Opportunity Card",
+      "kind": "card",
+      "description": "A movable application record: compact, paper-white, and almost flat at rest.",
+      "html": "<article class=\"ds-opportunity\"><small>Northstar</small><strong>Senior Product Engineer</strong><p>Review team brief</p></article>",
+      "css": ".ds-opportunity{width:240px;padding:12px;border:1px solid var(--line);border-radius:7px;color:var(--ink);background:var(--canvas);box-shadow:0 1px 1px oklch(.20 .01 90/.035);font-family:var(--font-geist)}.ds-opportunity small{color:var(--muted);font-size:10px}.ds-opportunity strong{display:block;margin-top:3px;font-size:13px}.ds-opportunity p{margin:12px 0 0;padding-top:9px;border-top:1px solid var(--line);color:var(--muted);font-size:11px}.ds-opportunity:hover{border-color:var(--line-strong);box-shadow:0 2px 6px oklch(.20 .01 90/.07)}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Working Page",
+    "overview": "Roleway feels like a personal workspace that happens to manage a job search, not a dashboard assembled from widgets. A warm-stone rail supports one paper-white work island; graphite typography and quiet neutral selection keep attention on the current opportunity and its next action.",
+    "keyCharacteristics": [
+      "Flat persistent navigation beside one dominant work island.",
+      "Warm neutral architecture with blue reserved for action, progress, focus, and selected icons.",
+      "Document-like pages and record surfaces instead of dashboard card grids.",
+      "Compact, labeled navigation in expanded and collapsed modes.",
+      "Dark mode preserves the same semantic hierarchy."
+    ],
+    "rules": [
+      { "name": "The One Saturated Voice Rule", "body": "Blue communicates action or progress. Navigation containers, page chrome, and decorative regions stay neutral.", "section": "colors" },
+      { "name": "The One Island Rule", "body": "The navigation rail belongs to the backdrop. Never place the sidebar inside a floating container or nest additional page-sized islands inside the main surface.", "section": "layout" },
+      { "name": "The Flat-by-Default Rule", "body": "Shadows explain hierarchy or movement; they never decorate static content.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do use proximity and hairlines before adding a container.",
+      "Do keep the next action and its due state visible near the record it affects.",
+      "Do reserve cards for movable opportunities, approvals, and self-contained records.",
+      "Do use blue for actions, progress, focus, and selected icons."
+    ],
+    "donts": [
+      "Don't wrap the sidebar in a floating panel or give every section its own island.",
+      "Don't use blue-tinted application chrome, startup gradients, glass, glow, or decorative metrics.",
+      "Don't turn summaries into large dashboard cards or put empty-state icons in generic rounded tiles.",
+      "Don't copy Notion's brand assets or terminology."
+    ]
+  }
+}

@@ -31,7 +31,7 @@ test.describe.serial("critical product journey", () => {
   test("public landing is keyboard and mobile friendly", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/");
-    await expect(page.getByRole("heading", { name: "Keep every application moving." })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Give every serious opportunity a clear next move." })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Pipeline", exact: true }).first()).toBeVisible();
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow).toBeLessThanOrEqual(1);
@@ -39,7 +39,7 @@ test.describe.serial("critical product journey", () => {
 
   test("landing → login → onboarding → opportunity → logout protection", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByRole("heading", { name: "Keep every application moving." })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Give every serious opportunity a clear next move." })).toBeVisible();
     const getStarted = page.locator('a[href="/login"]', { hasText: "Get started" }).first();
     await expect(getStarted).toHaveAttribute("href", "/login");
     await getStarted.click();
@@ -110,7 +110,7 @@ test.describe.serial("critical product journey", () => {
     expect(download.suggestedFilename()).toMatch(/^roleway-export-\d{4}-\d{2}-\d{2}\.json$/);
 
     await page.locator(".sidebar").getByRole("button", { name: /Open account menu/ }).click();
-    await page.locator(".sidebar").getByRole("button", { name: "Sign out" }).click();
+    await page.locator(".sidebar").getByRole("menuitem", { name: "Sign out" }).click();
     await expect(page).toHaveURL(/\/login\?message=/);
     await page.goto(opportunityPath);
     await expect(page).toHaveURL(/\/login\?next=/);
