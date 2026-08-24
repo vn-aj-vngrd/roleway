@@ -25,3 +25,16 @@ Researched from Linear and Apple’s official product and design material on 20 
 - Consistent blue primary actions in the header, hero, product preview, and closing action.
 - Layered but subtle surfaces and shadows; no dark marketing skin, glass cards, or decorative gradients.
 - Authenticated dark mode remains available and uses the same semantic token hierarchy.
+
+## Landing audit — 23 August 2026
+
+A second pass checked the implemented landing page against Linear’s current design notes, Apple’s Human Interface Guidelines, and Vercel’s Web Interface Guidelines.
+
+- **Reduce repetition before adding decoration.** The separate eight-row feature inventory repeated the interactive product explorer and lengthened the page without adding proof. It was removed; the explorer remains the complete feature index and demonstrates every capability with responsive HTML UI.
+- **Keep color structural.** Large saturated marketing fields competed with the product. The landing now uses paper, quiet neutral surfaces, hairlines, and one blue action voice; blue marks selection, progress, and calls to action rather than acting as atmosphere.
+- **Adapt product graphics instead of scaling them.** Pipeline, Inbox, and Opportunity previews now recompose into mobile-native layouts at phone widths. They do not use desktop screenshots, horizontal clipping, or transform scaling.
+- **Use one visual focus per chapter.** The hero, explorer, and workflow chapters each center one working product surface. Secondary copy recedes through size and contrast instead of extra containers.
+- **Motion explains progression.** Scroll reveals and the route progress indicator use transform, opacity, and clip-path, stop under reduced motion, and follow the product’s next-action journey rather than decorating unrelated elements.
+- **Touch and safe areas are first-class.** The public page uses `viewport-fit=cover`, safe-area padding, 44px controls, inert decorative previews, and layouts verified from 320px through tablet and phone landscape.
+
+Sources: [Linear, “How we redesigned the Linear UI”](https://linear.app/now/how-we-redesigned-the-linear-ui), [Linear, “A calmer interface for a product in motion”](https://linear.app/now/behind-the-latest-design-refresh), [Apple Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines/), and [Vercel Web Interface Guidelines](https://github.com/vercel-labs/web-interface-guidelines).

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-08-21T22:00:00Z",
+  "generatedAt": "2026-08-24T00:00:00Z",
   "title": "Design System: Roleway",
   "extensions": {
     "colorMeta": {
@@ -17,7 +17,6 @@
       "utility": { "displayName": "Utility Data", "purpose": "IDs, shortcuts, dates, and tabular values only." }
     },
     "shadows": [
-      { "name": "main-island", "value": "0 1px 2px oklch(.20 .01 90 / .06), 0 10px 28px oklch(.20 .01 90 / .065)", "purpose": "Separates the single main work island from the warm-stone application backdrop." },
       { "name": "dialog", "value": "0 18px 54px oklch(.18 .01 90 / .20)", "purpose": "Commands, search, and account overlays." },
       { "name": "record-hover", "value": "0 2px 6px oklch(.20 .01 90 / .07)", "purpose": "Movable opportunity cards on hover." }
     ],
@@ -58,9 +57,9 @@
       "name": "Navigation Row",
       "kind": "nav",
       "refersTo": "navigation-active",
-      "description": "Neutral selected fill with the icon carrying Roleway blue.",
+      "description": "Neutral selected fill with a graphite icon and no decorative accent.",
       "html": "<a class=\"ds-nav-active\" href=\"#\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"9\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\"/><circle cx=\"12\" cy=\"12\" r=\"3\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\"/></svg><span>Pipeline</span></a>",
-      "css": ".ds-nav-active{height:32px;padding:0 8px;border-radius:6px;color:var(--ink);background:var(--surface-2);display:flex;align-items:center;gap:10px;font:470 12px/1.4 var(--font-geist);text-decoration:none}.ds-nav-active svg{width:16px;height:16px;color:var(--primary)}.ds-nav-active:focus-visible{outline:2px solid var(--primary);outline-offset:2px}"
+      "css": ".ds-nav-active{height:32px;padding:0 9px;border-radius:6px;color:var(--ink);background:var(--surface-2);display:flex;align-items:center;gap:10px;font:470 13px/1.4 var(--font-geist);text-decoration:none}.ds-nav-active svg{width:16px;height:16px;color:var(--ink)}.ds-nav-active:focus-visible{outline:2px solid var(--primary);outline-offset:2px}"
     },
     {
       "name": "Opportunity Card",
@@ -72,30 +71,33 @@
   ],
   "narrative": {
     "northStar": "The Working Page",
-    "overview": "Roleway feels like a personal workspace that happens to manage a job search, not a dashboard assembled from widgets. A warm-stone rail supports one paper-white work island; graphite typography and quiet neutral selection keep attention on the current opportunity and its next action.",
+    "overview": "Roleway feels like a personal workspace that happens to manage a job search, not a dashboard assembled from widgets. A quiet neutral sidebar sits flush beside a paper-white content plane, separated by one hairline; graphite typography and neutral selection keep attention on the current opportunity and its next action.",
     "keyCharacteristics": [
-      "Flat persistent navigation beside one dominant work island.",
-      "Warm neutral architecture with blue reserved for action, progress, focus, and selected icons.",
+      "Flush persistent navigation and content separated by one structural rule.",
+      "Neutral architecture with blue reserved for primary actions, progress, focus, and the Roleway mark.",
       "Document-like pages and record surfaces instead of dashboard card grids.",
       "Compact, labeled navigation in expanded and collapsed modes.",
-      "Dark mode preserves the same semantic hierarchy."
+      "Dark mode preserves the same semantic hierarchy.",
+      "Public pages use the real application shell and task-specific HTML views as product evidence."
     ],
     "rules": [
       { "name": "The One Saturated Voice Rule", "body": "Blue communicates action or progress. Navigation containers, page chrome, and decorative regions stay neutral.", "section": "colors" },
-      { "name": "The One Island Rule", "body": "The navigation rail belongs to the backdrop. Never place the sidebar inside a floating container or nest additional page-sized islands inside the main surface.", "section": "layout" },
+      { "name": "The One Plane Rule", "body": "Sidebar and content meet directly. Never float the application shell, round the main content boundary, or use shadows to turn the workspace into an island.", "section": "layout" },
       { "name": "The Flat-by-Default Rule", "body": "Shadows explain hierarchy or movement; they never decorate static content.", "section": "elevation" }
     ],
     "dos": [
       "Do use proximity and hairlines before adding a container.",
       "Do keep the next action and its due state visible near the record it affects.",
       "Do reserve cards for movable opportunities, approvals, and self-contained records.",
-      "Do use blue for actions, progress, focus, and selected icons."
+      "Do use blue for primary actions, progress, focus, and the Roleway mark.",
+      "Do show real product structure and task-specific content on public pages."
     ],
     "donts": [
-      "Don't wrap the sidebar in a floating panel or give every section its own island.",
+      "Don't float the application shell, round the main content boundary, or give every section its own island.",
       "Don't use blue-tinted application chrome, startup gradients, glass, glow, or decorative metrics.",
       "Don't turn summaries into large dashboard cards or put empty-state icons in generic rounded tiles.",
-      "Don't copy Notion's brand assets or terminology."
+      "Don't copy Notion's brand assets or terminology.",
+      "Don't market Roleway with generic dashboard art, fake metrics, or product screenshots that show a discarded shell."
     ]
   }
 }

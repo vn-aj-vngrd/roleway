@@ -91,11 +91,11 @@ components:
 
 Roleway should feel like a personal workspace that happens to manage a job search, not a dashboard assembled from widgets. The authenticated application borrows the structural calm of current Notion, the interaction density of Linear, and Apple’s alignment and finish while retaining Roleway’s own blue action color and route-shaped mark.
 
-The interface is light-first for focused desk work. A warm-stone navigation rail supports one paper-white main island. Graphite typography, neutral selection, compact controls, and hairline structure keep attention on the current opportunity and its next action.
+The interface is light-first for focused desk work. A quiet neutral sidebar sits flush beside a paper-white content plane, separated by one hairline. Graphite typography, neutral selection, compact controls, and precise alignment keep attention on the current opportunity and its next action.
 
 **Key Characteristics:**
-- Flat persistent navigation beside one dominant work island.
-- Warm neutral architecture with blue reserved for action, progress, focus, and selected icons.
+- Flush persistent navigation and content separated by one structural rule.
+- Neutral architecture with blue reserved for primary actions, progress, focus, and the Roleway mark.
 - Document-like pages and record surfaces instead of dashboard card grids.
 - Compact, labeled navigation that remains legible in expanded and collapsed modes.
 - Dark mode preserves the same hierarchy through semantic color roles.
@@ -105,7 +105,7 @@ The interface is light-first for focused desk work. A warm-stone navigation rail
 The palette is warm-neutral and restrained; Roleway blue is the only saturated interface voice.
 
 ### Primary
-- **Roleway Blue:** Primary actions, focus rings, progress nodes, selected navigation icons, and the route logo.
+- **Roleway Blue:** Primary actions, focus rings, progress nodes, and the route logo.
 - **Roleway Blue Soft:** Low-emphasis callouts, selected progress states, and accessible focus support.
 
 ### Neutral
@@ -140,20 +140,20 @@ The palette is warm-neutral and restrained; Roleway blue is the only saturated i
 
 ## Layout
 
-Desktop uses a 240px expanded navigation rail or 64px compact rail directly on the warm-stone backdrop. Only the main work surface becomes an island: 8px from the viewport edge, separated from the rail by 8px, with a 10px corner radius.
+Desktop uses a 256px expanded sidebar or 64px compact rail. It is fixed to the viewport edge and separated from the full-height content plane by one 1px border. A 52px content toolbar holds the sidebar trigger and route breadcrumb.
 
-Pages use 42px top spacing and fluid horizontal padding from 28px to 64px. Focused pages cap content at 980px; operational boards may use the full island. Tight intervals of 4–16px group related controls, while 24–32px separates sections.
+Pages use 42px top spacing and fluid horizontal padding from 28px to 64px. Focused pages cap content at 980px; operational boards may use the full content plane. Tight intervals of 4–16px group related controls, while 24–32px separates sections.
 
-Below 760px the sidebar disappears, the island boundary is removed, pages use 20px horizontal padding, and primary navigation becomes a 58px bottom bar. DOM order remains unchanged and no mobile view may scroll horizontally.
+Below 760px the sidebar and content toolbar disappear, pages use 20px horizontal padding, and primary navigation becomes a 58px bottom bar. DOM order remains unchanged and no mobile view may scroll horizontally.
 
-**The One Island Rule.** The navigation rail belongs to the backdrop. Never place the sidebar inside a floating container or nest additional page-sized islands inside the main surface.
+**The One Plane Rule.** Sidebar and content meet directly. Never float the application shell, round the main content boundary, or use shadows to turn the workspace into an island.
 
 ## Elevation & Depth
 
-The system is flat by default. Tonal shifts and hairlines establish most hierarchy. The main island uses one ambient shadow plus a one-pixel structural border; dialogs and account menus may rise above it with a stronger but neutral shadow. Opportunity cards receive only a slight state shadow because they are movable objects.
+The system is flat by default. Tonal shifts and hairlines establish hierarchy. The application shell has no shadow; dialogs and account menus may rise above it with a stronger but neutral shadow. Opportunity cards receive only a slight state shadow because they are movable objects.
 
 ### Shadow Vocabulary
-- **Main island:** `0 1px 2px oklch(.20 .01 90 / .06), 0 10px 28px oklch(.20 .01 90 / .065)`.
+- **Application shell:** none; use a 1px sidebar separator.
 - **Dialog:** `0 18px 54px oklch(.18 .01 90 / .20)`.
 - **Movable record hover:** `0 2px 6px oklch(.20 .01 90 / .07)`.
 
@@ -161,7 +161,7 @@ The system is flat by default. Tonal shifts and hairlines establish most hierarc
 
 ## Shapes
 
-Controls use compact 5–6px corners. Movable records use 7px corners. The single main island and command dialogs use 10px corners. Dividers remain one pixel. Pills are reserved for categorical status, not ordinary buttons, navigation, or metadata.
+Controls use compact 5–6px corners. Movable records use 7px corners. Command dialogs use 10px corners; the application shell remains square and flush. Dividers remain one pixel. Pills are reserved for categorical status, not ordinary buttons, navigation, or metadata.
 
 The Roleway mark remains a compact route-shaped R in a blue tile. Interface icons use Lucide’s consistent outline vocabulary at 15–16px with restrained stroke weight.
 
@@ -185,12 +185,15 @@ The Roleway mark remains a compact route-shaped R in a blue tile. Interface icon
 - **Error / Disabled:** Semantic danger color or reduced opacity without removing the field’s label or recovery copy.
 
 ### Navigation
-- Expanded rows are 32px high with 16px outline icons, 12px labels, and 6px corners. Hover and active states use neutral fills; only the active icon turns blue. Section labels are sentence case, untracked, and visually subordinate.
+- Expanded rows are 32px high with 16px outline icons, 13px labels, and 6px corners. Hover and active states use neutral fills and graphite icons. Section labels are sentence case, untracked, and visually subordinate.
 - Compact mode preserves a 40px centerline for logo, search, destinations, notifications, and avatar.
 - Mobile navigation uses labeled 48px targets in a fixed bottom bar with the same neutral active state.
 
-### Main Work Island
-The island is the application’s dominant structural component. It owns page content, boards, settings, dialogs anchored to content, and route-specific loading states. Its border, background, and radius remain consistent across authenticated routes.
+### Main Work Plane
+The content plane is the application’s dominant structural region. It owns the route toolbar, page content, boards, settings, and route-specific loading states. Its white background and direct hairline relationship to the sidebar remain consistent across authenticated routes.
+
+### Public Product Pages
+Marketing uses the application itself as evidence. Large, tightly set graphite headlines create hierarchy, while real HTML previews repeat the flush sidebar, separator, route toolbar, and content plane used by the product. One graphite statement field may interrupt an otherwise light page; blue remains reserved for action and progress. Product views are responsive compositions, never scaled screenshots or decorative dashboard mockups.
 
 ## Do's and Don'ts
 
@@ -198,12 +201,14 @@ The island is the application’s dominant structural component. It owns page co
 - **Do** use proximity and hairlines before adding a container.
 - **Do** keep the next action and its due state visible near the record it affects.
 - **Do** reserve cards for movable opportunities, approvals, and self-contained records.
-- **Do** use blue for actions, progress, focus, and selected icons.
+- **Do** use blue for primary actions, progress, focus, and the Roleway mark.
 - **Do** preserve the same semantic hierarchy in dark mode and on mobile.
+- **Do** show real product structure and task-specific content on public pages.
 
 ### Don't:
-- **Don't** wrap the sidebar in a floating panel or give every section its own island.
+- **Don't** float the application shell, round the main content boundary, or give every section its own island.
 - **Don't** use blue-tinted application chrome, startup gradients, glass, glow, or decorative metrics.
 - **Don't** turn summaries into large dashboard cards or put empty-state icons in generic rounded tiles.
 - **Don't** use AI imagery, sparkles, robots, or chat styling to represent Assist.
 - **Don't** copy Notion’s brand assets, collaboration terminology, or AI-first positioning; only its workspace discipline is relevant.
+- **Don't** market Roleway with generic dashboard art, fake metrics, or product screenshots that still show a discarded shell.

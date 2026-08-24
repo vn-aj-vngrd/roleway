@@ -47,6 +47,19 @@ const toolNav: NavEntry[] = [
   { href: "/insights", label: "Insights", icon: ChartNoAxesColumnIncreasing },
 ];
 
+const routeTitles: Record<string, string> = {
+  "/today": "Today",
+  "/opportunities": "Pipeline",
+  "/jobs": "Job inbox",
+  "/preparation": "Interviews",
+  "/documents": "Documents",
+  "/assistant": "Assist",
+  "/insights": "Insights",
+  "/notifications": "Notifications",
+  "/settings": "Settings",
+  "/admin": "Admin console",
+};
+
 const searchEntries: SearchEntry[] = [
   { href: "/jobs?create=true", label: "Add a job", description: "Capture a role in your inbox", keywords: "create new capture import", icon: Plus, shortcut: "C" },
   { href: "/today", label: "Today", description: "Tasks, interviews, and next actions", keywords: "home due focus", icon: LayoutDashboard },
@@ -225,6 +238,14 @@ export function AppShell({ children, user, showTour, notificationCount, isAdmin 
       const target = event.target as HTMLElement;
       const editing = target.matches("input, textarea, select, [contenteditable='true']");
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") { event.preventDefault(); setSearchOpen(true); }
+      else if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "b") {
+        event.preventDefault();
+        setCompactSidebar((current) => {
+          const next = !current;
+          localStorage.setItem("roleway-sidebar", next ? "compact" : "expanded");
+          return next;
+        });
+      }
       else if (!editing && event.key === "/") { event.preventDefault(); setSearchOpen(true); }
       else if (!editing && event.key.toLowerCase() === "c") router.push("/jobs?create=true");
       else if (!editing && event.key.toLowerCase() === "i") router.push("/jobs");
@@ -233,14 +254,24 @@ export function AppShell({ children, user, showTour, notificationCount, isAdmin 
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [router]);
 
+  const toggleSidebar = useCallback(() => {
+    setCompactSidebar((current) => {
+      const next = !current;
+      localStorage.setItem("roleway-sidebar", next ? "compact" : "expanded");
+      return next;
+    });
+  }, []);
+  const currentSection = Object.entries(routeTitles).find(([route]) => pathname === route || pathname.startsWith(`${route}/`))?.[1] ?? "Workspace";
   const mobileNav = [...workNav, { href: "/settings/profile", label: "Settings", icon: Settings }];
 
   return (
     <div className="app-shell" data-sidebar={compactSidebar ? "compact" : "expanded"}>
       <aside className="sidebar" aria-label="Main navigation">
         <div className="sidebar-brand-row">
-          <Link href="/today" className="brand"><LogoMark /><span>Roleway</span></Link>
-          <button className="icon-button sidebar-toggle" onClick={(event) => { setCompactSidebar((current) => { const next = !current; localStorage.setItem("roleway-sidebar", next ? "compact" : "expanded"); return next; }); if (event.detail > 0) event.currentTarget.blur(); }} aria-label={compactSidebar ? "Expand sidebar" : "Collapse sidebar"} title={compactSidebar ? "Expand sidebar" : "Collapse sidebar"}><PanelLeft aria-hidden="true" /></button>
+          <Link href="/today" className="brand">
+            <LogoMark />
+            <span className="brand-copy"><strong>Roleway</strong><small>Personal workspace</small></span>
+          </Link>
         </div>
         <button ref={searchTriggerRef} className="sidebar-search" data-tour="commands" aria-label="Search Roleway" title="Search Roleway" onClick={() => setSearchOpen(true)}><Search aria-hidden="true" /><span>Search</span><kbd>⌘ K</kbd></button>
         <div className="sidebar-navigation">
@@ -251,7 +282,14 @@ export function AppShell({ children, user, showTour, notificationCount, isAdmin 
         <nav className="sidebar-utility" aria-label="Updates"><NavItem item={{ href: "/notifications", label: "Notifications", icon: Bell }} pathname={pathname} badge={notificationCount} /></nav>
         <AccountMenu user={user} dark={dark} isAdmin={isAdmin} onToggleTheme={toggleTheme} />
       </aside>
-      <main className="main" id="main-content">{children}</main>
+      <main className="main" id="main-content">
+        <header className="workspace-toolbar">
+          <button className="icon-button workspace-sidebar-toggle" onClick={toggleSidebar} aria-label={compactSidebar ? "Expand sidebar" : "Collapse sidebar"} title={`${compactSidebar ? "Expand" : "Collapse"} sidebar (⌘B)`}><PanelLeft aria-hidden="true" /></button>
+          <span className="workspace-toolbar-separator" aria-hidden="true" />
+          <nav className="workspace-breadcrumb" aria-label="Breadcrumb"><span>Workspace</span><span aria-hidden="true">/</span><strong>{currentSection}</strong></nav>
+        </header>
+        {children}
+      </main>
       <nav className="mobile-nav" aria-label="Mobile navigation">
         {mobileNav.map((item) => <NavItem key={item.href} item={item} pathname={pathname} />)}
         <button className="nav-link mobile-search" aria-label="Search Roleway" onClick={() => setSearchOpen(true)}><Search aria-hidden="true" /><span>Search</span></button>

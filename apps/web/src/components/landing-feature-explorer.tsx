@@ -44,9 +44,16 @@ export function LandingFeatureExplorer() {
 
 function FeatureWindow({ active }: { active: FeatureKey }) {
   return (
-    <div className="feature-window" aria-label={`${features.find((feature) => feature.key === active)?.label} product preview`}>
-      <header><span><LogoMark size={15} />Roleway</span><b>{features.find((feature) => feature.key === active)?.label}</b><kbd>⌘ K</kbd></header>
-      {active === "today" ? <TodayView /> : active === "inbox" ? <InboxView /> : active === "pipeline" ? <PipelineView /> : active === "workspace" ? <WorkspaceView /> : active === "documents" ? <DocumentsView /> : active === "interviews" ? <InterviewsView /> : active === "insights" ? <InsightsView /> : <AssistView />}
+    <div className="feature-window" aria-hidden="true" inert>
+      <aside className="feature-window-sidebar">
+        <span><LogoMark size={18} /><b>Roleway</b></span>
+        <nav><i /><i className="active" /><i /><i /><i /></nav>
+        <em />
+      </aside>
+      <div className="feature-window-main">
+        <header><span className="preview-panel-icon" /><i /><span>Workspace</span><b>/</b><strong>{features.find((feature) => feature.key === active)?.label}</strong><kbd>⌘ K</kbd></header>
+        {active === "today" ? <TodayView /> : active === "inbox" ? <InboxView /> : active === "pipeline" ? <PipelineView /> : active === "workspace" ? <WorkspaceView /> : active === "documents" ? <DocumentsView /> : active === "interviews" ? <InterviewsView /> : active === "insights" ? <InsightsView /> : <AssistView />}
+      </div>
     </div>
   );
 }
