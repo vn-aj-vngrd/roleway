@@ -1,4 +1,4 @@
-const CACHE_NAME = "roleway-static-v1";
+const CACHE_NAME = "roleway-static-v3";
 const OFFLINE_URL = "/offline.html";
 const PRECACHE = [
   OFFLINE_URL,
@@ -34,8 +34,9 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  const isStaticAsset = url.pathname.startsWith("/_next/static/")
-    || url.pathname.startsWith("/icons/")
+  // Next.js chunks are intentionally network-managed. Cache-first handling here
+  // can retain an old module graph during development or after deployment.
+  const isStaticAsset = url.pathname.startsWith("/icons/")
     || url.pathname === "/roleway-mark.svg";
 
   if (!isStaticAsset) return;

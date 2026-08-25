@@ -19,9 +19,13 @@ export async function updateProfile(formData: FormData) {
 }
 
 export async function deleteAccount(formData: FormData) {
-  const confirmation = z.literal("DELETE").safeParse(formData.get("confirmation"));
-  if (!confirmation.success) redirect("/settings/privacy?error=Type%20DELETE%20to%20confirm%20account%20deletion.");
+  const confirmation = z.object({ confirmationName: z.string().trim().min(1), confirmationEmail: z.string().trim().email() }).safeParse(Object.fromEntries(formData));
   const auth = await requireUser(); if (!auth) redirect("/login");
+  const { data: profile } = await auth.supabase.from("profiles").select("full_name").eq("user_id", auth.user.id).maybeSingle();
+  const expectedName = profile?.full_name || String(auth.user.user_metadata?.full_name || auth.user.email?.split("@")[0] || "Roleway user");
+  const nameMatches = confirmation.success && confirmation.data.confirmationName === expectedName;
+  const emailMatches = confirmation.success && confirmation.data.confirmationEmail.toLowerCase() === auth.user.email?.toLowerCase();
+  if (!nameMatches || !emailMatches) redirect("/settings/privacy?error=Your%20name%20and%20email%20must%20match%20the%20account.");
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !serviceKey) redirect("/settings/privacy?error=Account%20deletion%20is%20not%20configured.");

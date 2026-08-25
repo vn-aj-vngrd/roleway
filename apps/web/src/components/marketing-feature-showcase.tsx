@@ -2,6 +2,7 @@
 
 import { ArrowLeft, ArrowRight, CalendarClock, Check, Inbox, Target } from "lucide-react";
 import { useRef, useState } from "react";
+import { LogoMark } from "@/components/logo";
 
 const features = [
   { key: "today", label: "Today", title: "Know what deserves attention", description: "See interviews, overdue tasks, follow-ups, and unreviewed jobs in one restrained daily queue—not a dashboard full of vanity metrics." },
@@ -20,7 +21,7 @@ export function MarketingFeatureShowcase() {
     <div className="marketing-showcase" role="region" aria-roledescription="carousel" aria-label="Roleway product capabilities" onKeyDown={(event) => { if (event.key === "ArrowLeft") move(-1); if (event.key === "ArrowRight") move(1); }} onTouchStart={(event) => { touchStart.current = event.touches[0]?.clientX ?? null; }} onTouchEnd={(event) => { const end = event.changedTouches[0]?.clientX; if (touchStart.current === null || end === undefined) return; const delta = end - touchStart.current; if (Math.abs(delta) > 48) move(delta > 0 ? -1 : 1); touchStart.current = null; }} tabIndex={0}>
       <div className="showcase-tabs" role="tablist" aria-label="Choose a capability">{features.map((item, index) => <button key={item.key} role="tab" aria-selected={active === index} aria-controls="feature-panel" className={active === index ? "active" : ""} onClick={() => setActive(index)}>{item.label}</button>)}</div>
       <div className="showcase-body" id="feature-panel" role="tabpanel" aria-live="polite">
-        <div className="showcase-copy"><span className="mono">0{active + 1}</span><h3>{feature.title}</h3><p>{feature.description}</p><div className="showcase-controls"><button className="icon-button" onClick={() => move(-1)} aria-label="Previous capability"><ArrowLeft aria-hidden="true" /></button><span className="mono">{active + 1} / {features.length}</span><button className="icon-button" onClick={() => move(1)} aria-label="Next capability"><ArrowRight aria-hidden="true" /></button></div></div>
+        <div className="showcase-copy"><span className="mono">0{active + 1}</span><h3>{feature.title}</h3><p>{feature.description}</p><div className="showcase-controls"><button className="icon-button" data-tooltip="Previous capability" onClick={() => move(-1)} aria-label="Previous capability"><ArrowLeft aria-hidden="true" /></button><span className="mono">{active + 1} / {features.length}</span><button className="icon-button" data-tooltip="Next capability" onClick={() => move(1)} aria-label="Next capability"><ArrowRight aria-hidden="true" /></button></div></div>
         <div className="showcase-visual" aria-label={`${feature.label} interface preview`}>
           {feature.key === "today" ? <TodayPreview /> : feature.key === "inbox" ? <InboxPreview /> : feature.key === "workspace" ? <WorkspacePreview /> : <ControlPreview />}
         </div>
@@ -30,7 +31,7 @@ export function MarketingFeatureShowcase() {
 }
 
 function PreviewShell({ title, children }: { title: string; children: React.ReactNode }) {
-  return <div className="preview-shell"><header><span className="preview-mark">R</span><b>{title}</b><span className="preview-command">⌘ K</span></header>{children}</div>;
+  return <div className="preview-shell"><header><LogoMark className="preview-mark" size={17} tile /><b>{title}</b><span className="preview-command">⌘ K</span></header>{children}</div>;
 }
 function TodayPreview() { return <PreviewShell title="Today"><div className="preview-heading"><b>Good morning</b><span>3 items need attention</span></div><div className="preview-rows"><div><time>10:00</time><CalendarClock aria-hidden="true" /><span><b>Technical interview</b><small>Product Engineer · 60 min</small></span><em>Open prep</em></div><div><time>Today</time><Check aria-hidden="true" /><span><b>Follow up</b><small>Applied 6 days ago</small></span><em>Prepare</em></div><div><time>Inbox</time><Inbox aria-hidden="true" /><span><b>Review 2 jobs</b><small>Decide what enters the pipeline</small></span><em>Review</em></div></div></PreviewShell>; }
 function InboxPreview() { return <PreviewShell title="Job inbox"><div className="preview-job"><span>Example Company</span><b>Product Engineer</b><small>Remote · Full-time · Company site</small><p>Build dependable product workflows with TypeScript and PostgreSQL.</p><div><em>Track opportunity</em><span>Maybe</span><span>Dismiss</span></div></div><div className="preview-job muted-preview"><span>Another Company</span><b>Full-Stack Engineer</b><small>Remote · APAC</small></div></PreviewShell>; }

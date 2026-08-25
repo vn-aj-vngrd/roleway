@@ -24,7 +24,7 @@ export function ProductTour({ open }: { open: boolean }) {
     startTransition(async () => {
       await completeTour();
       setVisible(false);
-      if (goToJobs) router.push("/jobs?create=true");
+      if (goToJobs) router.push("/jobs/new");
       else router.refresh();
     });
   };
@@ -55,7 +55,7 @@ export function ProductTour({ open }: { open: boolean }) {
     <div className="tour-layer" aria-hidden="false">
       <div className="tour-scrim" />
       <section className="tour-card" role="dialog" aria-modal="false" aria-labelledby="tour-title" aria-describedby="tour-body">
-        <header><span className="mono">{step + 1} / {steps.length}</span><button className="icon-button" onClick={() => finish(false)} aria-label="Skip product tour"><X /></button></header>
+        <header><span className="mono">{step + 1} / {steps.length}</span><button className="icon-button" data-tooltip="Skip tour" onClick={() => finish(false)} aria-label="Skip product tour"><X /></button></header>
         <h2 id="tour-title">{current.title}</h2>
         <p id="tour-body">{current.body}</p>
         <footer><button className="button ghost" onClick={() => finish(false)} disabled={pending}>Skip tour</button><button ref={primaryRef} className="button primary" onClick={() => final ? finish(true) : setStep((value) => value + 1)} disabled={pending}>{final ? "Add my first job" : "Next"}<ArrowRight /></button></footer>

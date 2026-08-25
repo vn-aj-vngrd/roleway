@@ -2,41 +2,41 @@
 name: Roleway
 description: A calm working surface for a selective job search.
 colors:
-  roleway-blue: "oklch(0.55 0.19 255)"
-  roleway-blue-hover: "oklch(0.49 0.185 255)"
-  roleway-blue-soft: "oklch(0.94 0.035 255)"
-  paper: "oklch(0.995 0.002 90)"
-  warm-stone: "oklch(0.967 0.003 90)"
-  quiet-surface: "oklch(0.978 0.003 90)"
-  selected-stone: "oklch(0.935 0.004 90)"
-  graphite: "oklch(0.22 0.006 90)"
-  graphite-muted: "oklch(0.47 0.008 90)"
-  hairline: "oklch(0.90 0.004 90)"
-  hairline-strong: "oklch(0.82 0.006 90)"
+  accent-blue: "oklch(0.56 0.21 255)"
+  accent-blue-hover: "oklch(0.50 0.21 255)"
+  accent-blue-soft: "oklch(0.95 0.035 255)"
+  canvas-light: "oklch(1 0 0)"
+  canvas-dark: "oklch(0.15 0.006 255)"
+  surface-light: "oklch(0.975 0 0)"
+  surface-dark: "oklch(0.19 0.006 255)"
+  graphite: "oklch(0.17 0 0)"
+  graphite-muted: "oklch(0.46 0 0)"
+  hairline: "oklch(0.90 0 0)"
+  hairline-strong: "oklch(0.80 0 0)"
 typography:
   headline:
-    fontFamily: "Inter Variable, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif"
+    fontFamily: "Geist Sans Variable, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif"
     fontSize: "28px"
     fontWeight: 650
     lineHeight: 1.16
     letterSpacing: "-0.025em"
   title:
-    fontFamily: "Inter Variable, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif"
+    fontFamily: "Geist Sans Variable, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif"
     fontSize: "16px"
     fontWeight: 620
     lineHeight: 1.3
   body:
-    fontFamily: "Inter Variable, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif"
+    fontFamily: "Geist Sans Variable, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif"
     fontSize: "14px"
     fontWeight: 400
     lineHeight: 1.45
   label:
-    fontFamily: "Inter Variable, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif"
+    fontFamily: "Geist Sans Variable, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif"
     fontSize: "12px"
     fontWeight: 470
     lineHeight: 1.4
   utility:
-    fontFamily: "JetBrains Mono Variable, SFMono-Regular, Consolas, monospace"
+    fontFamily: "Geist Mono Variable, SFMono-Regular, Consolas, monospace"
     fontSize: "11px"
     fontWeight: 500
     lineHeight: 1.4
@@ -54,28 +54,28 @@ spacing:
   xl: "32px"
 components:
   button-primary:
-    backgroundColor: "{colors.roleway-blue}"
-    textColor: "{colors.paper}"
+    backgroundColor: "{colors.accent-blue}"
+    textColor: "{colors.canvas-light}"
     typography: "{typography.label}"
     rounded: "{rounded.control}"
     padding: "0 12px"
     height: "34px"
   button-secondary:
-    backgroundColor: "{colors.paper}"
+    backgroundColor: "{colors.canvas-light}"
     textColor: "{colors.graphite}"
     typography: "{typography.label}"
     rounded: "{rounded.control}"
     padding: "0 12px"
     height: "34px"
   navigation-active:
-    backgroundColor: "{colors.selected-stone}"
+    backgroundColor: "{colors.accent-blue-soft}"
     textColor: "{colors.graphite}"
     typography: "{typography.label}"
     rounded: "{rounded.control}"
     padding: "0 8px"
     height: "32px"
   input:
-    backgroundColor: "{colors.quiet-surface}"
+    backgroundColor: "{colors.surface-light}"
     textColor: "{colors.graphite}"
     typography: "{typography.body}"
     rounded: "{rounded.control}"
@@ -87,45 +87,45 @@ components:
 
 ## Overview
 
-**Creative North Star: "The Working Page"**
+**Creative North Star: "The Working Page and Pin-up"**
 
-Roleway should feel like a personal workspace that happens to manage a job search, not a dashboard assembled from widgets. The authenticated application borrows the structural calm of current Notion, the interaction density of Linear, and Apple’s alignment and finish while retaining Roleway’s own blue action color and route-shaped mark.
+Roleway should feel like a personal workspace that happens to manage a job search, not a dashboard assembled from widgets. The authenticated application borrows the structural calm of current Notion, the interaction density of Linear, and Apple’s alignment and finish while retaining Roleway’s route-shaped mark. Public product pages extend that workspace into a composed working pin-up: real interface evidence, precise annotations, and one tactile next-action slip.
 
-The interface is light-first for focused desk work. A quiet neutral sidebar sits flush beside a paper-white content plane, separated by one hairline. Graphite typography, neutral selection, compact controls, and precise alignment keep attention on the current opportunity and its next action.
+The interface supports equally composed light and dark themes for focused desk work. A quiet neutral sidebar sits flush beside the main content plane, separated by one hairline. High-contrast typography, neutral selection, compact controls, and precise alignment keep attention on the current opportunity and its next action.
 
 **Key Characteristics:**
 - Flush persistent navigation and content separated by one structural rule.
-- Neutral architecture with blue reserved for primary actions, progress, focus, and the Roleway mark.
+- Neutral architecture with Waypoint Blue carrying primary actions, focus, selection, progress, and the route mark.
 - Document-like pages and record surfaces instead of dashboard card grids.
 - Compact, labeled navigation that remains legible in expanded and collapsed modes.
 - Dark mode preserves the same hierarchy through semantic color roles.
 
 ## Colors
 
-The palette is warm-neutral and restrained; Roleway blue is the only saturated interface voice.
+The palette is neutral and high-contrast. Waypoint Blue is the only saturated voice and carries every forward action.
 
 ### Primary
-- **Roleway Blue:** Primary actions, focus rings, progress nodes, and the route logo.
-- **Roleway Blue Soft:** Low-emphasis callouts, selected progress states, and accessible focus support.
+- **Waypoint Blue:** Primary buttons, the favicon-style Roleway tile, focus rings, active navigation, progress nodes, and links requiring emphasis.
+- **Waypoint Blue Hover:** A deeper blue in light mode and a brighter blue in dark mode, preserving clear interaction feedback.
+- **Waypoint Blue Soft:** Selected rows, low-emphasis callouts, and accessible focus support.
 
 ### Neutral
-- **Paper:** Main work island, cards representing movable records, dialogs, and secondary buttons.
-- **Warm Stone:** Application backdrop and the uncontained navigation rail.
-- **Quiet Surface:** Inputs, toolbars, and low-emphasis working regions.
-- **Selected Stone:** Hover and selected navigation states.
+- **Canvas:** Pure white in light mode and near-black in dark mode; the main work plane, cards, dialogs, and secondary buttons.
+- **Sidebar:** A single neutral tonal step from the canvas in both themes.
+- **Surface:** Inputs, toolbars, hover states, and low-emphasis working regions.
 - **Graphite:** Primary text and high-confidence iconography.
 - **Graphite Muted:** Descriptions, metadata, and secondary controls.
-- **Hairline / Hairline Strong:** Structural dividers and interactive boundaries.
+- **Hairline / Hairline Strong:** Neutral structural dividers and interactive boundaries.
 
-**The One Saturated Voice Rule.** Blue communicates action or progress. Navigation containers, page chrome, and decorative regions stay neutral.
+**The One Saturated Voice Rule.** Waypoint Blue communicates forward action, focus, selection, progress, or a waypoint. Product chrome and secondary controls stay neutral.
 
 **The Semantic Theme Rule.** Dark mode changes role values, not component logic; selection, action, and hierarchy remain identical.
 
 ## Typography
 
-**Display Font:** Inter Variable with the system sans stack.
-**Body Font:** Inter Variable with the system sans stack.
-**Utility Font:** JetBrains Mono Variable for IDs, keyboard shortcuts, dates, and compact numeric metadata only.
+**Display Font:** Geist Sans Variable with the system sans stack.
+**Body Font:** Geist Sans Variable with the system sans stack.
+**Utility Font:** Geist Mono Variable for IDs, keyboard shortcuts, dates, and compact numeric metadata only.
 
 **Character:** The system uses one workhorse sans family with size-specific weight and tracking. It feels familiar and editorial without turning headings into marketing display type.
 
@@ -163,15 +163,15 @@ The system is flat by default. Tonal shifts and hairlines establish hierarchy. T
 
 Controls use compact 5–6px corners. Movable records use 7px corners. Command dialogs use 10px corners; the application shell remains square and flush. Dividers remain one pixel. Pills are reserved for categorical status, not ordinary buttons, navigation, or metadata.
 
-The Roleway mark remains a compact route-shaped R in a blue tile. Interface icons use Lucide’s consistent outline vocabulary at 15–16px with restrained stroke weight.
+The Roleway mark follows the favicon everywhere: a Waypoint Blue rounded tile with a white route-shaped R and terminal waypoint. Interface icons use Lucide’s consistent outline vocabulary at 15–16px with restrained stroke weight.
 
 ## Components
 
 ### Buttons
 - **Shape:** Compact rectangle with a 6px radius and 34px height.
-- **Primary:** Solid Roleway blue, paper-white text, modest inset highlight, and no decorative gradient.
-- **Secondary:** Paper background, strong hairline border, and graphite text.
-- **Hover / Focus:** Color shift plus a visible blue focus ring; no floating transform on routine controls.
+- **Primary:** Solid Waypoint Blue with high-contrast text in both themes. No gradient or decorative shadow.
+- **Secondary:** Canvas background, strong neutral hairline, and current foreground text.
+- **Hover / Focus:** Blue fill shift plus a visible blue focus ring; no floating transform on routine controls.
 
 ### Cards / Containers
 - **Opportunity cards:** Paper surface, 7px radius, hairline border, almost flat at rest.
@@ -181,7 +181,7 @@ The Roleway mark remains a compact route-shaped R in a blue tile. Interface icon
 
 ### Inputs / Fields
 - **Style:** Quiet warm surface, strong hairline border, 6px radius, and visible labels.
-- **Focus:** Roleway blue border with a restrained three-pixel soft ring.
+- **Focus:** Roleway blue border with a restrained three-pixel soft ring in both themes.
 - **Error / Disabled:** Semantic danger color or reduced opacity without removing the field’s label or recovery copy.
 
 ### Navigation
@@ -193,7 +193,9 @@ The Roleway mark remains a compact route-shaped R in a blue tile. Interface icon
 The content plane is the application’s dominant structural region. It owns the route toolbar, page content, boards, settings, and route-specific loading states. Its white background and direct hairline relationship to the sidebar remain consistent across authenticated routes.
 
 ### Public Product Pages
-Marketing uses the application itself as evidence. Large, tightly set graphite headlines create hierarchy, while real HTML previews repeat the flush sidebar, separator, route toolbar, and content plane used by the product. One graphite statement field may interrupt an otherwise light page; blue remains reserved for action and progress. Product views are responsive compositions, never scaled screenshots or decorative dashboard mockups.
+Marketing uses the application itself as evidence. Large, tightly set graphite headlines lead into real HTML product views composed as a working pin-up rather than a generic split hero. A pale or charcoal measurement board may carry the main product view; one blue-tinted action slip overlaps it to make the next-action mechanism tangible. One inverse monochrome statement field and closing field pace the page. Product views are responsive compositions, never raster screenshots or decorative dashboard mockups.
+
+**The Product Pin-up Rule.** The public page gets one dominant interface composition, one annotation system, and one tactile next-action object. Do not repeat miniature dashboard cards to fill sections.
 
 ## Do's and Don'ts
 
@@ -201,13 +203,13 @@ Marketing uses the application itself as evidence. Large, tightly set graphite h
 - **Do** use proximity and hairlines before adding a container.
 - **Do** keep the next action and its due state visible near the record it affects.
 - **Do** reserve cards for movable opportunities, approvals, and self-contained records.
-- **Do** use blue for primary actions, progress, focus, and the Roleway mark.
+- **Do** use Waypoint Blue for primary actions, focus, selection, progress, and the full Roleway route mark.
 - **Do** preserve the same semantic hierarchy in dark mode and on mobile.
 - **Do** show real product structure and task-specific content on public pages.
 
 ### Don't:
 - **Don't** float the application shell, round the main content boundary, or give every section its own island.
-- **Don't** use blue-tinted application chrome, startup gradients, glass, glow, or decorative metrics.
+- **Don't** tint application chrome blue or add secondary saturated colors, startup gradients, glass, glow, or decorative metrics.
 - **Don't** turn summaries into large dashboard cards or put empty-state icons in generic rounded tiles.
 - **Don't** use AI imagery, sparkles, robots, or chat styling to represent Assist.
 - **Don't** copy Notion’s brand assets, collaboration terminology, or AI-first positioning; only its workspace discipline is relevant.

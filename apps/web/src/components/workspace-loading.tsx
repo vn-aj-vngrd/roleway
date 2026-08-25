@@ -53,5 +53,5 @@ export function WorkspaceLoading() {
 }
 
 export function GenericLoadingScreen() {
-  return <div className="generic-loading" role="status" aria-live="polite"><div className="generic-loading-mark"><LogoMark /></div><div><strong>Opening Roleway</strong><span>Preparing your workspace…</span></div><i aria-hidden="true" /><span className="sr-only">Loading Roleway</span></div>;
+  return <div className="generic-loading" role="status" aria-live="polite"><div className="generic-loading-mark"><LogoMark tile /></div><div><strong>Opening Roleway</strong><span>Preparing your workspace…</span></div><i aria-hidden="true" /><span className="sr-only">Loading Roleway</span></div>;
 }

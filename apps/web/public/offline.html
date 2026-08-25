@@ -5,28 +5,39 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#0069e1">
   <title>Offline · Roleway</title>
+  <script>
+    try {
+      const saved = localStorage.getItem("roleway-theme");
+      document.documentElement.dataset.theme = saved === "light" || saved === "dark" ? saved : (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    } catch (_) {}
+  </script>
   <style>
-    :root { color-scheme: light dark; font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    :root { --canvas: #fff; --ink: #202020; --muted: #6a6a6a; --accent: #0069e1; color-scheme: light; font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    html[data-theme="dark"] { --canvas: #161616; --ink: #f7f7f7; --muted: #b3b3b3; color-scheme: dark; }
     * { box-sizing: border-box; }
-    body { min-height: 100vh; margin: 0; padding: 24px; color: #15171a; background: #fff; display: grid; place-items: center; }
-    main { width: min(420px, 100%); }
-    svg { display: block; margin-bottom: 24px; }
-    h1 { margin: 0; font-size: 28px; letter-spacing: -.03em; }
-    p { margin: 10px 0 24px; color: #626872; line-height: 1.6; }
-    button { min-height: 40px; padding: 0 14px; border: 0; border-radius: 7px; color: #fff; background: #0069e1; font: inherit; font-weight: 600; cursor: pointer; }
-    @media (prefers-color-scheme: dark) { body { color: #f4f6f8; background: #11151d; } p { color: #aab1bc; } }
+    body { min-height: 100vh; margin: 0; padding: 32px; color: var(--ink); background: var(--canvas); display: grid; place-items: center; }
+    main { width: min(420px, 100%); display: flex; align-items: flex-start; flex-direction: column; }
+    .logo { width: 36px; height: 36px; margin-bottom: 30px; display: block; }
+    .label { margin-bottom: 10px; color: var(--accent); font-size: 11px; font-weight: 650; }
+    h1 { max-width: 15ch; margin: 0; font-size: 28px; line-height: 1.08; letter-spacing: -.035em; }
+    p { max-width: 40ch; margin: 12px 0 24px; color: var(--muted); font-size: 14px; line-height: 1.65; }
+    button { min-height: 38px; padding: 0 13px; border: 1px solid var(--accent); border-radius: 7px; color: #fff; background: var(--accent); display: inline-flex; align-items: center; gap: 7px; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+    button svg { width: 15px; height: 15px; }
+    button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    @media (max-width: 600px) { body { padding: 24px; place-items: center start; } h1 { font-size: 26px; } }
   </style>
 </head>
 <body>
-  <main>
-    <svg aria-hidden="true" width="36" height="36" viewBox="0 0 64 64" fill="none">
+  <main role="alert">
+    <svg class="logo" aria-hidden="true" viewBox="0 0 64 64" fill="none">
       <rect x="2" y="2" width="60" height="60" rx="14" fill="#0069e1"/>
       <path d="M19.3 48V17.3h14c6.9 0 11.1 3.4 11.1 9s-4.2 9-11.1 9h-14m14.4 0L46.3 48" stroke="#fff" stroke-width="4.7" stroke-linecap="round" stroke-linejoin="round"/>
       <circle cx="46.3" cy="48" r="4" fill="#fff" stroke="#0069e1" stroke-width="1.3"/>
     </svg>
+    <span class="label">Connection required</span>
     <h1>You’re offline</h1>
     <p>Reconnect to open Roleway. Private workspace pages are not stored for offline use.</p>
-    <button type="button" onclick="location.reload()">Try again</button>
+    <button type="button" onclick="location.reload()"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8.1 8.1 0 1 0 .5 4"/><path d="M20 4v7h-7"/></svg>Try again</button>
   </main>
 </body>
 </html>

@@ -1,89 +1,138 @@
-import { ArrowRight, Check, FileText, Search } from "lucide-react";
+import { ArrowRight, CalendarClock, CalendarDays, ChartNoAxesColumnIncreasing, Check, FileText, Inbox, LayoutDashboard, NotebookPen, PanelLeft, Plus, Search, ShieldCheck, Target } from "lucide-react";
 import Link from "next/link";
-import { LandingFeatureExplorer } from "@/components/landing-feature-explorer";
+import { LandingHighlights } from "@/components/landing-highlights";
+import { LandingMotion } from "@/components/landing-motion";
 import { LogoMark } from "@/components/logo";
-import { MarketingReveals } from "@/components/marketing-reveals";
+import { ThemePicker } from "@/components/theme-picker";
 import { requireUser } from "@/lib/supabase/server";
+import "./landing.css";
 
 export const metadata = {
-  title: "Roleway — The workspace for a selective job search",
-  description: "Review jobs, track serious opportunities, prepare applications, and keep every next action in one place.",
+  title: "Roleway — Run your job search with a clear next move",
+  description: "Review jobs, track serious opportunities, prepare strong applications, and keep every next action in one focused workspace.",
 };
 
 export default async function HomePage() {
   const auth = await requireUser();
-  const primaryHref = auth ? "/today" : "/login";
-  const primaryLabel = auth ? "Open Roleway" : "Get started";
+  const primaryHref = auth ? "/today" : "/signup";
+  const primaryLabel = auth ? "Open Roleway" : "Start your search";
 
   return (
-    <div className="landing-v2">
-      <MarketingReveals />
-      <header className="landing-nav">
-        <Link href="/" className="landing-brand" aria-label="Roleway home"><LogoMark size={22} /><span>Roleway</span></Link>
-        <nav aria-label="Product navigation"><a href="#product">Product</a><a href="#workflow">Workflow</a></nav>
-        <div className="landing-auth">{!auth ? <Link href="/login">Log in</Link> : null}<Link href={primaryHref} className="landing-primary landing-primary--compact">{primaryLabel}<ArrowRight aria-hidden="true" /></Link></div>
+    <div className="rw-site">
+      <LandingMotion />
+      <header className="rw-nav">
+        <Link href="/" className="rw-brand" aria-label="Roleway home"><LogoMark size={23} tile /><span>Roleway</span></Link>
+        <nav aria-label="Product navigation"><a href="#workflow">Workflow</a><a href="#features">Product</a><a href="#assist">Assist</a></nav>
+        <div className="rw-nav-actions">{!auth ? <Link href="/login" className="rw-login">Log in</Link> : null}<Link href={primaryHref} className="rw-button rw-button-small">{primaryLabel}<ArrowRight aria-hidden="true" /></Link></div>
       </header>
 
       <main id="main-content">
-        <section className="landing-hero">
-          <div className="landing-hero-intro">
-            <div className="landing-hero-copy"><h1>Keep every serious opportunity moving.</h1></div>
-            <div className="landing-hero-side">
-              <p>Roleway is a focused workspace for a selective job search. The listing, next action, tasks, notes, documents, interviews, and history stay together from first review to final decision.</p>
-              <div className="landing-hero-actions"><Link href={primaryHref} className="landing-primary">{primaryLabel}<ArrowRight aria-hidden="true" /></Link><a href="#product">Explore the product</a></div>
-              <p className="landing-note"><Check aria-hidden="true" />Core tracking works without AI. You own every external action.</p>
-            </div>
+        <section className="rw-hero">
+          <div className="rw-hero-heading" data-reveal>
+            <h1>The job search system for serious opportunities.</h1>
+            <p className="rw-hero-subtitle">Review promising roles, run every application, prepare interviews, and keep the next move clear.</p>
+            <div className="rw-hero-actions"><Link href={primaryHref} className="rw-button">{primaryLabel}<ArrowRight aria-hidden="true" /></Link><a href="#workflow" className="rw-button rw-button-secondary">See how it works</a></div>
+            <p className="rw-control-note"><Check aria-hidden="true" />Useful without AI. You own every external action.</p>
           </div>
-          <div className="landing-product-stage">
-            <div className="landing-product-stage-head"><span>Your active search</span><p><i />One next action needs attention</p></div>
-            <PipelinePreview />
-            <div className="landing-journey" aria-label="Opportunity workflow">
-              {['Save a job', 'Review it', 'Prepare', 'Apply', 'Interview', 'Decide'].map((step, index) => <span key={step} className={index < 4 ? 'complete' : ''}><i />{step}</span>)}
-            </div>
+          <div className="rw-hero-stage" data-reveal>
+            <WorkspacePreview />
+            <div className="rw-next-slip"><span>Next action</span><strong>Choose two project examples</strong><small>Due Friday · Northstar Systems</small><button type="button" tabIndex={-1}>Mark complete <Check aria-hidden="true" /></button></div>
           </div>
         </section>
 
-        <section className="landing-thesis">
-          <p>A selective search needs more than a tracker.</p>
-          <h2>Decide what deserves your effort. Keep the work attached. Move forward without losing the thread.</h2>
-          <div className="landing-principles"><article><strong>Decide before you commit</strong><span>Jobs wait in an inbox until you choose what deserves a place in the pipeline.</span></article><article><strong>Always know what comes next</strong><span>Every active opportunity can carry one concrete action and due date.</span></article><article><strong>Prepare, then approve</strong><span>Optional Assist creates reviewable drafts. It never applies or contacts anyone for you.</span></article></div>
+        <LandingHighlights />
+
+        <section className="rw-problem">
+          <div className="rw-problem-copy" data-reveal><p>Job hunting creates fragments.</p><h2>A listing in one tab. Notes in another. A follow-up you meant to send six days ago.</h2></div>
+          <div className="rw-fragments" data-reveal aria-label="Disconnected job-search context">
+            <span>saved-job.pdf</span><span>resume-final-v4.docx</span><span>Follow up Friday</span><span>Interview notes</span><span>Who referred me?</span>
+            <strong>Roleway turns the fragments into one opportunity record.</strong>
+          </div>
         </section>
 
-        <section className="landing-product-section" id="product">
-          <header><div><h2>The whole search, connected.</h2><p>Choose a workspace to see how Roleway handles the work—not a simplified illustration, but the interface itself.</p></div><span>Eight focused views. One durable opportunity record. No context to reconstruct.</span></header>
-          <LandingFeatureExplorer />
+        <section className="rw-story" id="workflow">
+          <header className="rw-story-head" data-reveal><span>The complete loop</span><h2>From “worth a look” to a final decision.</h2><p>Each chapter keeps the context from the last one. Nothing important has to be reconstructed.</p></header>
+
+          <article className="rw-chapter rw-chapter-review" data-reveal>
+            <div className="rw-chapter-copy"><span>Review</span><h3>Decide what deserves your time.</h3><p>Save a role without committing to it. Review the source, compensation, location, requirements, and your first reaction before it enters the pipeline.</p><ul><li><Check />Separate discovered jobs from tracked opportunities</li><li><Check />Keep the original listing and source</li><li><Check />Dismiss or defer without cluttering active work</li></ul></div>
+            <InboxPipelinePreview />
+          </article>
+
+          <article className="rw-chapter rw-chapter-move" data-reveal>
+            <div className="rw-chapter-copy"><span>Move</span><h3>Give every opportunity one clear next move.</h3><p>A stage says where the role stands. A next action says what you will do about it. Roleway keeps both visible beside the work they affect.</p><ul><li><Check />Seven-stage opportunity pipeline</li><li><Check />One concrete next action and due date</li><li><Check />Tasks, notes, contacts, and history together</li></ul></div>
+            <OpportunityPreview />
+          </article>
+
+          <article className="rw-chapter rw-chapter-prepare" data-reveal>
+            <div className="rw-chapter-copy"><span>Prepare</span><h3>Prepare with the whole story in view.</h3><p>Resumes, application notes, research, interview schedules, and preparation stay attached to the opportunity they belong to.</p><ul><li><Check />Documents retain their opportunity context</li><li><Check />Interview plans sit beside the role brief</li><li><Check />Preparation builds on saved evidence</li></ul></div>
+            <PreparationPreview />
+          </article>
+
+          <article className="rw-chapter rw-chapter-focus" data-reveal>
+            <div className="rw-chapter-copy"><span>Focus</span><h3>Start the day with what needs attention.</h3><p>Today brings due tasks, interviews, follow-ups, and unreviewed jobs into one ordered queue—without turning a selective search into a volume contest.</p><ul><li><Check />Due work and follow-ups</li><li><Check />Upcoming interviews</li><li><Check />Jobs waiting for a decision</li></ul></div>
+            <TodayPreview />
+          </article>
         </section>
 
-        <section className="landing-workflow" id="workflow">
-          <header><h2>From found to followed through.</h2><p>Roleway separates “I found this” from “I am pursuing this,” then keeps every consequential detail connected through the rest of the search.</p></header>
-          <article className="landing-chapter"><div className="landing-chapter-copy"><h3>Review the role before it enters your pipeline.</h3><p>Capture the source listing, compensation, location, requirements, and your first reaction. Track it only when it is worth pursuing.</p><span>Job inbox → Opportunity</span></div><InboxScene /></article>
-          <article className="landing-chapter reverse"><div className="landing-chapter-copy"><h3>Keep the complete application in one workspace.</h3><p>The listing, next action, tasks, notes, documents, interview schedule, preparation, and activity history remain easy to find.</p><span>One role → One durable record</span></div><OpportunityScene /></article>
-          <article className="landing-chapter"><div className="landing-chapter-copy"><h3>Start each day with what actually needs attention.</h3><p>Today brings due work, follow-ups, interviews, and jobs awaiting review into one calm, ordered queue.</p><span>Due work → A clear next move</span></div><TodayScene /></article>
+        <section className="rw-product" id="features">
+          <div className="rw-product-layout">
+            <header data-reveal><span>One connected workspace</span><h2>The tools are useful because the context stays attached.</h2><p>Roleway covers the operational work of a serious search without becoming an auto-apply bot, a generic CRM, or an AI chat wrapper.</p></header>
+            <ProductOverviewPreview />
+          </div>
         </section>
 
+        <section className="rw-assist" id="assist">
+          <header className="rw-assist-copy" data-reveal><span>Optional Assist</span><h2>Preparation, not autopilot.</h2><p>Connect a supported provider when you want grounded help. Roleway prepares a reviewable draft from the context you choose. It never applies, contacts employers, or moves work forward without you.</p></header>
+          <div className="rw-assist-principles" data-reveal><div><ShieldCheck aria-hidden="true" /><span><strong>You start every run.</strong><small>Nothing is sent in the background.</small></span></div><div><Target aria-hidden="true" /><span><strong>You approve consequential changes.</strong><small>Drafts stay drafts until you use them.</small></span></div></div>
+          <AssistPreview />
+        </section>
 
-        <section className="landing-final"><div><span>Bring the opportunity already on your mind.</span><h2>Give it one clear next move.</h2></div><Link href={primaryHref} className="landing-primary">{primaryLabel}<ArrowRight aria-hidden="true" /></Link></section>
+        <section className="rw-close" data-reveal><div><span>Bring the opportunity already on your mind.</span><h2>Give it one clear next move.</h2><p>Start with a listing. Build the record as the opportunity becomes more serious.</p></div><Link href={primaryHref} className="rw-button rw-button-light">{primaryLabel}<ArrowRight aria-hidden="true" /></Link></section>
       </main>
 
-      <footer className="landing-footer"><Link href="/" className="landing-brand"><LogoMark size={19} /><span>Roleway</span></Link><span>A focused job search workspace</span><nav><Link href="/login">Log in</Link><Link href="/privacy">Privacy</Link></nav><span>© {new Date().getFullYear()}</span></footer>
+      <footer className="rw-footer"><Link href="/" className="rw-brand"><LogoMark size={20} tile /><span>Roleway</span></Link><span className="rw-footer-copyright">© {new Date().getFullYear()}</span><span className="rw-footer-tagline">A focused workspace for a selective job search.</span><nav><Link href="/privacy">Privacy</Link>{!auth ? <Link href="/login">Log in</Link> : null}</nav><ThemePicker /></footer>
     </div>
   );
 }
 
+function WorkspacePreview() {
+  const navigation = [["Workspace", [[LayoutDashboard, "Today"], [Target, "Pipeline"], [Inbox, "Job inbox"]]], ["Tools", [[CalendarClock, "Interviews"], [FileText, "Documents"], [NotebookPen, "Assist"], [ChartNoAxesColumnIncreasing, "Insights"]]]] as const;
+  const columns = [["Interested", [["Northstar Systems", "Senior Product Engineer", "Review role evidence"], ["Fieldwork", "Product Engineer", "Compare compensation"]]], ["Preparing", [["Atlas Labs", "Frontend Engineer", "Tailor project examples"], ["Common Room", "Product Engineer", "Draft application notes"]]], ["Applied", [["Latticework", "Software Engineer", "Follow up Friday"]]], ["Interview", [["Northstar Systems", "Senior Product Engineer", "System design tomorrow"]]]] as const;
+  return <div className="rw-app rw-app-pipeline" aria-label="Roleway pipeline workspace preview"><aside><div className="rw-app-brand"><LogoMark size={18} tile /><span><strong>Roleway</strong><small>Personal workspace</small></span></div><div className="rw-app-search"><Search /><span>Search</span><kbd>⌘ K</kbd></div>{navigation.map(([label, items]) => <div className="rw-app-nav-section" key={label}><small>{label}</small><nav>{items.map(([Icon, item]) => <span className={item === "Pipeline" ? "active" : ""} key={item}><Icon />{item}</span>)}</nav></div>)}</aside><main><div className="rw-app-bar"><PanelLeft /><i /><span>Workspace</span><b>/</b><strong>Pipeline</strong></div><header className="rw-hero-pipeline-head"><div><h2>Pipeline</h2><p>Move serious roles forward without losing the next action.</p></div><button><Plus />Add job</button></header><div className="rw-hero-pipeline-summary"><span><strong>6</strong> Active</span><span><strong>4</strong> In process</span><span><strong>1</strong> Needs action</span><p><CalendarClock />Keep one concrete next action on every active role.</p></div><div className="rw-hero-pipeline-toolbar"><span>7 stages</span><i /><span>Drag cards between stages</span></div><div className="rw-hero-pipeline-board">{columns.map(([stage, cards], columnIndex) => <section key={stage}><header><i /><strong>{stage}</strong><span>{cards.length}</span></header>{cards.map(([company, role, action]) => <article key={`${stage}-${company}`}><small>{company}</small><h3>{role}</h3><p>{action}</p><footer><span>RLW-0{14 + columnIndex}</span><span>Updated today</span></footer></article>)}</section>)}</div></main></div>;
+}
 
-function PipelinePreview() {
+function PreviewFrame({ title, children, className = "" }: { title: string; children: React.ReactNode; className?: string }) {
+  return <div className={`rw-preview rw-preview-focused ${className}`} aria-label={`${title} feature preview`}>{children}</div>;
+}
+
+function InboxPipelinePreview() {
+  const jobs = [["Northstar Systems", "Senior Product Engineer", "$165k–$190k · Remote — US", "Build dependable product workflows with TypeScript, React, and PostgreSQL."], ["Fieldwork", "Product Engineer", "$150k–$175k · New York / Remote", "Own product systems from discovery through delivery with a small engineering team."]];
+  return <PreviewFrame title="Job inbox" className="rw-inbox-preview"><div className="rw-job-records">{jobs.map(([company, role, meta, description], index) => <article key={company}><div><small>{company} · {index ? "Referral" : "Company site"}</small><h4>{role}</h4><span>{meta}</span><p>{description}</p><footer><button>Track opportunity</button><button>Maybe</button><button>Dismiss</button></footer></div><em>{index ? "Maybe" : "New"}</em></article>)}</div></PreviewFrame>;
+}
+
+function OpportunityPreview() {
+  return <PreviewFrame title="Northstar Systems" className="rw-opportunity-preview"><div className="rw-opportunity-body"><section><h4>Senior Product Engineer</h4><p>Northstar Systems · Remote</p><nav><strong>Overview</strong><span>Tasks</span><span>Notes</span><span>Activity</span></nav><h5>Tasks</h5><label><i className="done" />Review platform requirements</label><label><i />Choose two project examples</label><label><i />Draft application notes</label></section><aside><span>Next action</span><strong>Choose two project examples</strong><small>Due Friday</small><button>Save next action</button><footer>1 of 3 tasks complete</footer></aside></div></PreviewFrame>;
+}
+
+function PreparationPreview() {
+  return <PreviewFrame title="Preparation" className="rw-preparation-preview"><div className="rw-prep-grid"><section><h5>Documents</h5>{[["Targeted resume", "Updated today"], ["Project examples", "2 selected"], ["Application notes", "Draft"]].map(([name, meta]) => <div key={name}><FileText /><span><strong>{name}</strong><small>{meta}</small></span><em>Open</em></div>)}</section><section><h5>Next interview</h5><article><CalendarDays /><span><strong>System design interview</strong><small>Tomorrow · 10:00 · 60 min</small></span></article><label><i className="done" />Confirm format</label><label><i className="done" />Review role brief</label><label><i />Prepare trade-offs</label><button>Open preparation</button></section></div></PreviewFrame>;
+}
+
+function TodayPreview() {
+  const rows = [["10:00", "System design interview", "Northstar Systems · 60 minutes", "Prepare"], ["Today", "Send application follow-up", "Fieldwork · Applied 6 days ago", "Open"], ["Inbox", "Review two saved jobs", "Decide what enters the pipeline", "Review"]];
+  return <PreviewFrame title="Today" className="rw-today-preview"><div className="rw-today-head"><span>Thursday, August 20</span><h4>Good morning, Jordan</h4><p>Three items need your attention.</p></div>{rows.map(([time, title, meta, action]) => <article key={title}><time>{time}</time><i /><div><strong>{title}</strong><span>{meta}</span></div><button>{action}</button></article>)}</PreviewFrame>;
+}
+
+function ProductOverviewPreview() {
   const columns = [
-    { label: "Interested", cards: [{ company: "Northstar", role: "Senior Product Engineer", action: "Review requirements", due: "Today" }, { company: "Fieldwork", role: "Product Engineer", action: "Confirm compensation", due: "Fri" }] },
-    { label: "Preparing", cards: [{ company: "Meridian", role: "Staff Engineer", action: "Choose project examples", due: "Thu" }] },
-    { label: "Applied", cards: [{ company: "Arcway", role: "Platform Engineer", action: "Follow up", due: "Friday" }] },
-    { label: "Interview", cards: [{ company: "Northstar", role: "Product Lead", action: "Prepare role stories", due: "Tomorrow" }] },
+    { name: "Review", count: 2, cards: [["Northstar Systems", "Senior Product Engineer", "Review role evidence"], ["Fieldwork", "Product Engineer", "Compare compensation"]] },
+    { name: "Preparing", count: 2, cards: [["Atlas Labs", "Frontend Engineer", "Tailor project examples"], ["Common Room", "Product Engineer", "Draft application notes"]] },
+    { name: "Applied", count: 1, cards: [["Latticework", "Software Engineer", "Follow up Friday"]] },
+    { name: "Interviewing", count: 1, cards: [["Northstar Systems", "Senior Product Engineer", "System design tomorrow"]] },
   ];
-  return <div className="hero-app landing-app-preview" aria-hidden="true" inert><aside className="hero-app-sidebar"><div className="hero-app-brand"><LogoMark size={19} /><strong>Roleway</strong></div><div className="hero-app-search"><Search aria-hidden="true" /><span>Search</span><kbd>⌘ K</kbd></div><div className="hero-app-nav-label">Workspace</div><nav aria-label="Preview navigation"><span><i className="nav-symbol grid" />Today</span><span className="active"><i className="nav-symbol target" />Pipeline</span><span><i className="nav-symbol inbox" />Job inbox</span></nav><div className="hero-app-nav-label">Tools</div><nav aria-label="Preview tools"><span><i className="nav-symbol calendar" />Interviews</span><span><i className="nav-symbol document" />Documents</span><span><i className="nav-symbol assist" />Assist</span><span><i className="nav-symbol insight" />Insights</span></nav><div className="hero-app-sidebar-spacer" /><div className="hero-app-profile"><span>JL</span><div><strong>Jordan Lee</strong><small>Personal workspace</small></div></div></aside><div className="hero-app-main"><div className="hero-app-workbar"><span className="preview-panel-icon" /><i /><span>Workspace</span><b>/</b><strong>Pipeline</strong></div><header className="hero-app-heading"><div><h2>Pipeline</h2><p>Where every application stands and what to do next.</p></div><button>+ Add job</button></header><div className="hero-app-summary"><span><b>5</b> Active</span><span><b>3</b> In process</span><span><b>1</b> Needs action</span><p>One interview this week</p></div><div className="hero-app-toolbar"><span>7 stages</span><i /><span>Updated now</span></div><div className="hero-app-board">{columns.map((column) => <section key={column.label}><header><strong>{column.label}</strong><span>{column.cards.length}</span></header>{column.cards.map((card) => <article key={`${card.company}-${card.role}`}><small>{card.company}</small><h3>{card.role}</h3><p><i />{card.action}</p><footer><span>RLW-{card.company.length + card.role.length}</span><time>{card.due}</time></footer></article>)}</section>)}</div></div></div>;
+  return <div className="rw-overview-preview rw-overview-focused" data-reveal aria-label="Connected opportunity pipeline preview"><div className="rw-pipeline-board">{columns.map((column) => <section key={column.name}><header><strong>{column.name}</strong><span>{column.count}</span></header>{column.cards.map(([company, role, action]) => <article key={`${company}-${role}`}><small>{company}</small><h4>{role}</h4><p><i />{action}</p><footer><span>Updated today</span><b>•••</b></footer></article>)}</section>)}</div></div>;
 }
 
-function SceneFrame({ title, children }: { title: string; children: React.ReactNode }) {
-  return <div className="story-scene" aria-hidden="true" inert><aside className="scene-sidebar"><span><LogoMark size={18} /><b>Roleway</b></span><nav><i /><i className="active" /><i /><i /></nav><em /></aside><div className="scene-main"><header><span className="preview-panel-icon" /><i /><span>Workspace</span><b>/</b><strong>{title}</strong><kbd>⌘ K</kbd></header>{children}</div></div>;
+function AssistPreview() {
+  return <div className="rw-assist-preview" data-reveal aria-hidden="true"><header><span>Opportunity context</span><strong>Northstar Systems · Senior Product Engineer</strong><small>Listing, profile, tasks, notes, and saved evidence selected</small></header><main><span>Reviewable draft</span><h3>Prepare for the system design interview</h3><p>Focus on evidence already attached to this opportunity. Review every suggestion before using it.</p><ol><li><b>Choose two architecture trade-offs</b><small>Connect each choice to a saved project example.</small><button>Use as next action</button></li><li><b>Prepare one clarifying question</b><small>Use the saved workforce-planning research as context.</small><button>Use as next action</button></li></ol></main><footer><ShieldCheck />Nothing is sent until you run Assist. No external action is taken.</footer></div>;
 }
-function InboxScene() { return <SceneFrame title="Job inbox"><div className="scene-toolbar"><span>2 jobs to review</span><button>+ Add job</button></div><div className="scene-job selected"><div><small>Northstar Systems · Company site</small><h4>Senior Product Engineer</h4><p>Remote · $165k–$190k · TypeScript, React, PostgreSQL</p></div><span>New</span></div><div className="scene-job-actions"><button>Add to pipeline</button><button>Maybe</button><button>Dismiss</button></div><div className="scene-job"><div><small>Fieldwork · Referral</small><h4>Product Engineer</h4><p>New York / Remote · $150k–$175k</p></div><span>Maybe</span></div></SceneFrame>; }
-function OpportunityScene() { return <SceneFrame title="Opportunity"><div className="scene-prep-head"><div><span>RLW-014 · Interested</span><h4>Senior Product Engineer · Northstar Systems</h4><p>Remote · $165k–$190k · Company site</p></div><button>Open listing</button></div><div className="scene-prep-grid"><main><span>Tasks</span><label><i />Review platform requirements</label><label><i />Choose two project examples</label><label className="done"><i />Save the job description</label></main><aside><span>Next action</span><div><FileText aria-hidden="true" /><p><strong>Review requirements</strong><small>Due Friday</small></p></div><div><FileText aria-hidden="true" /><p><strong>Targeted resume</strong><small>Updated today</small></p></div><button>Save next action</button></aside></div></SceneFrame>; }
-function TodayScene() { return <SceneFrame title="Today"><div className="scene-today-head"><span>Thursday, August 20</span><h4>Good morning, Jordan</h4><p>Three items need your attention.</p></div><div className="scene-focus"><time>10:00</time><i /><div><strong>System design interview</strong><span>Northstar Systems · 60 minutes</span></div><button>Prepare</button></div><div className="scene-focus"><time>Today</time><i /><div><strong>Send application follow-up</strong><span>Fieldwork · Applied 6 days ago</span></div><button>Open</button></div><div className="scene-focus"><time>Inbox</time><i /><div><strong>Review two jobs</strong><span>Decide what enters the pipeline</span></div><button>Review</button></div></SceneFrame>; }

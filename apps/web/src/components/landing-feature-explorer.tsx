@@ -46,7 +46,7 @@ function FeatureWindow({ active }: { active: FeatureKey }) {
   return (
     <div className="feature-window" aria-hidden="true" inert>
       <aside className="feature-window-sidebar">
-        <span><LogoMark size={18} /><b>Roleway</b></span>
+        <span><LogoMark size={18} tile /><b>Roleway</b></span>
         <nav><i /><i className="active" /><i /><i /><i /></nav>
         <em />
       </aside>

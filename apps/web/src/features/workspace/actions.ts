@@ -70,6 +70,39 @@ export async function updateOpportunityStage(formData: FormData) {
   revalidatePath("/", "layout");
 }
 
+export async function updateOpportunityDetails(formData: FormData) {
+  const parsed = z.object({
+    opportunityId: z.string().uuid(),
+    jobId: z.string().uuid(),
+    company: z.string().trim().min(1).max(180),
+    title: z.string().trim().min(1).max(180),
+    location: z.string().trim().max(180),
+    compensation: z.string().trim().max(180),
+    remotePolicy: z.string().trim().max(120),
+    sourceUrl: z.union([z.literal(""), z.string().url()]),
+    applicationUrl: z.union([z.literal(""), z.string().url()]),
+    description: z.string().trim().max(100_000),
+  }).safeParse(Object.fromEntries(formData));
+  if (!parsed.success) redirect(`/opportunities/${String(formData.get("opportunityId"))}?error=${encodeURIComponent(parsed.error.issues[0]?.message ?? "Check the role details.")}`);
+  const auth = await authenticated();
+  const { data: opportunity } = await auth.supabase.from("opportunities").select("job_id").eq("id", parsed.data.opportunityId).eq("user_id", auth.user.id).maybeSingle();
+  if (!opportunity || opportunity.job_id !== parsed.data.jobId) redirect(`/opportunities/${parsed.data.opportunityId}?error=The%20linked%20job%20could%20not%20be%20verified.`);
+  const { error } = await auth.supabase.from("jobs").update({
+    company: parsed.data.company,
+    title: parsed.data.title,
+    location: parsed.data.location,
+    compensation: parsed.data.compensation,
+    remote_policy: parsed.data.remotePolicy,
+    source_url: parsed.data.sourceUrl || null,
+    application_url: parsed.data.applicationUrl || null,
+    description: parsed.data.description,
+  }).eq("id", parsed.data.jobId).eq("user_id", auth.user.id);
+  if (error) redirect(`/opportunities/${parsed.data.opportunityId}?error=The%20role%20details%20could%20not%20be%20updated.`);
+  revalidatePath(`/opportunities/${parsed.data.opportunityId}`);
+  revalidatePath("/jobs");
+  revalidatePath("/opportunities");
+}
+
 export async function updateNextAction(formData: FormData) {
   const parsed = z.object({ opportunityId: z.string().uuid(), nextAction: z.string().trim().min(1).max(180), nextActionDueAt: z.string().optional() }).safeParse(Object.fromEntries(formData));
   if (!parsed.success) return;

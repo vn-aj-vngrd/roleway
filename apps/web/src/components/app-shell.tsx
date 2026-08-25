@@ -2,7 +2,7 @@
 
 import {
   Bell,
-  Bot,
+  NotebookPen,
   CalendarClock,
   ChartNoAxesColumnIncreasing,
   ChevronUp,
@@ -11,14 +11,12 @@ import {
   Inbox,
   LayoutDashboard,
   LogOut,
-  Moon,
   PanelLeft,
   Plus,
   Search,
   Settings,
   ShieldCheck,
   SlidersHorizontal,
-  Sun,
   Target,
   UserRound,
   X,
@@ -26,13 +24,40 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { signOut } from "@/app/auth/actions";
 import { LogoMark } from "@/components/logo";
 import { ProductTour } from "@/components/product-tour";
 
 type NavEntry = { href: string; label: string; icon: LucideIcon };
 type SearchEntry = NavEntry & { description: string; keywords: string; shortcut?: string };
+type BreadcrumbItem = { label: string; href?: string };
+
+const BreadcrumbContext = createContext<((items: BreadcrumbItem[] | null) => void) | null>(null);
+
+export function WorkspaceBreadcrumbs({ items }: { items: BreadcrumbItem[] }) {
+  const setBreadcrumbs = useContext(BreadcrumbContext);
+  useEffect(() => {
+    setBreadcrumbs?.(items);
+    return () => setBreadcrumbs?.(null);
+  }, [items, setBreadcrumbs]);
+  return null;
+}
+
+function routeBreadcrumbs(pathname: string): BreadcrumbItem[] {
+  const segments = pathname.split("/").filter(Boolean);
+  if (segments[0] === "opportunities" && segments[1]) return [{ label: "Pipeline", href: "/opportunities" }, { label: "Opportunity" }];
+  if (segments[0] === "documents" && segments[1] === "new") return [{ label: "Documents", href: "/documents" }, { label: "New document" }];
+  if (segments[0] === "documents" && segments[1]) return [{ label: "Documents", href: "/documents" }, { label: "Document" }];
+  if (segments[0] === "jobs" && segments[1] === "new") return [{ label: "Job inbox", href: "/jobs" }, { label: "Add job" }];
+  if (segments[0] === "preparation" && segments[1] === "new") return [{ label: "Interviews", href: "/preparation" }, { label: "Schedule interview" }];
+  if (segments[0] === "settings") {
+    const settingsLabels: Record<string, string> = { profile: "Profile", preferences: "Job preferences", notifications: "Notifications", appearance: "Appearance", ai: "AI connections", privacy: "Privacy & data" };
+    return segments[1] ? [{ label: "Settings", href: "/settings/profile" }, { label: settingsLabels[segments[1]] ?? "Settings" }] : [{ label: "Settings" }];
+  }
+  const title = Object.entries(routeTitles).find(([route]) => pathname === route || pathname.startsWith(`${route}/`))?.[1] ?? "Workspace";
+  return [{ label: title }];
+}
 
 const workNav: NavEntry[] = [
   { href: "/today", label: "Today", icon: LayoutDashboard },
@@ -43,7 +68,7 @@ const workNav: NavEntry[] = [
 const toolNav: NavEntry[] = [
   { href: "/preparation", label: "Interviews", icon: CalendarClock },
   { href: "/documents", label: "Documents", icon: FileText },
-  { href: "/assistant", label: "Assist", icon: Bot },
+  { href: "/assistant", label: "Assist", icon: NotebookPen },
   { href: "/insights", label: "Insights", icon: ChartNoAxesColumnIncreasing },
 ];
 
@@ -61,13 +86,13 @@ const routeTitles: Record<string, string> = {
 };
 
 const searchEntries: SearchEntry[] = [
-  { href: "/jobs?create=true", label: "Add a job", description: "Capture a role in your inbox", keywords: "create new capture import", icon: Plus, shortcut: "C" },
+  { href: "/jobs/new", label: "Add a job", description: "Capture a role in your inbox", keywords: "create new capture import", icon: Plus, shortcut: "C" },
   { href: "/today", label: "Today", description: "Tasks, interviews, and next actions", keywords: "home due focus", icon: LayoutDashboard },
   { href: "/opportunities", label: "Pipeline", description: "Track every opportunity by stage", keywords: "opportunities kanban board jira stages", icon: Target },
   { href: "/jobs", label: "Job inbox", description: "Review roles before tracking them", keywords: "jobs listings capture", icon: Inbox, shortcut: "I" },
   { href: "/preparation", label: "Interviews", description: "Schedule and prepare conversations", keywords: "calendar preparation", icon: CalendarClock },
   { href: "/documents", label: "Documents", description: "Resumes, cover letters, and notes", keywords: "files resume cover letter", icon: FileText },
-  { href: "/assistant", label: "Assist", description: "Prepare grounded drafts and next actions", keywords: "ai helper suggestions", icon: Bot },
+  { href: "/assistant", label: "Assist", description: "Prepare grounded drafts and next actions", keywords: "ai helper suggestions", icon: NotebookPen },
   { href: "/insights", label: "Insights", description: "Review pipeline performance", keywords: "metrics conversion analytics", icon: ChartNoAxesColumnIncreasing },
   { href: "/notifications", label: "Notifications", description: "Review important workspace changes", keywords: "alerts updates", icon: Bell },
   { href: "/settings/profile", label: "Profile settings", description: "Update your career profile", keywords: "account name settings", icon: UserRound },
@@ -83,7 +108,7 @@ function NavItem({ item, pathname, badge }: { item: NavEntry; pathname: string; 
       data-tour={item.href === "/today" ? "today" : item.href === "/jobs" ? "jobs" : item.href === "/opportunities" ? "opportunities" : undefined}
       className={`nav-link ${active ? "active" : ""}`}
       aria-current={active ? "page" : undefined}
-      title={item.label}
+      data-tooltip={item.label}
     >
       <Icon aria-hidden="true" />
       <span>{item.label}</span>
@@ -146,7 +171,7 @@ function SearchDialog({ open, onClose }: { open: boolean; onClose: () => void })
           <Search aria-hidden="true" />
           <input ref={inputRef} className="command-input" aria-label="Search Roleway" placeholder="Search pages and actions…" value={query} onChange={(event) => setQuery(event.target.value)} />
           <kbd>Esc</kbd>
-          <button className="icon-button command-close" aria-label="Close search" onClick={onClose}><X aria-hidden="true" /></button>
+          <button className="icon-button command-close" data-tooltip="Close search" aria-label="Close search" onClick={onClose}><X aria-hidden="true" /></button>
         </div>
         <div className="command-list" role="listbox" aria-label="Search results">
           <div className="command-label">{query ? `${results.length} results` : "Go to"}</div>
@@ -168,7 +193,7 @@ function SearchDialog({ open, onClose }: { open: boolean; onClose: () => void })
   );
 }
 
-function AccountMenu({ user, dark, isAdmin, onToggleTheme }: { user: { name: string; email: string }; dark: boolean; isAdmin: boolean; onToggleTheme: () => void }) {
+function AccountMenu({ user, isAdmin }: { user: { name: string; email: string }; isAdmin: boolean }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -194,13 +219,12 @@ function AccountMenu({ user, dark, isAdmin, onToggleTheme }: { user: { name: str
           <Link role="menuitem" href="/settings/notifications"><Settings aria-hidden="true" /><span>Settings</span></Link>
         </div>
         <div className="account-menu-group">
-          <button role="menuitem" onClick={onToggleTheme}>{dark ? <Sun aria-hidden="true" /> : <Moon aria-hidden="true" />}<span>{dark ? "Light appearance" : "Dark appearance"}</span></button>
           <a role="menuitem" href="mailto:support@roleway.app?subject=Roleway%20support"><HelpCircle aria-hidden="true" /><span>Help and support</span></a>
           {isAdmin ? <Link role="menuitem" href="/admin"><ShieldCheck aria-hidden="true" /><span>Admin console</span></Link> : null}
         </div>
         <form action={signOut} className="account-signout"><button role="menuitem"><LogOut aria-hidden="true" /><span>Sign out</span></button></form>
       </div> : null}
-      <button className="sidebar-profile" aria-label={`${open ? "Close" : "Open"} account menu for ${user.name}`} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((current) => !current)}>
+      <button className="sidebar-profile" data-tooltip="Account" aria-label={`${open ? "Close" : "Open"} account menu for ${user.name}`} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((current) => !current)}>
         <span className="avatar">{initials}</span>
         <span className="user-copy"><span className="user-name">{user.name}</span><span className="user-state">{user.email}</span></span>
         <ChevronUp className={`account-chevron ${open ? "open" : ""}`} aria-hidden="true" />
@@ -213,23 +237,11 @@ export function AppShell({ children, user, showTour, notificationCount, isAdmin 
   const pathname = usePathname();
   const router = useRouter();
   const [searchOpen, setSearchOpen] = useState(false);
-  const [dark, setDark] = useState(false);
   const [compactSidebar, setCompactSidebar] = useState(false);
+  const [customBreadcrumbs, setCustomBreadcrumbs] = useState<BreadcrumbItem[] | null>(null);
   const searchTriggerRef = useRef<HTMLButtonElement>(null);
   const closeSearch = useCallback(() => { setSearchOpen(false); requestAnimationFrame(() => searchTriggerRef.current?.focus()); }, []);
-  const toggleTheme = useCallback(() => {
-    setDark((current) => {
-      const next = !current;
-      document.documentElement.dataset.theme = next ? "dark" : "light";
-      localStorage.setItem("roleway-theme", next ? "dark" : "light");
-      return next;
-    });
-  }, []);
-
   useEffect(() => {
-    const isDark = localStorage.getItem("roleway-theme") === "dark";
-    setDark(isDark);
-    document.documentElement.dataset.theme = isDark ? "dark" : "light";
     setCompactSidebar(localStorage.getItem("roleway-sidebar") === "compact");
   }, []);
 
@@ -247,7 +259,7 @@ export function AppShell({ children, user, showTour, notificationCount, isAdmin 
         });
       }
       else if (!editing && event.key === "/") { event.preventDefault(); setSearchOpen(true); }
-      else if (!editing && event.key.toLowerCase() === "c") router.push("/jobs?create=true");
+      else if (!editing && event.key.toLowerCase() === "c") router.push("/jobs/new");
       else if (!editing && event.key.toLowerCase() === "i") router.push("/jobs");
     };
     window.addEventListener("keydown", onKeyDown);
@@ -261,32 +273,36 @@ export function AppShell({ children, user, showTour, notificationCount, isAdmin 
       return next;
     });
   }, []);
-  const currentSection = Object.entries(routeTitles).find(([route]) => pathname === route || pathname.startsWith(`${route}/`))?.[1] ?? "Workspace";
+  const breadcrumbs = customBreadcrumbs ?? routeBreadcrumbs(pathname);
   const mobileNav = [...workNav, { href: "/settings/profile", label: "Settings", icon: Settings }];
 
   return (
+    <BreadcrumbContext.Provider value={setCustomBreadcrumbs}>
     <div className="app-shell" data-sidebar={compactSidebar ? "compact" : "expanded"}>
-      <aside className="sidebar" aria-label="Main navigation">
+      <aside className="sidebar" id="roleway-sidebar" aria-label="Main navigation">
         <div className="sidebar-brand-row">
-          <Link href="/today" className="brand">
-            <LogoMark />
-            <span className="brand-copy"><strong>Roleway</strong><small>Personal workspace</small></span>
+          <Link href="/today" className="brand" data-tooltip="Roleway">
+            <LogoMark tile />
+            <span className="brand-copy"><strong>Roleway</strong></span>
           </Link>
+          <button ref={searchTriggerRef} className="sidebar-search" data-tour="commands" data-tooltip="Search · ⌘K" aria-label="Search Roleway" onClick={() => setSearchOpen(true)}><Search aria-hidden="true" /></button>
         </div>
-        <button ref={searchTriggerRef} className="sidebar-search" data-tour="commands" aria-label="Search Roleway" title="Search Roleway" onClick={() => setSearchOpen(true)}><Search aria-hidden="true" /><span>Search</span><kbd>⌘ K</kbd></button>
         <div className="sidebar-navigation">
           <div className="sidebar-section"><div className="sidebar-label">Workspace</div><nav className="nav-group" aria-label="Workspace">{workNav.map((item) => <NavItem key={item.href} item={item} pathname={pathname} />)}</nav></div>
           <div className="sidebar-section"><div className="sidebar-label">Tools</div><nav className="nav-group" aria-label="Tools">{toolNav.map((item) => <NavItem key={item.href} item={item} pathname={pathname} />)}</nav></div>
         </div>
         <div className="nav-spacer" />
         <nav className="sidebar-utility" aria-label="Updates"><NavItem item={{ href: "/notifications", label: "Notifications", icon: Bell }} pathname={pathname} badge={notificationCount} /></nav>
-        <AccountMenu user={user} dark={dark} isAdmin={isAdmin} onToggleTheme={toggleTheme} />
+        <AccountMenu user={user} isAdmin={isAdmin} />
       </aside>
       <main className="main" id="main-content">
         <header className="workspace-toolbar">
-          <button className="icon-button workspace-sidebar-toggle" onClick={toggleSidebar} aria-label={compactSidebar ? "Expand sidebar" : "Collapse sidebar"} title={`${compactSidebar ? "Expand" : "Collapse"} sidebar (⌘B)`}><PanelLeft aria-hidden="true" /></button>
+          <button className="icon-button workspace-sidebar-toggle" data-tooltip={`${compactSidebar ? "Expand" : "Collapse"} sidebar · ⌘B`} onClick={toggleSidebar} aria-label={compactSidebar ? "Expand sidebar" : "Collapse sidebar"} aria-expanded={!compactSidebar} aria-controls="roleway-sidebar"><PanelLeft aria-hidden="true" /></button>
           <span className="workspace-toolbar-separator" aria-hidden="true" />
-          <nav className="workspace-breadcrumb" aria-label="Breadcrumb"><span>Workspace</span><span aria-hidden="true">/</span><strong>{currentSection}</strong></nav>
+          <nav className="workspace-breadcrumb" aria-label="Breadcrumb">
+            <Link href="/today">Workspace</Link>
+            {breadcrumbs.map((item, index) => <span className="workspace-breadcrumb-part" key={`${item.label}-${index}`}><span aria-hidden="true">/</span>{item.href ? <Link href={item.href}>{item.label}</Link> : <strong aria-current="page">{item.label}</strong>}</span>)}
+          </nav>
         </header>
         {children}
       </main>
@@ -297,5 +313,6 @@ export function AppShell({ children, user, showTour, notificationCount, isAdmin 
       <SearchDialog open={searchOpen} onClose={closeSearch} />
       <ProductTour open={showTour} />
     </div>
+    </BreadcrumbContext.Provider>
   );
 }

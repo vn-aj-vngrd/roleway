@@ -31,23 +31,23 @@ test.describe.serial("critical product journey", () => {
   test("public landing is keyboard and mobile friendly", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/");
-    await expect(page.getByRole("heading", { name: "Keep every serious opportunity moving." })).toBeVisible();
-    await expect(page.locator(".landing-app-preview")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "The job search system for serious opportunities." })).toBeVisible();
+    await expect(page.locator(".rw-app")).toBeVisible();
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow).toBeLessThanOrEqual(1);
   });
 
   test("landing → login → onboarding → opportunity → logout protection", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByRole("heading", { name: "Keep every serious opportunity moving." })).toBeVisible();
-    const getStarted = page.locator('a[href="/login"]', { hasText: "Get started" }).first();
-    await expect(getStarted).toHaveAttribute("href", "/login");
-    await getStarted.click();
+    await expect(page.getByRole("heading", { name: "The job search system for serious opportunities." })).toBeVisible();
+    const login = page.getByRole("link", { name: "Log in" }).first();
+    await expect(login).toHaveAttribute("href", "/login");
+    await login.click();
     await page.waitForURL("**/login");
 
     await page.getByLabel("Email").fill(email);
     await page.getByLabel("Password").fill(password);
-    await page.getByRole("button", { name: "Sign in" }).click();
+    await page.getByRole("button", { name: "Log in" }).click();
     await page.waitForURL("**/onboarding", { timeout: 20_000 });
 
     await page.getByLabel("Full name").fill("E2E User");
@@ -121,7 +121,7 @@ test.describe.serial("critical product journey", () => {
     await page.goto("/login");
     await page.getByLabel("Email").fill(email);
     await page.getByLabel("Password").fill(password);
-    await page.getByRole("button", { name: "Sign in" }).click();
+    await page.getByRole("button", { name: "Log in" }).click();
     await page.waitForURL("**/today");
     await page.goto("/settings/privacy");
     await page.getByLabel("Type DELETE to confirm").fill("DELETE");

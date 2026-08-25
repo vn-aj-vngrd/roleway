@@ -1,5 +1,5 @@
-import "@fontsource-variable/inter";
-import "@fontsource-variable/jetbrains-mono";
+import { GeistMono } from "geist/font/mono";
+import { GeistSans } from "geist/font/sans";
 import type { Metadata, Viewport } from "next";
 import { PwaRegister } from "@/components/pwa-register";
 import { SmoothScroll } from "@/components/smooth-scroll";
@@ -9,8 +9,8 @@ export const viewport: Viewport = {
   colorScheme: "light dark",
   viewportFit: "cover",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f7f7f5" },
-    { media: "(prefers-color-scheme: dark)", color: "#202020" },
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#111111" },
   ],
 };
 
@@ -36,17 +36,23 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`} suppressHydrationWarning>
+      <head>
+        <script
+          id="roleway-theme-init"
+          dangerouslySetInnerHTML={{ __html: `try{const saved=localStorage.getItem("roleway-theme");const system=window.matchMedia("(prefers-color-scheme: dark)").matches;document.documentElement.dataset.theme=saved==="light"||saved==="dark"?saved:(system?"dark":"light")}catch{document.documentElement.dataset.theme="light"}` }}
+        />
+      </head>
       <body>
         <script
           id="roleway-design-contract"
           type="application/json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify({
-            thesis: "A serious job search should feel like a personal workspace, not a dashboard assembled from cards.",
-            ownWorld: "Warm-stone navigation, a paper-white work island, graphite type, quiet neutral selection, and Roleway blue reserved for action and progress.",
-            story: "The user enters through Today, sees the next decision, and moves through jobs, preparation, applications, and interviews without losing context.",
-            firstViewport: "A flat persistent sidebar supports one dominant white work surface; the title, next action, and active records lead in that order.",
-            form: "Current Notion workspace grammar with Linear interaction density and Apple finish; notion-canon-2026-08.",
+            thesis: "Roleway tells one continuous product story from scattered job-search fragments to a controlled opportunity workflow; it refuses feature-card marketing and empty productivity claims.",
+            ownWorld: "Geist typography, pure neutral canvases, Waypoint Blue as the only saturated voice, precise hairlines, full-fidelity HTML product scenes, and one tactile next-action slip.",
+            story: "The visitor recognizes the fragmentation problem, sees the review-to-decision loop, explores the complete workspace and optional Assist, then starts a search.",
+            firstViewport: "A 72px navigation leads into an 88px product thesis, one-line subtitle, and paired actions; below, one edge-to-edge opportunity workspace fills a softly lit product stage while a blue next-action slip crosses its lower edge.",
+            form: "Linear-paced product narrative inside the selected architectural working-pin-up world; seed 165e5825, explicitly pinned by the user to linear.app as the quality and pacing reference.",
             finish: "unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance",
           }) }}
         />

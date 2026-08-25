@@ -1,16 +1,15 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-08-24T00:00:00Z",
+  "generatedAt": "2026-08-24T15:00:00Z",
   "title": "Design System: Roleway",
   "extensions": {
     "colorMeta": {
-      "roleway-blue": { "role": "primary", "displayName": "Roleway Blue", "canonical": "oklch(0.55 0.19 255)", "tonalRamp": ["oklch(0.18 0.08 255)", "oklch(0.28 0.12 255)", "oklch(0.38 0.16 255)", "oklch(0.49 0.185 255)", "oklch(0.55 0.19 255)", "oklch(0.68 0.15 255)", "oklch(0.82 0.09 255)", "oklch(0.94 0.035 255)"] },
-      "paper": { "role": "neutral", "displayName": "Paper", "canonical": "oklch(0.995 0.002 90)", "tonalRamp": ["oklch(0.15 0.002 90)", "oklch(0.28 0.002 90)", "oklch(0.42 0.002 90)", "oklch(0.58 0.002 90)", "oklch(0.72 0.002 90)", "oklch(0.84 0.002 90)", "oklch(0.93 0.002 90)", "oklch(0.995 0.002 90)"] },
-      "warm-stone": { "role": "neutral", "displayName": "Warm Stone", "canonical": "oklch(0.967 0.003 90)", "tonalRamp": ["oklch(0.15 0.003 90)", "oklch(0.27 0.003 90)", "oklch(0.40 0.003 90)", "oklch(0.54 0.003 90)", "oklch(0.68 0.003 90)", "oklch(0.80 0.003 90)", "oklch(0.90 0.003 90)", "oklch(0.967 0.003 90)"] },
-      "graphite": { "role": "neutral", "displayName": "Graphite", "canonical": "oklch(0.22 0.006 90)", "tonalRamp": ["oklch(0.15 0.006 90)", "oklch(0.22 0.006 90)", "oklch(0.32 0.006 90)", "oklch(0.44 0.006 90)", "oklch(0.57 0.006 90)", "oklch(0.70 0.006 90)", "oklch(0.83 0.006 90)", "oklch(0.94 0.006 90)"] }
+      "accent-blue": { "role": "primary", "displayName": "Waypoint Blue", "canonical": "oklch(0.56 0.21 255)", "tonalRamp": ["oklch(0.18 0.08 255)", "oklch(0.27 0.12 255)", "oklch(0.38 0.17 255)", "oklch(0.50 0.21 255)", "oklch(0.56 0.21 255)", "oklch(0.70 0.16 255)", "oklch(0.84 0.09 255)", "oklch(0.95 0.035 255)"] },
+      "canvas-light": { "role": "neutral", "displayName": "Light Canvas", "canonical": "oklch(1 0 0)", "tonalRamp": ["oklch(0.13 0 0)", "oklch(0.25 0 0)", "oklch(0.38 0 0)", "oklch(0.52 0 0)", "oklch(0.66 0 0)", "oklch(0.80 0 0)", "oklch(0.91 0 0)", "oklch(1 0 0)"] },
+      "canvas-dark": { "role": "neutral", "displayName": "Dark Canvas", "canonical": "oklch(0.13 0 0)", "tonalRamp": ["oklch(0.13 0 0)", "oklch(0.22 0 0)", "oklch(0.34 0 0)", "oklch(0.48 0 0)", "oklch(0.62 0 0)", "oklch(0.76 0 0)", "oklch(0.89 0 0)", "oklch(0.97 0 0)"] }
     },
     "typographyMeta": {
-      "headline": { "displayName": "Page Headline", "purpose": "Primary authenticated page titles and Today greeting." },
+      "headline": { "displayName": "Page Headline", "purpose": "Primary authenticated titles and tightly set public-page statements up to 102px." },
       "title": { "displayName": "Working Title", "purpose": "Section headings, record names, and empty-state headings." },
       "body": { "displayName": "Interface Body", "purpose": "Working copy, descriptions, and form content." },
       "label": { "displayName": "Control Label", "purpose": "Navigation, controls, and compact metadata." },
@@ -33,9 +32,9 @@
       "name": "Primary Button",
       "kind": "button",
       "refersTo": "button-primary",
-      "description": "The single saturated action voice for creation, saving, and forward progress.",
+      "description": "The Waypoint Blue action voice for creation, saving, and forward progress.",
       "html": "<button class=\"ds-btn-primary\">Add a job</button>",
-      "css": ".ds-btn-primary{height:34px;padding:0 12px;border:1px solid color-mix(in oklch,var(--primary) 85%,black);border-radius:6px;color:white;background:var(--primary);font:590 12px/1.4 var(--font-geist);box-shadow:0 1px 2px oklch(.25 .05 255/.14),inset 0 1px oklch(1 0 0/.12);cursor:pointer}.ds-btn-primary:hover{background:var(--primary-hover)}.ds-btn-primary:focus-visible{outline:2px solid var(--primary);outline-offset:2px}"
+      "css": ".ds-btn-primary{height:34px;padding:0 12px;border:1px solid var(--button-bg);border-radius:6px;color:var(--button-fg);background:var(--button-bg);font:600 12px/1.4 var(--font-geist);cursor:pointer}.ds-btn-primary:hover{background:var(--button-bg-hover)}.ds-btn-primary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}"
     },
     {
       "name": "Secondary Button",
@@ -49,7 +48,7 @@
       "name": "Text Field",
       "kind": "input",
       "refersTo": "input",
-      "description": "A labeled warm-neutral field with an exact blue focus state.",
+      "description": "A labeled neutral field with an exact blue focus state.",
       "html": "<label class=\"ds-field\">Professional headline<input value=\"Product Engineer\" /></label>",
       "css": ".ds-field{display:grid;gap:6px;color:var(--ink);font:570 12px/1.4 var(--font-geist)}.ds-field input{height:36px;padding:0 10px;border:1px solid var(--line-strong);border-radius:6px;color:var(--ink);background:var(--surface);font:400 14px/1.45 var(--font-geist)}.ds-field input:focus{border-color:var(--primary);box-shadow:0 0 0 3px color-mix(in oklch,var(--primary) 12%,transparent);outline:0}"
     },
@@ -70,18 +69,19 @@
     }
   ],
   "narrative": {
-    "northStar": "The Working Page",
-    "overview": "Roleway feels like a personal workspace that happens to manage a job search, not a dashboard assembled from widgets. A quiet neutral sidebar sits flush beside a paper-white content plane, separated by one hairline; graphite typography and neutral selection keep attention on the current opportunity and its next action.",
+    "northStar": "The Working Page and Pin-up",
+    "overview": "Roleway feels like a personal workspace that happens to manage a job search, not a dashboard assembled from widgets. Public pages extend the same product truth into a working pin-up: real HTML interface evidence, precise annotation, and one tactile next-action slip.",
     "keyCharacteristics": [
       "Flush persistent navigation and content separated by one structural rule.",
-      "Neutral architecture with blue reserved for primary actions, progress, focus, and the Roleway mark.",
+      "Neutral architecture with Waypoint Blue carrying primary actions, focus, selection, progress, and the route mark.",
       "Document-like pages and record surfaces instead of dashboard card grids.",
       "Compact, labeled navigation in expanded and collapsed modes.",
       "Dark mode preserves the same semantic hierarchy.",
       "Public pages use the real application shell and task-specific HTML views as product evidence."
     ],
     "rules": [
-      { "name": "The One Saturated Voice Rule", "body": "Blue communicates action or progress. Navigation containers, page chrome, and decorative regions stay neutral.", "section": "colors" },
+      { "name": "The One Saturated Voice Rule", "body": "Waypoint Blue communicates forward action, focus, selection, progress, or a waypoint. Product chrome remains neutral.", "section": "colors" },
+      { "name": "The Product Pin-up Rule", "body": "Public pages get one dominant interface composition, one annotation system, and one tactile next-action object.", "section": "components" },
       { "name": "The One Plane Rule", "body": "Sidebar and content meet directly. Never float the application shell, round the main content boundary, or use shadows to turn the workspace into an island.", "section": "layout" },
       { "name": "The Flat-by-Default Rule", "body": "Shadows explain hierarchy or movement; they never decorate static content.", "section": "elevation" }
     ],
@@ -89,12 +89,12 @@
       "Do use proximity and hairlines before adding a container.",
       "Do keep the next action and its due state visible near the record it affects.",
       "Do reserve cards for movable opportunities, approvals, and self-contained records.",
-      "Do use blue for primary actions, progress, focus, and the Roleway mark.",
+      "Do use Waypoint Blue for primary actions, focus, selection, progress, and the full Roleway route mark.",
       "Do show real product structure and task-specific content on public pages."
     ],
     "donts": [
       "Don't float the application shell, round the main content boundary, or give every section its own island.",
-      "Don't use blue-tinted application chrome, startup gradients, glass, glow, or decorative metrics.",
+      "Don't tint application chrome blue or add secondary saturated colors, startup gradients, glass, glow, or decorative metrics.",
       "Don't turn summaries into large dashboard cards or put empty-state icons in generic rounded tiles.",
       "Don't copy Notion's brand assets or terminology.",
       "Don't market Roleway with generic dashboard art, fake metrics, or product screenshots that show a discarded shell."

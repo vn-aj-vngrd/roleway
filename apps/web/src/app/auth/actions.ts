@@ -10,19 +10,19 @@ const credentialsSchema = z.object({
   password: z.string().min(8, "Password must be at least 8 characters."),
 });
 
-function loginUrl(type: "error" | "message", value: string, requestedNext?: FormDataEntryValue | null) {
+function authUrl(route: "/login" | "/signup", type: "error" | "message", value: string, requestedNext?: FormDataEntryValue | null) {
   const safeNext = safeNextPath(requestedNext, "");
   const next = safeNext ? `&next=${encodeURIComponent(safeNext)}` : "";
-  return `/login?${type}=${encodeURIComponent(value)}${next}`;
+  return `${route}?${type}=${encodeURIComponent(value)}${next}`;
 }
 
 export async function signIn(formData: FormData) {
   const parsed = credentialsSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) redirect(loginUrl("error", parsed.error.issues[0]?.message ?? "Check your details.", formData.get("next")));
+  if (!parsed.success) redirect(authUrl("/login", "error", parsed.error.issues[0]?.message ?? "Check your details.", formData.get("next")));
 
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithPassword(parsed.data);
-  if (error || !data.user) redirect(loginUrl("error", "Email or password is incorrect.", formData.get("next")));
+  if (error || !data.user) redirect(authUrl("/login", "error", "Email or password is incorrect.", formData.get("next")));
   const { data: profile } = await supabase.from("profiles").select("onboarding_completed").eq("user_id", data.user.id).maybeSingle();
   if (!profile?.onboarding_completed) redirect("/onboarding");
   const requestedNext = formData.get("next");
@@ -32,12 +32,12 @@ export async function signIn(formData: FormData) {
 
 export async function signUp(formData: FormData) {
   const parsed = credentialsSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) redirect(loginUrl("error", parsed.error.issues[0]?.message ?? "Check your details."));
+  if (!parsed.success) redirect(authUrl("/signup", "error", parsed.error.issues[0]?.message ?? "Check your details."));
 
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp(parsed.data);
-  if (error) redirect(loginUrl("error", error.message));
-  if (!data.session) redirect(loginUrl("error", "Your account was created, but sign-in could not start. Try signing in."));
+  if (error) redirect(authUrl("/signup", "error", error.message));
+  if (!data.session) redirect(authUrl("/login", "message", "Your account was created. Check your email, then log in."));
   redirect("/onboarding");
 }
 

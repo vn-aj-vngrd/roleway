@@ -1,11 +1,12 @@
-import { Bell, Bot, BriefcaseBusiness, ShieldCheck, UserRound } from "lucide-react";
+import { Bell, BriefcaseBusiness, Cable, Palette, ShieldCheck, UserRound } from "lucide-react";
 import Link from "next/link";
 
 const settings = [
   { href: "/settings/profile", label: "Profile", icon: UserRound },
   { href: "/settings/preferences", label: "Job preferences", icon: BriefcaseBusiness },
   { href: "/settings/notifications", label: "Notifications", icon: Bell },
-  { href: "/settings/ai", label: "AI connections", icon: Bot },
+  { href: "/settings/appearance", label: "Appearance", icon: Palette },
+  { href: "/settings/ai", label: "AI connections", icon: Cable },
   { href: "/settings/privacy", label: "Privacy & data", icon: ShieldCheck },
 ];
 
