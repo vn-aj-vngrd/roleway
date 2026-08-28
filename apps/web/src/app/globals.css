@@ -3133,7 +3133,7 @@ html:has(.app-shell) { background: var(--sidebar); }
 .sidebar-search-project-row { position: relative; min-width: 0; display: flex; align-items: center; }
 .sidebar-search-project-row .sidebar-search-project-button { min-width: 0; flex: 1; padding-right: 9px; }
 .sidebar-search-project-favorite { width: 12px; height: 12px; flex: 0 0 auto; color: var(--primary); fill: color-mix(in oklch, var(--primary) 18%, transparent); }
-.sidebar-search-project-more { position: absolute; z-index: 2; right: 4px; width: 26px; height: 26px; padding: 0; border: 0; border-radius: 6px; color: var(--muted); background: transparent; display: grid; place-items: center; cursor: pointer; opacity: 0; }
+.app-shell .sidebar-search-project-more { position: absolute; z-index: 2; right: 4px; width: 26px; height: 26px; padding: 0; border: 0; border-radius: 6px; color: var(--muted); background: transparent; display: grid; place-items: center; cursor: pointer; opacity: 0; }
 .sidebar-search-project-more svg { width: 15px; height: 15px; }
 .sidebar-search-project-row:hover .sidebar-search-project-more,
 .sidebar-search-project-more:focus-visible,
