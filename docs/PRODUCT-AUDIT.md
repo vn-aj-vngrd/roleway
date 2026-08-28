@@ -1,108 +1,109 @@
-# Roleway Product Audit
+# Roleway Production Audit
 
-_Audit baseline: August 2026, commit `f9724ed` plus the Roleway logo. This is the pre-hardening baseline used for the current improvement pass._
+_Audit refreshed: August 26, 2026. Scope: current working tree and applied Supabase migrations through `20260826140000`._
 
-## Audit health score
+## Release scorecard
 
-| # | Dimension | Score | Key finding |
-|---|---|---:|---|
-| 1 | Accessibility | 2/4 | Good semantic intent, but touch targets, async feedback, skip navigation, and focus/error handling are incomplete. |
-| 2 | Performance | 3/4 | Server Components and parallel queries are strong; unpaginated boards and broad client shell remain risks. |
-| 3 | Responsive design | 2/4 | Mobile navigation and reflow exist, but dense workspace/board controls and sub-44px controls need hardening. |
-| 4 | Theming | 3/4 | Consistent OKLCH tokens and deliberate dark mode; inline layout values and fixed external SVG colors are limited exceptions. |
-| 5 | Anti-patterns | 3/4 | Calm and restrained overall; repeated card-like empty states and exposed unavailable AI features weaken product credibility. |
-| **Total** |  | **13/20** | **Acceptable—significant product hardening required before market release.** |
+| Dimension | Score | Evidence |
+| --- | ---: | --- |
+| Product usefulness | 9/10 | Multiple Workspaces, active Home queue, Job triage, connected Opportunity dossier, submissions, people, interviews, documents, and outcomes form one operating loop. |
+| Workflow completeness | 8.5/10 | Discover/capture → triage → prepare → apply → follow up → interview is complete. External discovery aggregation and browser autofill are deliberate future adapters. |
+| Information architecture | 9/10 | Account-wide Career Profile and project-scoped operational data are explicit in navigation, RLS, search, export, analytics, and admin metrics. |
+| UX clarity and speed | 9/10 | List-first Opportunities, project switcher, quick capture, command search, predictable automations, and contextual empty/error states. |
+| Accessibility | 9/10 | WCAG 2.2 AA-tagged axe checks pass for public landing and authenticated Home; Opportunity was separately axe-checked. Keyboard stage changes and pointer alternatives exist. |
+| Responsive quality | 9/10 | 1440×1000 and 390×844 production views have no horizontal overflow; mobile preserves project switching and every core action. |
+| Engineering | 8.5/10 | Supabase is the single schema source, project context is centralized, mutations are owner/project scoped, pure logic is unit-tested, dead packages were removed. |
+| Security and privacy | 9/10 | RLS relationship checks, direct cross-owner E2E attacks, admin database authorization, SSRF controls, capture quota, encrypted AI keys, export, password-reverified deletion. |
+| Reliability and observability | 8.5/10 | Intentional loading/error states, redacted system events, database-backed Admin health, AI failure records, audit logs, and production build/browser checks. |
+| Production readiness | 9/10 | Auth, onboarding, projects, core workflows, admin denial, migrations, tests, production build, and real-browser validation pass. |
 
-## Anti-pattern verdict
+## Verified release paths
 
-**Pass with reservations.** The product does not look like an AI dashboard template: it avoids gradients, glass, oversized metrics, and decorative AI treatment. The credibility problem is functional rather than stylistic: Documents can be created but not opened, AI is exposed but unavailable, privacy controls describe missing export/deletion, and many mutations fail silently.
+### Acquisition and account
 
-## Executive summary
+- Public page states the Workspace differentiator and only advertises implemented behavior.
+- Signup creates an authenticated session and a default project; onboarding atomically configures the profile and first Workspace.
+- Login preserves same-origin deep links.
+- Forgot-password, PKCE callback, reset-password, sign-out, expired-session routing, export, and password-reverified account deletion are implemented.
 
-- **P0:** Documents route creates dead-end records; no public landing page means the acquisition journey does not exist.
-- **P1:** Server Actions silently discard invalid input and database failures; buttons provide no pending protection; stage closure stores a placeholder reason; destructive operations and account data controls are absent.
-- **P1 security:** child-resource RLS checks `user_id` but does not prove the referenced Opportunity belongs to the same owner, allowing cross-owner associations if a UUID is known.
-- **P1 reliability:** no practical browser tests cover authentication, onboarding, RLS-backed mutations, direct links, or logout.
-- **P2:** no pagination, job editing, interview editing/deletion, note/task deletion, or accessible board keyboard workflow.
+### Workspaces
 
-## Detailed findings
+- Create, configure, switch, archive, and restore work.
+- Jobs, Opportunities, tasks, contacts, interviews, documents, applications, notifications, search, Home, and Insights use active `project_id` scope.
+- Existing users and records were backfilled without losing data.
+- A direct cross-user read returns no rows; a cross-owner task relationship insert is rejected by RLS.
 
-### P0
+### Capture and triage
 
-**Public acquisition flow is absent**  
-Location: `apps/web/src/app/page.tsx`  
-Impact: anonymous visitors are redirected into authentication without understanding the product or trust model.  
-Recommendation: add a focused public page with real product representation, direct signup/login paths, privacy/open-source trust signals, and no fabricated proof.
+- Manual capture works from any primary app surface.
+- URL capture blocks private/loopback addresses, credentials, non-web schemes, non-standard ports, oversized responses, and redirect abuse.
+- Ashby, Greenhouse, and Lever use fixed public job-board endpoints; generic pages use JobPosting JSON-LD/metadata.
+- Missing company/title/description is disclosed rather than inferred. Duplicate URLs warn within the project.
+- Capture is authenticated and limited to 20 attempts per user per hour.
+- Inbox track/maybe/dismiss states are persisted; tracking is idempotent.
 
-**Documents are dead-end records**  
-Location: `apps/web/src/app/(app)/documents/page.tsx`  
-Impact: users can create a document but cannot open, edit, associate, export, or delete it. This is a placebo feature.  
-Recommendation: implement focused document editing and protected deletion or remove Documents from navigation.
+### Opportunity dossier
 
-### P1
+- Dense List and Board projections use the same records; Board has select/keyboard alternatives to drag.
+- Status, priority, excitement, deadline, listing details, and one next action are editable.
+- Application submission records channel, confirmation, salary response, portfolio, and exact immutable document versions where selected.
+- Tasks and notes can be created, completed, reopened, and deleted.
+- Contacts record relationship, details, notes, and follow-up; create/edit/delete works and follow-ups surface on Home.
+- Interviews record schedule, IANA timezone, meeting, people, preparation, questions, post-interview notes, status, and outcome.
+- Document saves append version snapshots and preserve project/opportunity association.
+- Activity merges notes and consequential events into one timeline.
 
-**Mutations fail silently**  
-Location: `apps/web/src/features/workspace/actions.ts`  
-Impact: invalid IDs, Zod failures, and Supabase errors often return nothing; users cannot know whether work was saved.  
-Recommendation: use typed action results or explicit redirect messages, log redacted server errors, and expose recoverable UI errors.
+### Active assistance
 
-**Duplicate submissions are easy**  
-Location: all Server Action forms  
-Impact: no pending state disables repeat clicks; duplicate notes/tasks/interviews can be created on slow connections.  
-Recommendation: shared `SubmitButton` using `useFormStatus`, plus database idempotency where consequences are material.
+- Home orders due tasks, contact follow-ups, interviews, next actions, and Inbox review without duplicate automation work.
+- Application submission creates a seven-day follow-up.
+- Interview scheduling creates one preparation task and one useful notification, and moves eligible work to Interview.
+- Entity search covers active-project Opportunities, Jobs, documents, contacts, interviews, and notes.
+- Insights uses real application/interview data, waits for a minimum sample before rates, and avoids causal language.
 
-**Stage semantics are not enforced**  
-Location: `updateOpportunityStage` and `opportunities` UI  
-Impact: callers bypass domain transitions and closing always records “Closed by user,” destroying insight quality.  
-Recommendation: validate transitions centrally and collect a real closed reason.
+### Administration
 
-**Cross-owner relationship integrity is incomplete**  
-Location: `supabase/migrations/20260817140000_roleway_foundation.sql` child policies  
-Impact: RLS owns the child row but does not validate ownership of referenced Opportunity IDs.  
-Recommendation: add `EXISTS` checks for tasks, notes, events, interviews, and Opportunity-linked documents.
+- `admin_members` and protected database functions authorize; route hiding is not relied upon.
+- Normal users are redirected from Admin.
+- Overview, searchable Users, System, and Audit sections use real data.
+- Owners can change admin roles; the final owner is protected and changes are audited.
+- System health reports database reachability, redacted application errors, AI failures, provider connection failures, notifications, interviews, and admin actions.
 
-**Auth does not preserve intended deep links**  
-Location: authenticated layout and login actions  
-Impact: an expired user following an Opportunity URL lands on Today after login.  
-Recommendation: carry a validated same-origin `next` path through login.
+## Automated evidence
 
-**No critical browser coverage**  
-Location: test configuration  
-Impact: deployments can regress signup, onboarding, RLS mutations, or logout without detection.  
-Recommendation: Playwright serial E2E with disposable Supabase users and reliable cleanup.
+```text
+TypeScript: pass
+ESLint: pass
+Vitest: 30 tests across core and web (current count may increase)
+Playwright: 5 serial critical-path tests
+Supabase migration history: local and remote aligned
+Next.js production build: pass
+Axe: no serious/critical WCAG-tagged violations on audited release surfaces
+Production browser: no console errors, no failed critical requests, CLS 0, authenticated Home LCP < 1s in local production run
+Live deployment: `https://roleway.vercel.app` aliased to a READY Vercel production deployment and smoke-tested at 390px
+```
 
-### P2
+## Deliberate exclusions—not placeholders
 
-- `apps/web/src/components/app-shell.tsx`: unavailable Agent/AI surfaces are promoted as finished navigation.
-- `apps/web/src/app/(app)/opportunities/page.tsx`: board loads every record and stage changes require select plus a separate tiny Move button.
-- `apps/web/src/app/(app)/opportunities/[id]/page.tsx`: giant component mixes querying, formatting, and four workflows; errors from secondary queries appear as empty data.
-- `apps/web/src/app/(app)/today/page.tsx`: server-local time determines greeting and deadlines; dates are not consistently formatted with shared `Intl` utilities.
-- `apps/web/src/app/globals.css`: desktop controls are frequently 27–34px with no touch-specific 44px override.
-- Root layout lacks a skip link and theme-color metadata.
-- Forms lack pending announcements, inline field errors, and unsaved-change protection.
-- Jobs, tasks, notes, interviews, and documents lack protected deletion or undo.
-- No pagination/search for growing pipelines.
+These are absent from navigation and public claims:
 
-## Systemic issues
+- unsupported job aggregation or a proprietary job marketplace;
+- browser extension and application autofill;
+- background auto-apply or recruiter outreach;
+- email/calendar integration;
+- binary file upload/PDF rendering;
+- generic workflow/automation builder;
+- collaboration, billing, or team permissions;
+- opaque fit or hireability scores.
 
-1. **Action contract drift:** every form invents its own redirect/silent-return behavior.
-2. **Feature exposure exceeds completion:** navigation advertises surfaces before their core loop is usable.
-3. **Domain rules split across UI and SQL:** stage rules, closure outcomes, and relationship ownership are not enforced at one reliable seam.
-4. **Responsive styling is visual, not interaction-complete:** layout reflows, but touch size and dense controls remain desktop assumptions.
+The architecture leaves legitimate seams for job-source, browser-companion, storage, and calendar adapters without shipping half-working controls.
 
-## Positive findings
+## Remaining lower-priority risks
 
-- Job and Opportunity are correctly separated in both language and storage.
-- Authenticated layouts call `getUser`, Server Actions re-authenticate, and core tables use RLS.
-- Independent Today queries run in parallel.
-- The restrained OKLCH token system, typography, dark mode, reduced-motion rule, and route monogram form a coherent visual identity.
-- Onboarding is short, preference-led, and now proceeds directly from password signup.
-- Empty states explain the model rather than showing blank pages.
+1. Email delivery for recovery links depends on deployment-specific Supabase SMTP configuration and must be smoke-tested after changing providers or domains.
+2. Generic URL extraction quality varies by source; the honest manual fallback remains required even with supported ATS adapters.
+3. Board renders up to 1,000 Opportunities. List rows use compact rendering, but a future high-volume profile should add cursor pagination/virtualization before raising this limit.
+4. Analytics are intentionally directional. Resume/source comparisons remain counts until larger samples justify stronger presentation.
+5. The initial admin owner email is a deployment bootstrap in SQL. Forks must replace it before first production signup.
 
-## Recommended action sequence
-
-1. **P0 — harden:** complete or hide dead-end features; add public acquisition flow.
-2. **P1 — harden:** normalize mutation feedback, pending states, authorization, and destructive confirmation.
-3. **P1 — audit:** add and run critical Playwright paths and database-policy checks.
-4. **P2 — adapt:** verify touch sizing and dense workflows at 390px, 768px, and desktop.
-5. **P2 — polish:** final hierarchy, copy, spacing, loading, and interaction-state pass.
+None of these risks creates fake functionality or blocks the current individual, selective-search release model.

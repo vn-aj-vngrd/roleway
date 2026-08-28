@@ -1,16 +1,61 @@
 import { CheckCircle2, PlugZap, ShieldCheck, Trash2, TriangleAlert } from "lucide-react";
 import { AiConnectionForm } from "@/components/ai-connection-form";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
-import { SettingsNav } from "@/components/settings-nav";
 import { SubmitButton } from "@/components/submit-button";
+import { PageHeader } from "@/components/ui-primitives";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireUser } from "@/lib/supabase/server";
-import { deleteAiConnection, testAiConnection } from "./actions";
+import { deleteAiConnection, testAiConnection, updateAgentGuidance } from "./actions";
 
-export default async function AiSettingsPage({ searchParams }: { searchParams: Promise<{ saved?: string; tested?: string; deleted?: string; error?: string }> }) {
-  const [auth, query] = await Promise.all([requireUser(), searchParams]); if (!auth) return null;
-  const { data: connections } = await createAdminClient().from("ai_connections").select("id, provider, label, model, base_url, key_hint, status, last_error, last_tested_at").eq("user_id", auth.user.id).order("updated_at", { ascending: false });
-  return <div className="page settings-page"><header className="page-header"><div><h1>Settings</h1><p className="page-subtitle">Tune Roleway around the way you work.</p></div></header><div className="settings-layout"><SettingsNav active="AI connections" /><main className="ai-settings-main">{query.saved ? <div className="form-alert success" role="status">AI connection saved. Test it before the first run.</div> : null}{query.tested ? <div className="form-alert success" role="status">Connection verified and ready.</div> : null}{query.deleted ? <div className="form-alert success" role="status">Connection removed.</div> : null}{query.error ? <div className="form-alert error" role="alert">{query.error}</div> : null}<section className="form-section ai-provider-section"><div className="settings-section-title"><div><h2>Provider connections</h2><p>Connect a provider account for optional, on-demand assistance.</p></div></div><div className="ai-safety-note"><ShieldCheck aria-hidden="true" /><p><strong>You stay in control.</strong> Roleway sends selected context only when you run Assist. Results remain drafts and nothing is submitted externally.</p></div>{connections?.length ? <div className="connection-list">{connections.map((connection) => <article className="connection-row" key={connection.id}><span className={`connection-status ${connection.status}`} aria-hidden="true">{connection.status === "connected" ? <CheckCircle2 /> : connection.status === "error" ? <TriangleAlert /> : <PlugZap />}</span><div className="connection-copy"><strong>{connection.label}</strong><span>{providerLabel(connection.provider)} · <span className="mono">{connection.model}</span> · {connection.key_hint}</span>{connection.last_error ? <small>{connection.last_error}</small> : null}</div><span className={`status-label ${connection.status === "connected" ? "success" : "neutral"}`}><i />{connection.status}</span><form action={testAiConnection}><input type="hidden" name="connectionId" value={connection.id} /><SubmitButton className="button secondary" pendingLabel="Testing…">Test</SubmitButton></form><ConfirmationDialog title={`Delete ${connection.label}?`} description="This removes the saved provider configuration and encrypted API key from Roleway." action={deleteAiConnection} confirmLabel="Delete connection" pendingLabel="Deleting…" trigger={<Trash2 aria-hidden="true" />} triggerClassName="icon-button" triggerAriaLabel={`Delete ${connection.label}`} triggerTooltip="Delete connection" hiddenFields={{ connectionId: connection.id }} destructive /></article>)}</div> : <div className="empty-inline">No provider connected yet.</div>}</section><section className="form-section ai-add-section"><h2>Add a connection</h2><p>Your provider bills API usage directly. A ChatGPT, Claude, or Gemini consumer subscription does not automatically include API usage; create an API key in the provider’s developer console.</p><AiConnectionForm /></section></main></div></div>;
+type AiQuery = { saved?: string; tested?: string; deleted?: string; guidanceSaved?: string; error?: string };
+
+export default async function AiSettingsPage(props: { searchParams: Promise<AiQuery> }) {
+  const searchParams = await props.searchParams;
+  const [auth, query] = await Promise.all([requireUser(), searchParams]);
+  if (!auth) return null;
+  const admin = createAdminClient();
+  const [connectionsResult, preferenceResult] = await Promise.all([
+    admin.from("ai_connections").select("id, provider, label, model, base_url, key_hint, status, last_error, last_tested_at").eq("user_id", auth.user.id).order("updated_at", { ascending: false }),
+    auth.supabase.from("agent_preferences").select("guidance").eq("user_id", auth.user.id).maybeSingle(),
+  ]);
+  const connections = connectionsResult.data ?? [];
+
+  return <div className="page settings-page ai-settings-page">
+    <PageHeader title="Agent" description="Connect your provider and set personal guidance for grounded Workspace conversations." />
+    <main className="ai-settings-main">
+      {query.saved ? <div className="form-alert success" role="status">Connection saved. Test it before using Agent.</div> : null}
+      {query.tested ? <div className="form-alert success" role="status">Connection verified and ready.</div> : null}
+      {query.deleted ? <div className="form-alert success" role="status">Connection removed.</div> : null}
+      {query.guidanceSaved ? <div className="form-alert success" role="status">Agent guidance saved.</div> : null}
+      {query.error ? <div className="form-alert error" role="alert">{query.error}</div> : null}
+
+      <section className="settings-row-group ai-provider-section">
+        <header><div><h2>Provider connections</h2><p>Bring an API key from a supported provider. Roleway encrypts it before storage.</p></div></header>
+        <div className="ai-safety-note"><ShieldCheck aria-hidden="true" /><p><strong>You approve every internal change.</strong> Agent reads the active Workspace only after you send a request. It cannot submit applications or contact employers.</p></div>
+        {connections.length ? <div className="connection-list">{connections.map((connection) => <article className="connection-row" key={connection.id}>
+          <span className={`connection-status ${connection.status}`} aria-hidden="true">{connection.status === "connected" ? <CheckCircle2 /> : connection.status === "error" ? <TriangleAlert /> : <PlugZap />}</span>
+          <div className="connection-copy"><strong>{connection.label}</strong><span>{providerLabel(connection.provider)} · <span className="mono">{connection.model}</span> · {connection.key_hint}</span>{connection.last_error ? <small>{connection.last_error}</small> : null}</div>
+          <span className={`status-label ${connection.status === "connected" ? "success" : "neutral"}`}><i />{connection.status}</span>
+          <form action={testAiConnection}><input type="hidden" name="connectionId" value={connection.id} /><SubmitButton className="button secondary" pendingLabel="Testing…">Test</SubmitButton></form>
+          <ConfirmationDialog title={`Delete ${connection.label}?`} description="This removes the saved provider configuration and encrypted API key from Roleway." action={deleteAiConnection} confirmLabel="Delete connection" pendingLabel="Deleting…" trigger={<Trash2 aria-hidden="true" />} triggerClassName="icon-button" triggerAriaLabel={`Delete ${connection.label}`} triggerTooltip="Delete connection" hiddenFields={{ connectionId: connection.id }} destructive />
+        </article>)}</div> : <div className="empty-inline">No provider connected yet. Add one below; the rest of Roleway works without AI.</div>}
+      </section>
+
+      <section className="settings-row-group agent-guidance-section">
+        <header><div><h2>Personal guidance</h2><p>Describe how Agent should answer and prepare work for you. Guidance cannot expand permissions.</p></div></header>
+        <form action={updateAgentGuidance}>
+          <label className="sr-only" htmlFor="agent-guidance">Personal Agent guidance</label>
+          <textarea id="agent-guidance" name="guidance" maxLength={6000} defaultValue={preferenceResult.data?.guidance ?? ""} placeholder="Stay concise. Separate stored facts from inference. Prefer one concrete next step…" />
+          <footer><span>Applied to future conversations</span><SubmitButton pendingLabel="Saving guidance…">Save guidance</SubmitButton></footer>
+        </form>
+      </section>
+
+      <section className="settings-row-group ai-add-section">
+        <header><div><h2>Add a connection</h2><p>Your provider bills API usage directly. Consumer chat subscriptions do not automatically include API access.</p></div></header>
+        <AiConnectionForm />
+      </section>
+    </main>
+  </div>;
 }
 
 function providerLabel(provider: string) {

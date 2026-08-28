@@ -16,5 +16,5 @@ export async function restartTour() {
   if (!auth) redirect("/login");
   await auth.supabase.from("profiles").update({ tour_completed: false }).eq("user_id", auth.user.id);
   revalidatePath("/", "layout");
-  redirect("/today?tour=true");
+  redirect("/home?tour=true");
 }

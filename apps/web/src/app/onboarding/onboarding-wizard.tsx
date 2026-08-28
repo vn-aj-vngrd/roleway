@@ -1,24 +1,23 @@
 "use client";
 
-import { Check, Inbox, Target } from "lucide-react";
+import { Check } from "lucide-react";
 import { useRef, useState } from "react";
-import { completeOnboarding } from "./actions";
-import { SelectField } from "@/components/form-controls";
 import { SubmitButton } from "@/components/submit-button";
+import { completeOnboarding } from "./actions";
 
-const steps = ["Profile", "Preferences", "Workflow"] as const;
+const steps = ["Profile", "Workspace"] as const;
 
 export function OnboardingWizard({ email }: { email: string }) {
   const [step, setStep] = useState(0);
   const formRef = useRef<HTMLFormElement>(null);
 
-  const continueToNext = () => {
-    const panel = formRef.current?.querySelector<HTMLElement>(`[data-step="${step}"]`);
-    const fields = panel?.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>("input, textarea, select") ?? [];
+  const continueToWorkspace = () => {
+    const panel = formRef.current?.querySelector<HTMLElement>('[data-step="0"]');
+    const fields = panel?.querySelectorAll<HTMLInputElement>("input") ?? [];
     for (const field of fields) {
       if (!field.reportValidity()) return;
     }
-    setStep((current) => Math.min(current + 1, steps.length - 1));
+    setStep(1);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -29,28 +28,25 @@ export function OnboardingWizard({ email }: { email: string }) {
       </div>
 
       <section className="wizard-panel" data-step="0" hidden={step !== 0}>
-        <div className="onboarding-copy"><div className="wizard-time">About 2 minutes</div><h1>Start with what you’re aiming for</h1><p>We’ll use this to make your empty workspace useful from the first job you add. Nothing here is public.</p></div>
-        <div className="form-section"><h2>Your professional profile</h2><p>Just enough context to identify your workspace and shape future recommendations.</p><div className="field-grid"><div className="field"><label htmlFor="fullName">Full name</label><input className="input" id="fullName" name="fullName" required autoComplete="name" /></div><div className="field"><label htmlFor="headline">Professional headline</label><input className="input" id="headline" name="headline" required placeholder="Product-minded full-stack engineer" /></div></div><div className="field"><label htmlFor="summary">Short summary <span className="muted">(optional)</span></label><textarea className="textarea" id="summary" name="summary" placeholder="What kind of work do you do best?" /></div><p className="field-note">Signed in as {email}</p></div>
+        <div className="onboarding-copy"><div className="wizard-time">About 1 minute</div><h1>Start with your direction</h1><p>Add only enough context to create a private Workspace. You can complete your Career Profile later.</p></div>
+        <div className="form-section"><h2>Your profile</h2><p>This identifies your private account and gives your Workspace a useful starting point.</p><div className="field-grid"><div className="field"><label htmlFor="fullName">Full name</label><input className="input" id="fullName" name="fullName" required autoComplete="name" /></div><div className="field"><label htmlFor="headline">Professional headline</label><input className="input" id="headline" name="headline" required placeholder="Product-minded full-stack engineer" /></div></div><p className="field-note">Signed in as {email}</p></div>
       </section>
 
       <section className="wizard-panel" data-step="1" hidden={step !== 1}>
-        <div className="onboarding-copy"><h1>Define a good opportunity</h1><p>Preferences help you review jobs consistently. They don’t hide anything or make decisions for you.</p></div>
-        <div className="form-section"><h2>Search preferences</h2><p>Separate multiple entries with commas.</p><div className="field"><label htmlFor="targetTitles">Target roles</label><input className="input" id="targetTitles" name="targetTitles" required placeholder="Product Engineer, Full-Stack Engineer" /><span className="field-hint">Add the titles you would genuinely consider next.</span></div><div className="field"><label htmlFor="technologies">Preferred technologies</label><input className="input" id="technologies" name="technologies" placeholder="TypeScript, React, PostgreSQL" /></div><div className="field-grid"><div className="field"><label htmlFor="remotePreference">Remote preference</label><SelectField id="remotePreference" name="remotePreference" defaultValue="preferred" options={[{ value: "required", label: "Remote required" }, { value: "preferred", label: "Remote preferred" }, { value: "flexible", label: "Flexible" }]} /></div><div className="field"><label htmlFor="minimumCompensation">Minimum annual compensation</label><input className="input" id="minimumCompensation" name="minimumCompensation" type="number" min="0" placeholder="50000" /></div></div><div className="field"><label htmlFor="locations">Allowed locations</label><input className="input" id="locations" name="locations" placeholder="Worldwide, APAC, Philippines" /></div></div>
+        <div className="onboarding-copy"><h1>Name the search you are running</h1><p>One Workspace keeps one target and its Jobs, Opportunities, documents, people, and results together.</p></div>
+        <div className="form-section"><h2>First Workspace</h2><p>You will add a real Job next. Preferences such as location and compensation can wait until they help a decision.</p><div className="field"><label htmlFor="projectName">Workspace name</label><input className="input" id="projectName" name="projectName" required defaultValue="My job search" placeholder="Remote product engineering" /><span className="field-hint">Use a name that distinguishes this direction from another search.</span></div><div className="field"><label htmlFor="targetTitles">Target role</label><input className="input" id="targetTitles" name="targetTitles" required placeholder="Product Engineer" /><span className="field-hint">You can add more roles and detailed preferences later.</span></div></div>
       </section>
 
-      <section className="wizard-panel" data-step="2" hidden={step !== 2}>
-        <div className="onboarding-copy"><h1>Your workspace starts with one decision</h1><p>Add a promising job, review it in your Inbox, then track it only when it deserves your attention.</p></div>
-        <div className="workflow-preview" aria-label="Roleway workflow">
-          <div><span><Inbox /></span><div><b>Add a job</b><p>Capture a listing without committing it to your pipeline.</p></div></div>
-          <div><span><Check /></span><div><b>Review the Inbox</b><p>Track, keep for later, or dismiss. You remain in control.</p></div></div>
-          <div><span><Target /></span><div><b>Move the Opportunity forward</b><p>Give it one next action, then keep every task and note attached.</p></div></div>
-        </div>
-        <div className="tour-preview-note"><strong>A short product tour comes next.</strong><span>Four quick pointers, then you’ll add your first real job.</span></div>
-      </section>
+      <input type="hidden" name="summary" value="" />
+      <input type="hidden" name="technologies" value="" />
+      <input type="hidden" name="remotePreference" value="flexible" />
+      <input type="hidden" name="locations" value="" />
+      <input type="hidden" name="minimumCompensation" value="" />
+      <input type="hidden" name="currency" value="USD" />
 
       <div className="onboarding-actions wizard-actions">
-        {step > 0 ? <button className="button ghost" type="button" onClick={() => setStep((current) => current - 1)}>Back</button> : <span className="muted small">Private by default · Editable later</span>}
-        {step < steps.length - 1 ? <button className="button primary" type="button" onClick={continueToNext}>Continue</button> : <SubmitButton pendingLabel="Creating workspace…">Open my workspace</SubmitButton>}
+        {step > 0 ? <button className="button ghost" type="button" onClick={() => setStep(0)}>Back</button> : <span className="muted small">Private by default · Editable later</span>}
+        {step === 0 ? <button className="button primary" type="button" onClick={continueToWorkspace}>Continue</button> : <SubmitButton pendingLabel="Creating Workspace…">Create Workspace and add a Job</SubmitButton>}
       </div>
     </form>
   );

@@ -1,14 +1,25 @@
 import { describe, expect, it } from "vitest";
-import { canTransitionStage, requiresExplicitApproval, transitionStage } from "./index";
+import { canTransitionStage, formatOpportunityTicket, opportunityStageOrder, requiresClosedOutcome, requiresExplicitApproval, transitionStage } from "./index";
 
 describe("Opportunity stage transitions", () => {
-  it("allows a prepared Opportunity to become applied", () => {
-    expect(transitionStage("preparing", "applied")).toBe("applied");
+  it("allows non-linear updates when an existing search is captured late", () => {
+    expect(transitionStage("interested", "interview")).toBe("interview");
+    expect(canTransitionStage("offer", "preparing")).toBe(true);
   });
 
-  it("rejects skipping from inbox to offer", () => {
-    expect(canTransitionStage("inbox", "offer")).toBe(false);
-    expect(() => transitionStage("inbox", "offer")).toThrow(/Invalid Opportunity/);
+  it("keeps intake in the Job Inbox instead of an Opportunity stage", () => {
+    expect(opportunityStageOrder).not.toContain("inbox");
+  });
+
+  it("requires an outcome when work closes", () => {
+    expect(requiresClosedOutcome("closed")).toBe(true);
+    expect(requiresClosedOutcome("offer")).toBe(false);
+  });
+});
+
+describe("Opportunity identifiers", () => {
+  it("combines the Workspace key with the durable reference number", () => {
+    expect(formatOpportunityTicket("PLD", 87)).toBe("PLD-087");
   });
 });
 

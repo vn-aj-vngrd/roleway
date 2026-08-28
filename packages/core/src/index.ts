@@ -1,22 +1,37 @@
-import type { OpportunityStage, ToolPermission } from "@roleway/schemas";
+import { opportunityStages, type OpportunityStage, type ToolPermission } from "@roleway/schemas";
 
-const allowedTransitions: Record<OpportunityStage, readonly OpportunityStage[]> = {
-  inbox: ["interested", "closed"],
-  interested: ["inbox", "preparing", "closed"],
-  preparing: ["interested", "applied", "closed"],
-  applied: ["interview", "closed"],
-  interview: ["applied", "offer", "closed"],
-  offer: ["closed"],
-  closed: ["interested"],
+/**
+ * Searchers may add an Opportunity after an application or interview already exists,
+ * so stage changes are intentionally non-linear. Closure still requires an outcome.
+ */
+export const opportunityStageOrder = opportunityStages;
+
+export const opportunityStageLabels: Record<OpportunityStage, string> = {
+  interested: "Interested",
+  preparing: "Preparing",
+  applied: "Applied",
+  interview: "Interview",
+  offer: "Offer",
+  closed: "Closed",
 };
 
-export function canTransitionStage(from: OpportunityStage, to: OpportunityStage): boolean {
-  return from === to || allowedTransitions[from].includes(to);
+export const closedOutcomeReasons = ["Rejected", "Withdrawn", "No response", "Role closed", "Not interested", "Offer declined", "Accepted", "Other"] as const;
+
+export function formatOpportunityTicket(ticketKey: string, referenceNumber: number): string {
+  return `${ticketKey}-${String(referenceNumber).padStart(3, "0")}`;
+}
+
+export function canTransitionStage(_from: OpportunityStage, to: OpportunityStage): boolean {
+  return opportunityStages.includes(to);
 }
 
 export function transitionStage(from: OpportunityStage, to: OpportunityStage): OpportunityStage {
   if (!canTransitionStage(from, to)) throw new Error(`Invalid Opportunity stage transition: ${from} → ${to}`);
   return to;
+}
+
+export function requiresClosedOutcome(stage: OpportunityStage): boolean {
+  return stage === "closed";
 }
 
 export const toolPermissions = {

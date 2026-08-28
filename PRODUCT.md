@@ -12,7 +12,7 @@ Roleway is for individual job seekers running an active, selective search over w
 
 ## Product Purpose
 
-Roleway turns a job hunt into a controlled project. It connects discovery, evaluation, application work, follow-up, interviews, documents, and outcomes around a durable Opportunity so the user can always answer, “What should I do next?”
+Roleway gives each focused job search its own Workspace. It separates different targets, then connects discovery, evaluation, application work, people, follow-up, interviews, documents, and outcomes around a durable Opportunity so the user can always answer, “What should I do next?”
 
 Success means fewer dropped follow-ups, stronger evidence-based applications, complete context when preparing or interviewing, and clear user ownership of every external action.
 
@@ -26,27 +26,30 @@ Unlike high-volume trackers, auto-apply products, and disconnected resume tools,
 
 A typical workflow is:
 
-1. Save a discovered Job with its source, description, requirements, compensation, and location.
-2. Review it in the Job inbox before deciding whether to track it.
-3. Track it as an Opportunity with a stage, next action, and due date.
-4. Keep tasks, notes, contacts, documents, application material, interviews, research, and history with that Opportunity.
-5. Start each day from Today, which surfaces due work, follow-ups, interviews, and jobs awaiting review.
-6. Use optional Assist for grounded drafts or preparation, then review the output before anything becomes part of the Opportunity.
-7. Move the Opportunity through its lifecycle and retain the outcome history.
+1. Open or create the Workspace for this career target.
+2. Save a discovered Job with its source, description, requirements, compensation, and location.
+3. Review it in the Workspace Inbox before deciding whether to track it.
+4. Track it as an Opportunity with a stage, next action, priority, and due date.
+5. Keep the submission record, tasks, notes, contacts, documents, interviews, preparation, and history with that Opportunity.
+6. Start each day from the Workspace’s Home view, which surfaces due work, follow-ups, interviews, and Jobs awaiting review.
+7. Ask the optional Roleway Agent about the active Workspace or request grounded preparation, then review drafts and explicitly approve any internal change.
+8. Move the Opportunity through its lifecycle and retain the outcome history and Workspace-level results.
 
-Users work primarily at a desktop during focused planning and preparation, while the responsive web app and installable PWA preserve essential tracking and Today workflows on mobile.
+Users work primarily at a desktop during focused planning and preparation, while the responsive web app and installable PWA preserve essential tracking and Home workflows on mobile.
 
 ## Capabilities and Constraints
 
-- Jobs and Opportunities are distinct. A Job is discovered information; tracking it creates an owner-scoped Opportunity.
+- An Account can own multiple Workspaces with independent preferences, Jobs, Opportunities, documents, people, goals, notifications, and analytics.
+- Jobs and Opportunities are distinct. A Job is discovered information inside one Workspace; tracking it creates one owner-scoped Opportunity in that Workspace.
 - Every active Opportunity can expose one concrete next action and due date.
-- The application supports Today, Job inbox, a seven-stage pipeline, Opportunity workspaces, tasks, notes, documents, interviews, preparation, notifications, settings, and insights.
+- The application supports Home, Workspace Inbox, list and board pipeline views, rich Opportunity dossiers, application records, tasks, notes, document versions, contacts, interviews, preparation, entity search, notifications, settings, analytics, export/deletion, and a data-backed admin console.
 - Core tracking works without an AI provider.
-- Assist is optional and provider-neutral. Users supply a supported provider connection; credentials are encrypted server-side.
-- AI output must be structured, grounded in supplied career and Opportunity context, validated before display, and treated as a draft.
+- Roleway Agent is optional and provider-neutral. Users supply a supported provider connection; credentials are encrypted server-side.
+- Agent answers and drafts must be grounded in disclosed active-Workspace context and validated before display. Internal mutations require exact, durable Approval; external actions remain unavailable.
 - Users approve consequential changes and own every external action.
 - Roleway does not submit applications, contact employers, mass apply, or run background submission.
-- The current product has no teams, billing, browser extension, email/calendar integration, or consumer-AI-subscription bridge.
+- Job URL capture supports public Ashby, Greenhouse, and Lever endpoints plus JSON-LD/metadata fallbacks; missing fields are never fabricated.
+- The current product has no teams, billing, browser extension, email/calendar integration, external job aggregation, or consumer-AI-subscription bridge.
 - Authenticated data is owner-scoped through Supabase Row Level Security and independently authorized server mutations.
 - The PWA caches only versioned static assets; authenticated pages and API responses remain network-only.
 
@@ -68,14 +71,15 @@ Users work primarily at a desktop during focused planning and preparation, while
 - `docs/COMPETITIVE-ASSESSMENT.md` contains sourced market research and the selective-search position.
 - `docs/PRODUCT-AUDIT.md` records the product-quality baseline and known hardening work.
 - `docs/AI-PROVIDER-INTEGRATION.md` documents supported provider behavior and security decisions.
-- `docs/design-research-linear.md` records primary-source design research used for the current interface direction.
+- `docs/LINEAR-DESIGN-SYSTEM-AUDIT.md` and `docs/LINEAR-COMPONENT-CATALOG.md` record primary-source and authenticated-product design research used for the current interface direction.
+- `docs/ROLEWAY-AGENT.md` specifies the native conversational Agent, BYO-provider boundary, tools, approvals, and rollout.
 - The live deployment is `https://roleway.vercel.app`.
 - There are no approved testimonials, customer logos, usage metrics, outcome claims, pricing claims, or press assets. Future work must not fabricate them.
-- The repository states an Apache-2.0 license, but the license file is still pending and must not be represented as complete until added.
+- The repository includes an Apache-2.0 `LICENSE` file.
 
 ## Product Principles
 
-1. **The next action leads.** Active work resolves to a clear, concrete next step instead of a passive status.
+1. **The next action leads.** Active work resolves to a clear, concrete Next Action instead of a passive status.
 2. **Complete context beats feature inventory.** Tools and artifacts stay with the Opportunity that gives them meaning.
 3. **Selective progress beats application volume.** Roleway helps users invest in serious opportunities rather than maximize submissions.
 4. **Evidence beats opaque scores.** Requirements, sources, gaps, and approved career evidence remain inspectable.
@@ -83,4 +87,4 @@ Users work primarily at a desktop during focused planning and preparation, while
 
 ## Accessibility & Inclusion
 
-Target WCAG 2.2 AA. Primary flows must work with keyboard and pointer, focus must remain visible, drag-and-drop must have button and keyboard alternatives, and status must never depend on color alone. Dialogs manage focus, motion respects reduced-motion preferences, and mobile preserves Today, status changes, notes, tasks, and preparation workflows.
+Target WCAG 2.2 AA. Primary flows must work with keyboard and pointer, focus must remain visible, drag-and-drop must have button and keyboard alternatives, and status must never depend on color alone. Dialogs manage focus, motion respects reduced-motion preferences, and mobile preserves Home, status changes, notes, tasks, and preparation workflows.

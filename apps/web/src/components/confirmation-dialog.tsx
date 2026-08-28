@@ -6,8 +6,8 @@ import { SubmitButton } from "@/components/submit-button";
 type ConfirmationField = {
   name: string;
   label: string;
-  expected: string;
-  type?: "text" | "email";
+  expected?: string;
+  type?: "text" | "email" | "password";
 };
 
 type ConfirmationDialogProps = {
@@ -29,7 +29,7 @@ export function ConfirmationDialog({ title, description, action, confirmLabel, p
   const dialogRef = useRef<HTMLDialogElement>(null);
   const id = useId();
   const [values, setValues] = useState<Record<string, string>>({});
-  const confirmed = confirmationFields.every((field) => (values[field.name] ?? "").trim() === field.expected.trim());
+  const confirmed = confirmationFields.every((field) => field.expected === undefined ? (values[field.name] ?? "").length >= 8 : (values[field.name] ?? "").trim() === field.expected.trim());
   const close = () => { dialogRef.current?.close(); setValues({}); };
 
   return <>
@@ -38,7 +38,7 @@ export function ConfirmationDialog({ title, description, action, confirmLabel, p
       <form action={action}>
         {Object.entries(hiddenFields).map(([name, value]) => <input type="hidden" name={name} value={value} key={name} />)}
         <header><h2 id={`${id}-title`}>{title}</h2><p>{description}</p></header>
-        {confirmationFields.length ? <div className="confirmation-fields">{confirmationFields.map((field, index) => <div className="field" key={field.name}><label htmlFor={`${id}-${field.name}`}>{field.label}</label><span>Enter <strong>{field.expected}</strong></span><input className="input" id={`${id}-${field.name}`} name={field.name} type={field.type ?? "text"} value={values[field.name] ?? ""} autoComplete="off" spellCheck={false} autoFocus={index === 0} required onChange={(event) => setValues((current) => ({ ...current, [field.name]: event.target.value }))} /></div>)}</div> : null}
+        {confirmationFields.length ? <div className="confirmation-fields">{confirmationFields.map((field, index) => <div className="field" key={field.name}><label htmlFor={`${id}-${field.name}`}>{field.label}</label>{field.expected !== undefined ? <span>Enter <strong>{field.expected}</strong></span> : <span>Enter your current password.</span>}<input className="input" id={`${id}-${field.name}`} name={field.name} type={field.type ?? "text"} value={values[field.name] ?? ""} autoComplete={field.type === "password" ? "current-password" : "off"} spellCheck={false} autoFocus={index === 0} required onChange={(event) => setValues((current) => ({ ...current, [field.name]: event.target.value }))} /></div>)}</div> : null}
         <footer><button className="button secondary" type="button" onClick={close}>Cancel</button><SubmitButton className={destructive ? "button danger confirmation-submit" : "button primary"} pendingLabel={pendingLabel} disabled={!confirmed}>{confirmLabel}</SubmitButton></footer>
       </form>
     </dialog>

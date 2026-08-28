@@ -5,7 +5,7 @@ export async function GET() {
   const auth = await requireUser();
   if (!auth) return NextResponse.json({ error: "Authentication required." }, { status: 401 });
 
-  const tables = ["profiles", "career_preferences", "jobs", "opportunities", "tasks", "opportunity_notes", "opportunity_events", "interviews", "documents", "notifications", "ai_runs"] as const;
+  const tables = ["profiles", "career_preferences", "search_projects", "jobs", "opportunities", "application_records", "tasks", "opportunity_notes", "opportunity_events", "contacts", "interviews", "documents", "document_versions", "notifications", "ai_runs", "agent_conversations", "agent_messages", "agent_run_steps", "agent_proposals", "agent_preferences"] as const;
   const results = await Promise.all(tables.map(async (table) => {
     const { data, error } = await auth.supabase.from(table).select("*");
     return [table, { data: data ?? [], error: error?.message }] as const;
@@ -15,7 +15,7 @@ export async function GET() {
 
   const payload = {
     exportedAt: new Date().toISOString(),
-    formatVersion: 1,
+    formatVersion: 2,
     user: { id: auth.user.id, email: auth.user.email },
     data: Object.fromEntries(results.map(([table, result]) => [table, result.data])),
   };

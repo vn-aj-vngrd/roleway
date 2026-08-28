@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { generateAssistantOutput } from "./providers";
+import { generateAgentResponse, generateAssistantOutput } from "./providers";
 
 const draft = { title: "Plan", summary: "A grounded plan.", suggestions: [{ title: "Prepare examples", rationale: "The role requires systems work." }], cautions: [] };
+const agentReply = { message: "Your follow-up is due this week.", proposals: [{ tool: "create_task", summary: "Create a follow-up task", targetId: "42a2b2bc-d54f-4f6c-a9a8-5b482904aaf4", title: "Follow up with the recruiter", body: null, dueAt: null, name: null, objective: null }] };
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -24,6 +25,19 @@ describe("AI provider adapters", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: JSON.stringify(draft) }] } }] }), { status: 200, headers: { "Content-Type": "application/json" } })));
     const result = await generateAssistantOutput({ provider: "gemini", model: "gemini-2.5-flash", base_url: null }, "secret", "Prompt");
     expect(result.output.suggestions).toHaveLength(1);
+  });
+
+  it("parses a grounded Agent response with reviewable proposals", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify(agentReply) } }] }), { status: 200, headers: { "Content-Type": "application/json" } })));
+    const result = await generateAgentResponse({ provider: "openai", model: "gpt-4.1-mini", base_url: null }, "secret", "Prompt");
+    expect(result.output.message).toContain("follow-up");
+    expect(result.output.proposals[0]?.tool).toBe("create_task");
+  });
+
+  it("rejects incomplete Agent mutation proposals", async () => {
+    const invalid = { message: "I can create that task.", proposals: [{ ...agentReply.proposals[0], targetId: null }] };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify(invalid) } }] }), { status: 200, headers: { "Content-Type": "application/json" } })));
+    await expect(generateAgentResponse({ provider: "openai", model: "gpt-4.1-mini", base_url: null }, "secret", "Prompt")).rejects.toThrow("Opportunity");
   });
 
   it("blocks private compatible endpoints", async () => {

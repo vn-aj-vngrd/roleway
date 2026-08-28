@@ -1,0 +1,12 @@
+.git
+.impeccable
+docs
+supabase/.temp
+apps/web/test-results
+apps/web/playwright-report
+**/*.tsbuildinfo
+**/.turbo
+**/coverage
+.env
+.env.*
+!.env.example

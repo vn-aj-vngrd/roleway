@@ -5,12 +5,13 @@ import { OnboardingWizard } from "./onboarding-wizard";
 
 export const metadata = { title: "Set up your search" };
 
-export default async function OnboardingPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
+export default async function OnboardingPage(props: { searchParams: Promise<{ error?: string }> }) {
+  const searchParams = await props.searchParams;
   const [auth, query] = await Promise.all([requireUser(), searchParams]);
   if (!auth) redirect("/login");
 
   const { data: profile } = await auth.supabase.from("profiles").select("onboarding_completed").eq("user_id", auth.user.id).maybeSingle();
-  if (profile?.onboarding_completed) redirect("/today");
+  if (profile?.onboarding_completed) redirect("/home");
 
   return (
     <main className="onboarding-page" id="main-content">

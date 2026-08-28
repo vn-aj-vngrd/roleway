@@ -6,9 +6,9 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { completeTour } from "@/app/(app)/tour-actions";
 
 const steps = [
-  { target: "today", title: "Start with Today", body: "Interviews, due tasks, and jobs waiting for review appear here. If it isn’t actionable, it stays out." },
+  { target: "home", title: "Start from Home", body: "Workspace context, interviews, due tasks, and jobs waiting for review appear here. If it isn’t actionable, it stays out." },
   { target: "jobs", title: "Review before you track", body: "Jobs enter an Inbox first. Track only the opportunities worth spending time on." },
-  { target: "opportunities", title: "Run a focused pipeline", body: "Every tracked Opportunity keeps its next action, tasks, notes, interviews, and history together." },
+  { target: "opportunities", title: "Run a focused pipeline", body: "Every tracked Opportunity keeps its Next Action, tasks, notes, interviews, and history together." },
   { target: "commands", title: "Move quickly when you’re ready", body: "Use ⌘K or Ctrl+K to add work, navigate, and find the next useful action." },
 ] as const;
 
@@ -24,7 +24,7 @@ export function ProductTour({ open }: { open: boolean }) {
     startTransition(async () => {
       await completeTour();
       setVisible(false);
-      if (goToJobs) router.push("/jobs/new");
+      if (goToJobs) router.push("/inbox/new");
       else router.refresh();
     });
   };

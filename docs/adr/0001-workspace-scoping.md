@@ -1,0 +1,3 @@
+# Scope active work by Workspace
+
+Roleway scopes every Job and Opportunity to a first-class Workspace, while the Career Profile remains account-wide. We chose an explicit Workspace entity and active-Workspace context instead of one global tracker or duplicating the whole account because different career targets need independent preferences, Opportunities, documents, and goals without forcing users to maintain separate accounts. Account-wide Agent, Insights, and Notification Center surfaces may aggregate owned Workspace records, but every operational record and mutation retains exact Workspace attribution; unattributed global intake can be added later if capture integrations require it.

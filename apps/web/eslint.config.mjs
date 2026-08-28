@@ -1,12 +1,16 @@
-import { FlatCompat } from "@eslint/eslintrc";
 import { defineConfig, globalIgnores } from "eslint/config";
-import { dirname } from "node:path";
-import { fileURLToPath } from "node:url";
-
-const baseDirectory = dirname(fileURLToPath(import.meta.url));
-const compat = new FlatCompat({ baseDirectory });
+import nextVitals from "eslint-config-next/core-web-vitals";
+import nextTypeScript from "eslint-config-next/typescript";
 
 export default defineConfig([
-  ...compat.extends("next/core-web-vitals", "next/typescript"),
+  ...nextVitals,
+  ...nextTypeScript,
+  {
+    rules: {
+      "react-hooks/immutability": "off",
+      "react-hooks/purity": "off",
+      "react-hooks/set-state-in-effect": "off",
+    },
+  },
   globalIgnores([".next*/**", "playwright-report/**", "test-results/**", "next-env.d.ts"]),
 ]);

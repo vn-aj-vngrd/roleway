@@ -1,7 +1,10 @@
 "use client";
 
-import { CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight, Clock } from "lucide-react";
+import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight, Clock } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export type SelectOption = { value: string; label: string; disabled?: boolean };
 
@@ -19,50 +22,41 @@ type SelectFieldProps = {
 };
 
 export function SelectField({ id, name, options, defaultValue, value, placeholder = "Select…", required, disabled, ariaLabel, onValueChange }: SelectFieldProps) {
-  const rootRef = useRef<HTMLDivElement>(null);
-  const [open, setOpen] = useState(false);
-  const [internalValue, setInternalValue] = useState(value ?? defaultValue ?? "");
-  const selectedValue = value ?? internalValue;
-  const selected = options.find((option) => option.value === selectedValue);
-
-  useEffect(() => {
-    const close = (event: MouseEvent) => { if (!rootRef.current?.contains(event.target as Node)) setOpen(false); };
-    const escape = (event: KeyboardEvent) => { if (event.key === "Escape") setOpen(false); };
-    document.addEventListener("mousedown", close);
-    window.addEventListener("keydown", escape);
-    return () => { document.removeEventListener("mousedown", close); window.removeEventListener("keydown", escape); };
-  }, []);
-
-  const choose = (next: string) => {
-    setInternalValue(next);
-    onValueChange?.(next);
-    setOpen(false);
-  };
-
-  return <div className={`custom-select ${open ? "is-open" : ""}`} data-required={required || undefined} ref={rootRef}>
-    <input type="hidden" name={name} value={selectedValue} />
-    <button className="custom-select-trigger" id={id} type="button" disabled={disabled} aria-label={ariaLabel} aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen((current) => !current)}>
-      <span className={selected ? "" : "placeholder"}>{selected?.label ?? placeholder}</span><ChevronDown aria-hidden="true" />
-    </button>
-    {open ? <div className="custom-select-menu" data-lenis-prevent role="listbox" aria-label={ariaLabel}>
-      {options.map((option) => <button className="custom-select-option" type="button" role="option" aria-selected={option.value === selectedValue} disabled={option.disabled} key={option.value} onClick={() => choose(option.value)}><span>{option.label}</span>{option.value === selectedValue ? <Check aria-hidden="true" /> : null}</button>)}
-    </div> : null}
-  </div>;
+  return <Select name={name || undefined} items={options} defaultValue={defaultValue} value={value} required={required} disabled={disabled} onValueChange={(nextValue) => onValueChange?.(nextValue ?? "")}>
+    <SelectTrigger id={id} aria-label={ariaLabel} className="w-full"><SelectValue placeholder={placeholder} /></SelectTrigger>
+    <SelectContent align="start" alignItemWithTrigger={false}>
+      <SelectGroup>{options.map((option) => <SelectItem value={option.value} disabled={option.disabled} key={option.value}>{option.label}</SelectItem>)}</SelectGroup>
+    </SelectContent>
+  </Select>;
 }
 
-type DateTimeFieldProps = { id: string; name: string; defaultValue?: string | undefined; required?: boolean | undefined; placeholder?: string | undefined };
+type DateTimeFieldProps = { id: string; name: string; defaultValue?: string | undefined; required?: boolean | undefined; placeholder?: string | undefined; timeZone?: string | undefined };
 
 const pad = (value: number) => String(value).padStart(2, "0");
 const dateKey = (date: Date) => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 
-export function DateTimeField({ id, name, defaultValue = "", required, placeholder = "Choose date and time" }: DateTimeFieldProps) {
+function zonedParts(date: Date, timeZone?: string) {
+  if (!timeZone) return { year: date.getFullYear(), month: date.getMonth() + 1, day: date.getDate(), hour: date.getHours(), minute: date.getMinutes() };
+  try {
+    const parts = Object.fromEntries(new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(date).map((part) => [part.type, part.value]));
+    return { year: Number(parts.year), month: Number(parts.month), day: Number(parts.day), hour: Number(parts.hour), minute: Number(parts.minute) };
+  } catch { return { year: date.getFullYear(), month: date.getMonth() + 1, day: date.getDate(), hour: date.getHours(), minute: date.getMinutes() }; }
+}
+
+export function DateTimeField({ id, name, defaultValue = "", required, placeholder = "Choose date and time", timeZone }: DateTimeFieldProps) {
   const parsed = defaultValue ? new Date(defaultValue) : null;
-  const [selectedDate, setSelectedDate] = useState(parsed && !Number.isNaN(parsed.getTime()) ? dateKey(parsed) : "");
-  const [hour, setHour] = useState(parsed && !Number.isNaN(parsed.getTime()) ? pad(parsed.getHours()) : "09");
-  const [minute, setMinute] = useState(parsed && !Number.isNaN(parsed.getTime()) ? pad(parsed.getMinutes()) : "00");
-  const [month, setMonth] = useState(() => parsed && !Number.isNaN(parsed.getTime()) ? new Date(parsed.getFullYear(), parsed.getMonth(), 1) : new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+  const parts = parsed && !Number.isNaN(parsed.getTime()) ? zonedParts(parsed, timeZone) : null;
+  const [browserTimeZone, setBrowserTimeZone] = useState("UTC");
+  const [selectedDate, setSelectedDate] = useState(parts ? `${parts.year}-${pad(parts.month)}-${pad(parts.day)}` : "");
+  const [hour, setHour] = useState(parts ? pad(parts.hour) : "09");
+  const [minute, setMinute] = useState(parts ? pad(parts.minute) : "00");
+  const [month, setMonth] = useState(() => parts ? new Date(parts.year, parts.month - 1, 1) : new Date(new Date().getFullYear(), new Date().getMonth(), 1));
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setBrowserTimeZone(Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
+  }, []);
 
   useEffect(() => {
     const close = (event: MouseEvent) => { if (!rootRef.current?.contains(event.target as Node)) setOpen(false); };
@@ -84,12 +78,21 @@ export function DateTimeField({ id, name, defaultValue = "", required, placehold
 
   return <div className={`date-time-field ${open ? "is-open" : ""}`} data-required={required || undefined} ref={rootRef}>
     <input type="hidden" name={name} value={value} />
+    <input type="hidden" name={`${name}Timezone`} value={timeZone || browserTimeZone} />
     <button className="date-time-trigger" id={id} type="button" aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen((current) => !current)}><CalendarDays aria-hidden="true" /><span className={selectedDate ? "" : "placeholder"}>{label}</span>{selectedDate ? <small>{hour}:{minute}</small> : null}<ChevronDown aria-hidden="true" /></button>
-    {open ? <div className="date-time-popover" role="dialog" aria-label="Choose date and time">
+    {open ? <div className="date-time-popover floating-panel" role="dialog" aria-label="Choose date and time">
       <header><button type="button" data-tooltip="Previous month" aria-label="Previous month" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))}><ChevronLeft /></button><strong>{new Intl.DateTimeFormat(undefined, { month: "long", year: "numeric" }).format(month)}</strong><button type="button" data-tooltip="Next month" aria-label="Next month" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))}><ChevronRight /></button></header>
       <div className="calendar-weekdays">{["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((day) => <span key={day}>{day}</span>)}</div>
       <div className="calendar-grid">{days.map((day, index) => day ? <button type="button" className={selectedDate === dateKey(new Date(month.getFullYear(), month.getMonth(), day)) ? "selected" : ""} key={day} onClick={() => setSelectedDate(dateKey(new Date(month.getFullYear(), month.getMonth(), day)))}>{day}</button> : <span key={`empty-${index}`} />)}</div>
-      <footer><Clock aria-hidden="true" /><span>Time</span><SelectField id={`${id}-hour`} name="" value={hour} options={hourOptions} ariaLabel="Hour" onValueChange={setHour} /><b>:</b><SelectField id={`${id}-minute`} name="" value={minute} options={minuteOptions} ariaLabel="Minute" onValueChange={setMinute} /><button className="button primary" type="button" disabled={!selectedDate} onClick={() => setOpen(false)}>Done</button></footer>
+      <footer><Clock aria-hidden="true" /><span>Time</span><SelectField id={`${id}-hour`} name="" value={hour} options={hourOptions} ariaLabel="Hour" onValueChange={setHour} /><b>:</b><SelectField id={`${id}-minute`} name="" value={minute} options={minuteOptions} ariaLabel="Minute" onValueChange={setMinute} /><Button size="sm" type="button" disabled={!selectedDate} onClick={() => setOpen(false)}>Done</Button></footer>
     </div> : null}
   </div>;
+}
+
+export function TimezoneField({ id, name = "timezone", defaultValue = "", className }: { id: string; name?: string; defaultValue?: string; className?: string }) {
+  const [value, setValue] = useState(defaultValue);
+  useEffect(() => {
+    if (!defaultValue) setValue(Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
+  }, [defaultValue]);
+  return <Input className={className} id={id} name={name} required value={value} onChange={(event) => setValue(event.target.value)} placeholder="America/New_York" />;
 }

@@ -23,7 +23,7 @@ export async function saveAiConnection(formData: FormData) {
   const admin = createAdminClient();
   const { error } = await admin.from("ai_connections").insert({ user_id: auth.user.id, provider: parsed.data.provider, label: parsed.data.label, model, base_url: parsed.data.baseUrl || null, encrypted_secret: secret.encrypted, secret_iv: secret.iv, key_hint: `••••${parsed.data.apiKey.slice(-4)}` });
   if (error) redirect("/settings/ai?error=The%20connection%20could%20not%20be%20saved.");
-  revalidatePath("/settings/ai"); revalidatePath("/assistant");
+  revalidatePath("/settings/ai"); revalidatePath("/agent");
   redirect("/settings/ai?saved=true");
 }
 
@@ -48,11 +48,21 @@ export async function testAiConnection(formData: FormData) {
   redirect("/settings/ai?tested=true");
 }
 
+export async function updateAgentGuidance(formData: FormData) {
+  const guidance = z.string().trim().max(6000).safeParse(formData.get("guidance") ?? "");
+  if (!guidance.success) redirect("/settings/ai?error=Agent%20guidance%20must%20be%206000%20characters%20or%20fewer.");
+  const auth = await requireUser(); if (!auth) redirect("/login");
+  const { error } = await auth.supabase.from("agent_preferences").upsert({ user_id: auth.user.id, guidance: guidance.data });
+  if (error) redirect("/settings/ai?error=Agent%20guidance%20could%20not%20be%20saved.");
+  revalidatePath("/settings/ai");
+  redirect("/settings/ai?guidanceSaved=true");
+}
+
 export async function deleteAiConnection(formData: FormData) {
   const connectionId = connectionIdSchema.safeParse(formData.get("connectionId"));
   if (!connectionId.success) return;
   const auth = await requireUser(); if (!auth) redirect("/login");
   await createAdminClient().from("ai_connections").delete().eq("id", connectionId.data).eq("user_id", auth.user.id);
-  revalidatePath("/settings/ai"); revalidatePath("/assistant");
+  revalidatePath("/settings/ai"); revalidatePath("/agent");
   redirect("/settings/ai?deleted=true");
 }

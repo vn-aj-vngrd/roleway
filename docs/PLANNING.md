@@ -1,135 +1,167 @@
-# Roleway V1 Planning Artifacts
+# Roleway Architecture and Product Model
 
-## 1. Product requirements
-
-Roleway must let one authenticated owner establish approved career evidence, define preferences, ingest Jobs, triage them before tracking, and run tracked Opportunities through a controlled lifecycle. Every active Opportunity should expose one Next Action. AI output must be structured, grounded, inspectable, provider-neutral, and approval-gated according to tool risk. Non-AI tracking must work without a configured provider. V1 excludes external submission, email/calendar integrations, mass apply, teams, billing, extensions, and local subscription bridges.
-
-Quality gates for every shipped flow: owner authorization, Zod validation, responsive states, keyboard and pointer access, useful empty/error/loading states, and behavior tests around consequential transitions.
-
-## 2. Information architecture
-
-- **Today** — interviews, due work, reviews, follow-ups, recommendations, stale work
-- **Opportunities** — pipeline board and saved views
-  - Opportunity — Overview, Application, Preparation, Research, Interviews, Activity
-- **Jobs** — candidate inbox, import, manual creation
-- **Documents** — resume bases/versions, focused documents, answer bank
-- **Preparation** — upcoming interviews, plans, question bank, mock sessions
-- **Insights** — goals and sufficiently-supported pipeline metrics
-- **Agent** — contextual threads and durable runs
-- **Settings** — Career Profile, Preferences, AI Providers, Privacy/Data
-
-## 3. Route map
+## Product hierarchy
 
 ```text
-/                         → /today
-/auth/sign-in             → email + Google
-/auth/recover             → account recovery
-/today                    → command center
-/opportunities            → Kanban
-/opportunities/[id]       → opportunity workspace
-/jobs                     → inbox
-/jobs/import              → URL/paste/manual ingestion
-/documents                → document workspace
-/documents/resumes/[id]   → version/diff review
-/preparation              → interview preparation
-/preparation/[id]         → plan or mock session
-/insights                 → pipeline metrics
-/agent                    → threads and runs
-/settings/profile         → Career Profile
-/settings/preferences     → job preferences
-/settings/ai              → providers, models, credentials
-/settings/privacy         → export, deletion, telemetry
-/api/jobs/import          → validated ingestion request
-/api/webhooks/trigger     → signed background callbacks
+Account
+├── Career Profile (global, user-approved facts)
+├── Agent, Insights, and Notification Center (all Workspaces)
+└── Workspace (one career target or strategy)
+    ├── visual identity, preferences, objective, Opportunity ticket key, and weekly goal
+    ├── Job Inbox
+    ├── Opportunities
+    ├── workspace documents and versions
+    ├── workspace contacts and follow-ups
+    ├── workspace interviews and preparation
+    ├── Home and search
+    └── archived workspace history
 ```
 
-## 4. Primary user flows
+A **Job** is captured listing data. An **Opportunity** is the user’s tracked relationship with one Job. Tracking is idempotent and preserves the Job’s Workspace. One Workspace equals one focused job search. The database retains `search_projects` and `project_id` as legacy storage names. See [`CONTEXT.md`](../CONTEXT.md) for canonical language.
 
-1. **First run:** authenticate → approve profile facts → set preferences → import first Job → inspect parsed snapshot.
-2. **Triage:** enter Jobs inbox → J/K inspect → Track/Maybe/Dismiss → Track creates Opportunity and event.
-3. **Apply:** inspect Fit Analysis and evidence → prepare application → review proposed plan/tasks/resume version → approve individually → submit externally → mark Applied and schedule follow-up.
-4. **Interview:** add event → preparation plan runs in background → complete topics/practice → hold interview → record outcome and Next Action.
-5. **Close:** move to Offer or Closed → record structured outcome → preserve timeline and artifacts.
+## Runtime architecture
 
-## 5. Domain model
+- Next.js 16 App Router pages and layouts are Server Components by default.
+- Tailwind CSS 4 supplies the utility/token layer; shadcn source components in `apps/web/src/components/ui` use Base UI for accessible interaction primitives.
+- Product-specific layout primitives preserve Roleway’s route archetypes and compose shadcn controls rather than replacing the application structure.
+- Supabase PostgreSQL migrations are the authoritative schema.
+- Supabase Auth uses password sessions in HttpOnly cookies refreshed by middleware.
+- `requireSearchContext()` resolves the user, profile, available Workspaces, and active Workspace once per server render.
+- Pages query by the legacy `project_id` key; RLS independently checks user and Workspace ownership.
+- Server Actions authenticate again and constrain resource IDs to the active Workspace.
+- Client islands own only interactive state: shell commands, Workspace switching, custom controls, dialogs, rich text, board/list interaction, and the product tour.
+- `packages/core` owns shared workflow metadata and approval rules; `packages/schemas` owns shared domain schemas.
 
-A Job owns immutable Job Snapshots and normalized Job Requirements. Tracking a Job creates one owner-scoped Opportunity with a Stage and append-only Opportunity Events. Tasks, notes, contacts, application records, interviews, research, documents, and Agent Runs attach to the Opportunity. Career Profile entities are the only approved factual evidence. Resume Bases select profile evidence; Resume Versions are immutable revisions. Fit Analyses compare a snapshot of requirements/preferences/evidence, preserving the inputs that produced the result. See `CONTEXT.md` for canonical language.
+There is no duplicate ORM model. Runtime database changes begin in `supabase/migrations`.
 
-Key invariants:
-- Job and Opportunity are distinct; at most one active Opportunity per owner/Job pair.
-- Closed Opportunities require a Closed Outcome.
-- External actions always require a pending Approval and explicit user execution.
-- Generated claims reference Career Evidence or are marked as unsupported and cannot be approved.
-- Historical snapshots, submitted resume versions, and activity events are immutable.
+## Important modules and seams
 
-## 6. Database schema
+| Module | Interface | Responsibility |
+| --- | --- | --- |
+| Workspace context | `requireSearchContext()` | Authenticated owner plus active Workspace scope |
+| Workspace actions | create, update, switch, archive, restore | Workspace lifecycle and active context |
+| Opportunity actions | submit application, decision properties, contacts, task/note deletion | Connected Opportunity workflows |
+| Interview actions | update and delete | Scheduled event, preparation, outcome, follow-up automation |
+| URL capture | `importJobFromUrl()` | SSRF-safe fetch, ATS adapters, extraction, honest fallback |
+| Workspace search | `search_roleway(query, project)` | Categorized Workspace-scoped entity search |
+| Agent providers | `generateAssistantOutput()` and conversational provider seam | BYO-provider generation with validated drafts and bounded chat output |
+| Observability | `recordSystemEvent()` | Redacted critical workflow errors for Admin → System |
 
-PostgreSQL/Supabase with Drizzle. All owner data carries `user_id`; high-volume queries index `(user_id, created_at)` and route-specific fields. Major clusters:
+These are deep modules at real seams. Do not add adapters or abstraction layers until behavior genuinely varies.
 
-- identity: `users`, `profiles`, `career_preferences`
-- evidence: `experiences`, `projects`, `skills`, `education`, `certifications`, `achievements`
-- discovery: `job_sources`, `jobs`, `job_snapshots`, `job_requirements`
-- workflow: `opportunity_stages`, `opportunities`, `opportunity_events`, `opportunity_notes`, `tasks`, `application_records`, `application_answers`
-- content: `resume_bases`, `resume_versions`, `resume_sections`, `documents`, `document_versions`
-- relationships/prep: `contacts`, `contact_events`, `interviews`, `interview_sessions`, `questions`, `practice_answers`
-- provenance: `research_items`, `research_sources`
-- system: `notifications`, `ai_providers`, `ai_configs`, `agent_threads`, `agent_messages`, `agent_runs`, `agent_steps`, `tool_calls`, `approvals`
+## Domain invariants
 
-Use partial indexes for open Opportunities and incomplete due Tasks, GIN for Job/document full-text search, optional vector columns only for evidence/answer retrieval, check constraints for enums, and unique owner-scoped keys. Private Storage objects live under `{user_id}/...` and are accessed with signed URLs.
+- An Account always has at least one non-archived Workspace.
+- Career Profile facts are global; visual identity, focus, preferences, and the Opportunity ticket key are Workspace-specific.
+- Each Workspace owns one account-unique, configurable 2–10 character ticket key used to display Opportunity identifiers; changing the key does not change Opportunity identity or history.
+- Jobs, Opportunities, tasks, interviews, contacts, documents, applications, and notification records cannot cross Workspaces; account-wide surfaces may aggregate those owned records without changing their Workspace ownership.
+- One owner can track a Job at most once.
+- Opportunity stage changes are non-linear so an existing application can be captured late.
+- Closed Opportunities require a structured outcome.
+- Every application record preserves submission time, channel, confirmation, and selected documents where provided.
+- Document saves create append-only version snapshots.
+- Scheduling an interview creates one preparation task, moves eligible Opportunities to Interview, records an event, and emits one useful notification.
+- Submitting an application creates a seven-day follow-up and moves the Opportunity to Applied.
+- AI output is a draft. Read tools may inspect permitted context across the authenticated Account’s Workspaces. Every internal mutation resolves and rechecks one destination Workspace before explicit, durable Approval; external tools remain unavailable.
 
-## 7. Authorization matrix
+## Core routes
 
-| Resource/action | Owner | Background worker | Other user | Anonymous |
-|---|---:|---:|---:|---:|
-| Read/write profile and preferences | yes | scoped read | no | no |
-| Read/write Jobs and Opportunities | yes | scoped by signed run | no | no |
-| Read private documents | yes | scoped by run purpose | no | no |
-| Mutate stage/tasks/notes | yes | approved internal-write policy | no | no |
-| Execute external action | explicit approval only | never in V1 | no | no |
-| Read AI credential plaintext | never after save | provider adapter only | no | no |
-| Export/delete account | yes + re-auth | no | no | no |
+```text
+/                          public product page
+/login                     password login
+/signup                    account creation
+/forgot-password           recovery request
+/reset-password            recovery session password update
+/auth/callback              Supabase PKCE callback
+/onboarding                profile + first Workspace
+/home                     active-project action queue
+/inbox                     active-Workspace Inbox
+/opportunities             active-project List / Board
+/opportunities/[id]        Opportunity dossier
+/documents                  project documents
+/documents/[id]             document editor and version history
+/interview                 interviews
+/interview/[id]            interview schedule, preparation, notes, outcome
+/contacts                   project contacts and follow-ups
+/agent                     account-wide Roleway Agent conversations, runs, drafts, and approvals
+/insights                   account-wide, sample-aware analytics across Workspaces
+/notifications              account-wide Notification Center with Workspace attribution
+/settings/workspaces        create/switch/archive Workspaces
+/settings/workspaces/[id]   dedicated Workspace settings overview
+/settings/workspaces/[id]/general  Workspace identity, focus, preferences, and boundaries
+/settings/*                 profile, notifications, appearance, AI, privacy
+/admin                      role-protected admin product
+/api/search                 authenticated entity search
+/api/export                 private JSON export
+```
 
-Server Actions and Route Handlers authenticate and authorize independently. Supabase RLS mirrors owner rules as defense in depth. Trigger.dev jobs receive resource IDs and re-resolve owner-scoped context; no serialized whole-user context.
+Legacy `/inbox/new`, `/documents/new`, `/interview/new`, and `/settings/preferences` routes redirect into the current modal or settings flows.
 
-## 8. AI tool permission matrix
+## Capture architecture
 
-| Class | Tools | Default |
-|---|---|---|
-| Read-only | `read_job`, `read_profile`, `read_resume`, `get_opportunity`, `search_jobs`, `research_company` | run; show context manifest |
-| Internal write | `create_task`, `create_note`, `create_document_draft`, `update_fit_analysis` | policy-controlled; log event |
-| Reviewable artifact | `create_resume_version`, `create_application_plan`, `create_preparation_plan` | stage proposal; approval before adoption |
-| External | `send_email`, `submit_application`, `message_contact`, `schedule_event` | explicit per-action approval; not implemented V1 |
+Manual capture is always available. URL capture:
 
-All arguments use discriminated Zod schemas; dispatch is an allow-list keyed by tool name. Tools receive an immutable owner/opportunity execution context, never arbitrary IDs from model output.
+1. normalizes the URL and removes common tracking parameters;
+2. rejects credentials, non-web schemes, non-standard ports, loopback/private DNS answers, oversized bodies, and excessive redirects;
+3. consumes an authenticated 20-attempt/hour database quota;
+4. uses fixed public ATS endpoints for Ashby, Greenhouse, and Lever;
+5. otherwise reads JobPosting JSON-LD and observable metadata;
+6. sanitizes rich text;
+7. returns only fields the source exposed and asks the user to fill the rest;
+8. warns on duplicate source URLs inside the Workspace.
 
-## 9. Provider architecture
+A browser extension remains a future adapter. It must not bypass this normalization, provenance, quota, or privacy model.
 
-`packages/ai` exposes one deep `generateStructured(task, context, schema)` interface and a streaming conversational interface. Provider adapters cover OpenAI, Anthropic, Gemini, OpenRouter, Ollama, and custom OpenAI-compatible endpoints. Product code chooses a capability slot (`fast`, `reasoning`, `agent`, `embedding`), never a vendor model. The provider registry resolves user config, decrypts credentials server-side, produces a redacted request manifest, validates output with Zod, and records usage. Environment credentials are optional self-host overrides. A future local runner satisfies a separate execution adapter and cannot expose consumer subscription credentials.
+## Security model
 
-## 10. Component architecture
+- Every user-owned table has RLS.
+- Relationship policies and assignment triggers validate both owner and Workspace.
+- Service-role access is confined to server-only modules for encrypted AI credentials, account deletion, E2E cleanup, and redacted system events.
+- AI keys use AES-256-GCM and are never returned to the browser.
+- Account deletion requires the exact account name/email and a fresh password verification.
+- Admin authorization uses `admin_members` plus security-definer functions; UI checks are not the authorization mechanism.
+- Admin role changes require an owner and write `admin_audit_logs`.
+- Authenticated pages and API responses use `no-store`; the PWA caches static assets only.
 
-- Server layouts/pages own data loading and authorization.
-- Feature modules own queries, schemas, actions, and route-specific views.
-- Client islands are limited to Kanban interaction, keyboard scopes, command palette, diff review, mock session, and agent streaming.
-- Shared UI contains primitives (button, input, dialog, tabs, status, skeleton), not domain composites.
-- `AppShell` owns desktop/mobile navigation and global commands; `OpportunityWorkspace` composes tab content with `ContextPanel`; `AgentPanel` receives page context as a typed manifest.
+## Analytics semantics
 
-Module seams are intentionally placed at job-source normalization, provider generation, tool execution, resume rendering, and background dispatch because each has multiple real adapters.
+Insights are account-wide and calculated across owned Workspaces from real Jobs, application records, interviews, and outcomes. Conversion rates wait for at least three applications. Source results are shown as counts for small samples. The product does not claim causation or predict hiring outcomes.
 
-## 11. Design system
+## AI model
 
-See `DESIGN.md`. Restrained pure-white/cool-neutral system, moss action color, compact single-family typography, 224px desktop rail, structural dividers, and minimal shadow. Signature action lines join deadline, state, and Next Action. Dark mode is token-driven. Components include all interactive states; drag actions have accessible menus; reduced motion is mandatory.
+Roleway Agent is account-configured through user-supplied provider credentials and can read permitted context across all owned Workspaces. It is a native conversational work surface rather than a generic chat widget. The product workflow, tool tiers, approval states, and rollout are specified in [`ROLEWAY-AGENT.md`](ROLEWAY-AGENT.md). A conversation is account-owned and may optionally focus an Opportunity, Job, interview, contact, or document. Starting a new conversation creates a clean context boundary; proposed mutations still resolve one exact destination Workspace.
 
-## 12. Milestone plan
+Every execution is a durable Agent Run. Runs record the selected context categories, provider/model, status, bounded step summaries, draft output, tool proposals, errors, and approvals. Secrets, raw prompts, stack traces, and unrelated record content are never stored in run metadata or system events.
 
-1. **Foundation:** monorepo, shell, strict config, schema, auth seams, tokens.
-2. **Evidence:** Career Profile and preferences with owner-scoped validation.
-3. **Discovery:** URL/paste/manual Jobs, snapshots, Inbox, Track transition.
-4. **Workflow:** Kanban, Opportunity workspace, tasks/events, Today.
-5. **AI foundation:** providers, encrypted BYOK, context manifests, tools/runs/approvals, Trigger.dev dispatch.
-6. **Intelligence:** requirements, evidence-linked Fit Analysis, application plans.
-7. **Documents:** resume bases/versions/diffs/PDF, answer bank.
-8. **Research & preparation:** sourced research, contacts, interviews, plans, questions, mock reviews.
-9. **Completion:** insights, notifications, privacy/export/delete, Docker, MCP seam, accessibility/performance/browser test pass.
+Agent capabilities are tiered:
 
-Each milestone ends with unit/integration tests, a Playwright primary-flow check, keyboard/mobile review, authorization checks, and removal of abstractions that have only one hypothetical adapter.
+1. authenticated read tools search and summarize only records visible across the Account’s owned Workspaces;
+2. draft tools prepare next actions, tasks, notes, questions, follow-ups, and document text without applying them;
+3. internal mutation tools present an exact Approval card and execute only after explicit user approval and renewed server-side scope checks;
+4. external actions—submitting applications, contacting employers, or scheduling external events—remain unavailable.
+
+Provider output is untrusted input. Conversational text is bounded and sanitized; structured drafts and tool proposals are validated with shared Zod schemas. A user can cancel, retry, reject, edit, or approve. Applying a suggestion records the Approval and resulting domain event.
+
+Provider connections and conversation history remain account-wide and encrypted with AES-256-GCM where applicable; resulting operational records remain Workspace-scoped. Consumer AI subscriptions are not treated as API authorization. Core Roleway tracking continues to work without AI.
+
+## Testing and release gates
+
+Required before release:
+
+```bash
+pnpm typecheck
+pnpm test
+pnpm lint
+pnpm --filter @roleway/web test:e2e
+pnpm build
+```
+
+The E2E suite must use a disposable account and verify normal-user admin denial before temporarily granting test-only admin access. Browser validation covers desktop and mobile screenshots, keyboard controls, no horizontal overflow, console errors, and production-server behavior.
+
+## Intentional future boundaries
+
+- No unsupported job aggregation or scraping-based marketplace.
+- No browser extension until permissions, privacy copy, ATS fallbacks, and review UX are complete.
+- No email/calendar integration until token storage and failure recovery are designed.
+- No generic workflow engine, automation builder, collaboration, billing, or team permissions in the individual product.
+- No opaque fit score; future fit work must map requirements to user-approved evidence and distinguish facts from inference.

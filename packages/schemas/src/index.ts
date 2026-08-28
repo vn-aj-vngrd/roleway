@@ -1,7 +1,6 @@
 import { z } from "zod";
 
 export const opportunityStages = [
-  "inbox",
   "interested",
   "preparing",
   "applied",
@@ -54,3 +53,26 @@ export const fitAnalysisSchema = z.object({
 
 export const toolPermissionSchema = z.enum(["read", "internal_write", "reviewable_artifact", "external"]);
 export type ToolPermission = z.infer<typeof toolPermissionSchema>;
+
+export const agentToolSchema = z.enum(["create_workspace", "create_task", "set_next_action", "create_note"]);
+export const agentProposalSchema = z.object({
+  tool: agentToolSchema,
+  summary: z.string().trim().min(1).max(500),
+  targetId: z.string().uuid().nullable(),
+  title: z.string().trim().max(180).nullable(),
+  body: z.string().trim().max(20_000).nullable(),
+  dueAt: z.string().datetime().nullable(),
+  name: z.string().trim().max(100).nullable(),
+  objective: z.string().trim().max(500).nullable(),
+}).superRefine((proposal, context) => {
+  if (proposal.tool === "create_workspace" && !proposal.name) context.addIssue({ code: "custom", message: "A Workspace name is required." });
+  if (["create_task", "set_next_action"].includes(proposal.tool) && (!proposal.targetId || !proposal.title)) context.addIssue({ code: "custom", message: "An Opportunity and title are required." });
+  if (proposal.tool === "create_note" && (!proposal.targetId || !proposal.body)) context.addIssue({ code: "custom", message: "An Opportunity and note are required." });
+});
+export const agentResponseSchema = z.object({
+  message: z.string().trim().min(1).max(12_000),
+  proposals: z.array(agentProposalSchema).max(4),
+});
+export type AgentTool = z.infer<typeof agentToolSchema>;
+export type AgentProposal = z.infer<typeof agentProposalSchema>;
+export type AgentResponse = z.infer<typeof agentResponseSchema>;

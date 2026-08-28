@@ -11,24 +11,20 @@ export async function completeOnboarding(formData: FormData) {
   const auth = await requireUser();
   if (!auth) redirect("/login");
 
-  const profileResult = await auth.supabase.from("profiles").upsert({
-    user_id: auth.user.id,
-    full_name: parsed.data.fullName,
-    headline: parsed.data.headline,
-    summary: parsed.data.summary,
-    onboarding_completed: true,
+  const { error } = await auth.supabase.rpc("complete_roleway_onboarding", {
+    input_full_name: parsed.data.fullName,
+    input_headline: parsed.data.headline,
+    input_summary: parsed.data.summary,
+    input_project_name: parsed.data.projectName,
+    input_target_titles: commaSeparatedList(parsed.data.targetTitles),
+    input_technologies: commaSeparatedList(parsed.data.technologies),
+    input_remote_preference: parsed.data.remotePreference,
+    input_locations: commaSeparatedList(parsed.data.locations),
+    input_minimum_compensation: parsed.data.minimumCompensation === "" ? null : parsed.data.minimumCompensation,
+    input_currency: parsed.data.currency,
   });
 
-  const preferenceResult = await auth.supabase.from("career_preferences").upsert({
-    user_id: auth.user.id,
-    target_titles: commaSeparatedList(parsed.data.targetTitles),
-    preferred_technologies: commaSeparatedList(parsed.data.technologies),
-    remote_preference: parsed.data.remotePreference,
-    allowed_locations: commaSeparatedList(parsed.data.locations),
-    minimum_compensation: parsed.data.minimumCompensation ?? null,
-  });
-
-  const error = profileResult.error ?? preferenceResult.error;
-  if (error) redirect(`/onboarding?error=${encodeURIComponent("Profile could not be saved. Try again.")}`);
-  redirect("/today?welcome=true");
+  if (error) redirect(`/onboarding?error=${encodeURIComponent("Your first Workspace could not be created. Try again.")}`);
+  await auth.supabase.from("profiles").update({ tour_completed: true }).eq("user_id", auth.user.id);
+  redirect("/inbox?create=true&welcome=true");
 }

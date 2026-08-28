@@ -1,30 +1,110 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-08-24T15:00:00Z",
+  "generatedAt": "2026-08-26T18:15:00Z",
   "title": "Design System: Roleway",
   "extensions": {
     "colorMeta": {
-      "accent-blue": { "role": "primary", "displayName": "Waypoint Blue", "canonical": "oklch(0.56 0.21 255)", "tonalRamp": ["oklch(0.18 0.08 255)", "oklch(0.27 0.12 255)", "oklch(0.38 0.17 255)", "oklch(0.50 0.21 255)", "oklch(0.56 0.21 255)", "oklch(0.70 0.16 255)", "oklch(0.84 0.09 255)", "oklch(0.95 0.035 255)"] },
-      "canvas-light": { "role": "neutral", "displayName": "Light Canvas", "canonical": "oklch(1 0 0)", "tonalRamp": ["oklch(0.13 0 0)", "oklch(0.25 0 0)", "oklch(0.38 0 0)", "oklch(0.52 0 0)", "oklch(0.66 0 0)", "oklch(0.80 0 0)", "oklch(0.91 0 0)", "oklch(1 0 0)"] },
-      "canvas-dark": { "role": "neutral", "displayName": "Dark Canvas", "canonical": "oklch(0.13 0 0)", "tonalRamp": ["oklch(0.13 0 0)", "oklch(0.22 0 0)", "oklch(0.34 0 0)", "oklch(0.48 0 0)", "oklch(0.62 0 0)", "oklch(0.76 0 0)", "oklch(0.89 0 0)", "oklch(0.97 0 0)"] }
+      "accent-blue": {
+        "role": "primary",
+        "displayName": "Waypoint Blue",
+        "canonical": "oklch(0.57 0.18 265)",
+        "tonalRamp": [
+          "oklch(0.18 0.07 265)",
+          "oklch(0.29 0.10 265)",
+          "oklch(0.40 0.14 265)",
+          "oklch(0.52 0.18 265)",
+          "oklch(0.57 0.18 265)",
+          "oklch(0.72 0.13 265)",
+          "oklch(0.84 0.08 265)",
+          "oklch(0.95 0.03 265)"
+        ]
+      },
+      "canvas-light": {
+        "role": "neutral",
+        "displayName": "Light Canvas",
+        "canonical": "oklch(0.985 0.002 255)",
+        "tonalRamp": [
+          "oklch(0.13 0 0)",
+          "oklch(0.25 0 0)",
+          "oklch(0.38 0 0)",
+          "oklch(0.52 0 0)",
+          "oklch(0.66 0 0)",
+          "oklch(0.80 0 0)",
+          "oklch(0.91 0 0)",
+          "oklch(1 0 0)"
+        ]
+      },
+      "canvas-dark": {
+        "role": "neutral",
+        "displayName": "Dark Canvas",
+        "canonical": "oklch(0.165 0.008 255)",
+        "tonalRamp": [
+          "oklch(0.135 0.007 255)",
+          "oklch(0.165 0.008 255)",
+          "oklch(0.195 0.008 255)",
+          "oklch(0.235 0.01 255)",
+          "oklch(0.39 0.012 255)",
+          "oklch(0.56 0.009 255)",
+          "oklch(0.71 0.009 255)",
+          "oklch(0.96 0.004 255)"
+        ]
+      }
     },
     "typographyMeta": {
-      "headline": { "displayName": "Page Headline", "purpose": "Primary authenticated titles and tightly set public-page statements up to 102px." },
-      "title": { "displayName": "Working Title", "purpose": "Section headings, record names, and empty-state headings." },
-      "body": { "displayName": "Interface Body", "purpose": "Working copy, descriptions, and form content." },
-      "label": { "displayName": "Control Label", "purpose": "Navigation, controls, and compact metadata." },
-      "utility": { "displayName": "Utility Data", "purpose": "IDs, shortcuts, dates, and tabular values only." }
+      "headline": {
+        "displayName": "Page Headline",
+        "purpose": "Primary authenticated titles and tightly set public-page statements up to 102px."
+      },
+      "title": {
+        "displayName": "Working Title",
+        "purpose": "Section headings, record names, and empty-state headings."
+      },
+      "body": {
+        "displayName": "Interface Body",
+        "purpose": "Working copy, descriptions, and form content."
+      },
+      "label": {
+        "displayName": "Control Label",
+        "purpose": "Navigation, controls, and compact metadata."
+      },
+      "utility": {
+        "displayName": "Utility Data",
+        "purpose": "IDs, shortcuts, dates, and tabular values only."
+      }
     },
     "shadows": [
-      { "name": "dialog", "value": "0 18px 54px oklch(.18 .01 90 / .20)", "purpose": "Commands, search, and account overlays." },
-      { "name": "record-hover", "value": "0 2px 6px oklch(.20 .01 90 / .07)", "purpose": "Movable opportunity cards on hover." }
+      {
+        "name": "dialog",
+        "value": "0 18px 54px oklch(.18 .01 90 / .20)",
+        "purpose": "Commands, search, and account overlays."
+      },
+      {
+        "name": "record-hover",
+        "value": "0 2px 6px oklch(.20 .01 90 / .07)",
+        "purpose": "Movable opportunity cards on hover."
+      }
     ],
     "motion": [
-      { "name": "state-fast", "value": "150ms ease-out", "purpose": "Navigation, list, and control state changes." },
-      { "name": "state-standard", "value": "180ms ease-out", "purpose": "Disclosure and panel transitions." }
+      {
+        "name": "state-fast",
+        "value": "140ms ease-out",
+        "purpose": "Navigation, list, and control state changes."
+      },
+      {
+        "name": "state-standard",
+        "value": "180ms ease-out",
+        "purpose": "Disclosure and panel transitions."
+      }
     ],
     "breakpoints": [
-      { "name": "mobile", "value": "760px" }
+      {
+        "name": "mobile",
+        "value": "760px"
+      },
+      {
+        "name": "compact",
+        "value": "900px"
+      }
     ]
   },
   "components": [
@@ -34,7 +114,7 @@
       "refersTo": "button-primary",
       "description": "The Waypoint Blue action voice for creation, saving, and forward progress.",
       "html": "<button class=\"ds-btn-primary\">Add a job</button>",
-      "css": ".ds-btn-primary{height:34px;padding:0 12px;border:1px solid var(--button-bg);border-radius:6px;color:var(--button-fg);background:var(--button-bg);font:600 12px/1.4 var(--font-geist);cursor:pointer}.ds-btn-primary:hover{background:var(--button-bg-hover)}.ds-btn-primary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}"
+      "css": ".ds-btn-primary{height:32px;padding:0 11px;border:1px solid var(--button-bg);border-radius:6px;color:var(--button-fg);background:var(--button-bg);font:600 12px/1.4 var(--font-geist);cursor:pointer}.ds-btn-primary:hover{background:var(--button-bg-hover)}.ds-btn-primary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}"
     },
     {
       "name": "Secondary Button",
@@ -42,7 +122,7 @@
       "refersTo": "button-secondary",
       "description": "A quiet bounded action for navigation and reversible choices.",
       "html": "<button class=\"ds-btn-secondary\">Open pipeline</button>",
-      "css": ".ds-btn-secondary{height:34px;padding:0 12px;border:1px solid var(--line-strong);border-radius:6px;color:var(--ink);background:var(--canvas);font:590 12px/1.4 var(--font-geist);cursor:pointer}.ds-btn-secondary:hover{background:var(--surface)}.ds-btn-secondary:focus-visible{outline:2px solid var(--primary);outline-offset:2px}"
+      "css": ".ds-btn-secondary{height:32px;padding:0 11px;border:1px solid var(--line-strong);border-radius:6px;color:var(--ink);background:var(--canvas);font:590 12px/1.4 var(--font-geist);cursor:pointer}.ds-btn-secondary:hover{background:var(--surface)}.ds-btn-secondary:focus-visible{outline:2px solid var(--primary);outline-offset:2px}"
     },
     {
       "name": "Text Field",
@@ -56,8 +136,8 @@
       "name": "Navigation Row",
       "kind": "nav",
       "refersTo": "navigation-active",
-      "description": "Neutral selected fill with a graphite icon and no decorative accent.",
-      "html": "<a class=\"ds-nav-active\" href=\"#\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"9\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\"/><circle cx=\"12\" cy=\"12\" r=\"3\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\"/></svg><span>Pipeline</span></a>",
+      "description": "Neutral selected fill with a graphite icon and one blue waypoint at the rail edge.",
+      "html": "<a class=\"ds-nav-active\" href=\"#\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"9\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\"/><circle cx=\"12\" cy=\"12\" r=\"3\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\"/></svg><span>Opportunities</span></a>",
       "css": ".ds-nav-active{height:32px;padding:0 9px;border-radius:6px;color:var(--ink);background:var(--surface-2);display:flex;align-items:center;gap:10px;font:470 13px/1.4 var(--font-geist);text-decoration:none}.ds-nav-active svg{width:16px;height:16px;color:var(--ink)}.ds-nav-active:focus-visible{outline:2px solid var(--primary);outline-offset:2px}"
     },
     {
@@ -66,24 +146,60 @@
       "description": "A movable application record: compact, paper-white, and almost flat at rest.",
       "html": "<article class=\"ds-opportunity\"><small>Northstar</small><strong>Senior Product Engineer</strong><p>Review team brief</p></article>",
       "css": ".ds-opportunity{width:240px;padding:12px;border:1px solid var(--line);border-radius:7px;color:var(--ink);background:var(--canvas);box-shadow:0 1px 1px oklch(.20 .01 90/.035);font-family:var(--font-geist)}.ds-opportunity small{color:var(--muted);font-size:10px}.ds-opportunity strong{display:block;margin-top:3px;font-size:13px}.ds-opportunity p{margin:12px 0 0;padding-top:9px;border-top:1px solid var(--line);color:var(--muted);font-size:11px}.ds-opportunity:hover{border-color:var(--line-strong);box-shadow:0 2px 6px oklch(.20 .01 90/.07)}"
+    },
+    {
+      "name": "Filter Chip",
+      "kind": "chip",
+      "description": "A removable, low-emphasis statement of one active Opportunity filter.",
+      "html": "<button class=\"ds-filter-chip\">Priority: high <svg viewBox=\"0 0 16 16\" aria-hidden=\"true\"><path d=\"M4 4l8 8m0-8-8 8\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\"/></svg></button>",
+      "css": ".ds-filter-chip{height:26px;padding:0 7px;border:1px solid color-mix(in oklch,var(--accent) 26%,var(--line));border-radius:5px;color:var(--ink);background:var(--accent-soft);display:inline-flex;align-items:center;gap:5px;font:500 10px/1 var(--font-geist);cursor:pointer}.ds-filter-chip svg{width:11px;height:11px;color:var(--muted)}.ds-filter-chip:hover{border-color:var(--accent)}.ds-filter-chip:focus-visible{outline:2px solid var(--accent);outline-offset:2px}"
+    },
+    {
+      "name": "Triage Row",
+      "kind": "custom",
+      "description": "A compact Job Inbox selection row that leads into one persistent listing dossier.",
+      "html": "<button class=\"ds-triage-row\"><i>N</i><span><strong>Senior Product Engineer</strong><small>Northstar Systems</small><em>Remote · $165k–$190k</em></span><b>New</b></button>",
+      "css": ".ds-triage-row{width:320px;min-height:84px;padding:11px 12px;border:0;border-bottom:1px solid var(--line);color:var(--ink);background:var(--accent-soft);display:grid;grid-template-columns:30px minmax(0,1fr) auto;align-items:start;gap:10px;text-align:left}.ds-triage-row i{width:30px;height:30px;border:1px solid var(--line);border-radius:6px;background:var(--canvas);display:grid;place-items:center;font:650 11px var(--font-geist);font-style:normal}.ds-triage-row span{min-width:0;display:grid;gap:2px}.ds-triage-row strong{font:610 12px var(--font-geist)}.ds-triage-row small,.ds-triage-row em,.ds-triage-row b{color:var(--muted);font:400 10px var(--font-geist);font-style:normal}.ds-triage-row:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}"
     }
   ],
   "narrative": {
-    "northStar": "The Working Page and Pin-up",
-    "overview": "Roleway feels like a personal workspace that happens to manage a job search, not a dashboard assembled from widgets. Public pages extend the same product truth into a working pin-up: real HTML interface evidence, precise annotation, and one tactile next-action slip.",
+    "northStar": "The Focused Dossier and Waypoint Rail",
+    "overview": "Roleway feels like a personal operating system for deliberate career searches. The desktop shell leads with the account avatar, search, and create controls, then a Search Project switcher and grouped navigation beside one inset work surface. Today is a project-scoped action dossier; the Inbox is a keyboard-first triage surface; Opportunities combine grouped issue rows with composable and saved views; Contacts keeps people and follow-ups inside the active Search Project.",
     "keyCharacteristics": [
-      "Flush persistent navigation and content separated by one structural rule.",
+      "Quiet workspace chrome surrounding one subtly inset, bordered work surface.",
       "Neutral architecture with Waypoint Blue carrying primary actions, focus, selection, progress, and the route mark.",
       "Document-like pages and record surfaces instead of dashboard card grids.",
-      "Compact, labeled navigation in expanded and collapsed modes.",
+      "A first-class Search Project switcher keeps separate strategies, pipelines, and results distinct.",
+      "Navigation grouped by Focus, Prepare, and Review with one active blue waypoint.",
+      "Today leads with an ordered next-up list and a compact context rail.",
       "Dark mode preserves the same semantic hierarchy.",
-      "Public pages use the real application shell and task-specific HTML views as product evidence."
+      "Public pages use the real application shell and task-specific HTML views as product evidence.",
+      "The Inbox pairs a keyboard-navigable review queue with one listing dossier.",
+      "Opportunity filters compose in place and can be saved, renamed, applied, or removed.",
+      "Contacts expose relationship, Opportunity, and follow-up context in one compact list.",
+      "Mobile keeps primary destinations in the bottom bar and secondary routes in one More sheet."
     ],
     "rules": [
-      { "name": "The One Saturated Voice Rule", "body": "Waypoint Blue communicates forward action, focus, selection, progress, or a waypoint. Product chrome remains neutral.", "section": "colors" },
-      { "name": "The Product Pin-up Rule", "body": "Public pages get one dominant interface composition, one annotation system, and one tactile next-action object.", "section": "components" },
-      { "name": "The One Plane Rule", "body": "Sidebar and content meet directly. Never float the application shell, round the main content boundary, or use shadows to turn the workspace into an island.", "section": "layout" },
-      { "name": "The Flat-by-Default Rule", "body": "Shadows explain hierarchy or movement; they never decorate static content.", "section": "elevation" }
+      {
+        "name": "The One Saturated Voice Rule",
+        "body": "Waypoint Blue communicates forward action, focus, selection, progress, or a waypoint. Product chrome remains neutral.",
+        "section": "colors"
+      },
+      {
+        "name": "The Product Pin-up Rule",
+        "body": "Public pages get one dominant interface composition, one annotation system, and one tactile next-action object.",
+        "section": "components"
+      },
+      {
+        "name": "The One Work Surface Rule",
+        "body": "One subtly inset, 12px work surface sits inside quiet sidebar chrome; internal content stays flat and avoids nested islands.",
+        "section": "layout"
+      },
+      {
+        "name": "The Flat-by-Default Rule",
+        "body": "Shadows explain hierarchy or movement; they never decorate static content.",
+        "section": "elevation"
+      }
     ],
     "dos": [
       "Do use proximity and hairlines before adding a container.",
@@ -93,7 +209,7 @@
       "Do show real product structure and task-specific content on public pages."
     ],
     "donts": [
-      "Don't float the application shell, round the main content boundary, or give every section its own island.",
+      "Don't add more than the single inset work surface or give every section its own floating island.",
       "Don't tint application chrome blue or add secondary saturated colors, startup gradients, glass, glow, or decorative metrics.",
       "Don't turn summaries into large dashboard cards or put empty-state icons in generic rounded tiles.",
       "Don't copy Notion's brand assets or terminology.",
