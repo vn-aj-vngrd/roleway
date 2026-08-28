@@ -1,8 +1,17 @@
 "use client";
 
-import { ArrowLeft, ArrowRight, BriefcaseBusiness, CalendarClock, CheckCircle2, ExternalLink, Inbox, MapPin } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  CalendarClock,
+  CheckCircle2,
+  ChevronDown,
+  ExternalLink,
+  Inbox,
+  X,
+} from "lucide-react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { SubmitButton } from "@/components/submit-button";
+import { Button } from "@/components/ui/button";
+import { showToast } from "@/components/toast";
 import { setJobInboxState, trackJob } from "@/features/workspace/actions";
 
 type InboxJob = {
@@ -20,83 +29,329 @@ type InboxJob = {
   imported_at: string;
 };
 
-export function JobInbox({ jobs, projectName, minReviewDate, defaultReviewDate }: { jobs: InboxJob[]; projectName: string; minReviewDate: string; defaultReviewDate: string }) {
-  const [selectedId, setSelectedId] = useState(jobs[0]?.id ?? "");
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [laterOpen, setLaterOpen] = useState(false);
-  const listRef = useRef<HTMLDivElement>(null);
-  const selectedIndex = Math.max(0, jobs.findIndex((job) => job.id === selectedId));
-  const selected = jobs[selectedIndex] ?? jobs[0];
+export function JobInbox({
+  jobs,
+  minReviewDate,
+  defaultReviewDate,
+  referenceTime,
+}: {
+  jobs: InboxJob[];
+  minReviewDate: string;
+  defaultReviewDate: string;
+  referenceTime: string;
+}) {
+  const [expandedId, setExpandedId] = useState<string | null>(
+    jobs[0]?.id ?? null,
+  );
+  const [laterOpenId, setLaterOpenId] = useState<string | null>(null);
+  const listRef = useRef<HTMLElement>(null);
+  const referenceTimestamp = new Date(referenceTime).getTime();
 
   useEffect(() => {
-    if (!jobs.some((job) => job.id === selectedId)) {
-      setSelectedId(jobs[0]?.id ?? "");
-      setMobileOpen(false);
-    }
-  }, [jobs, selectedId]);
+    if (expandedId && !jobs.some((job) => job.id === expandedId))
+      setExpandedId(null);
+  }, [expandedId, jobs]);
 
-  useEffect(() => setLaterOpen(false), [selectedId]);
+  useEffect(() => {
+    if (laterOpenId && laterOpenId !== expandedId) setLaterOpenId(null);
+  }, [expandedId, laterOpenId]);
 
-  const counts = useMemo(() => ({ new: jobs.filter((job) => job.inbox_state === "new").length, later: jobs.filter((job) => job.inbox_state === "maybe").length }), [jobs]);
+  const updateInboxState = async (formData: FormData) => {
+    const state = String(formData.get("state") ?? "");
+    await setJobInboxState(formData);
+    showToast(
+      state === "dismissed"
+        ? { title: "Job dismissed", tone: "removed" }
+        : {
+            title: "Review scheduled",
+            description: "The Job will return to Inbox on that date.",
+          },
+    );
+    setLaterOpenId(null);
+  };
 
   const selectIndex = (index: number) => {
     const next = jobs[Math.min(Math.max(index, 0), jobs.length - 1)];
     if (!next) return;
-    setSelectedId(next.id);
-    requestAnimationFrame(() => listRef.current?.querySelector<HTMLButtonElement>(`[data-job-id="${next.id}"]`)?.focus());
+    setExpandedId(next.id);
+    requestAnimationFrame(() =>
+      listRef.current
+        ?.querySelector<HTMLButtonElement>(`[data-job-id="${next.id}"]`)
+        ?.focus(),
+    );
   };
 
-  if (!selected) return null;
+  if (jobs.length === 0) return null;
 
-  return <section className="triage-workspace" data-mobile-open={mobileOpen || undefined} aria-label="Job Inbox">
-    <aside className="triage-list-panel">
-      <header className="triage-list-header"><div><strong>Review queue</strong><span>{jobs.length}</span></div><p><span>{counts.new} new</span><span>{counts.later} later</span></p></header>
-      <div className="triage-list" ref={listRef} role="listbox" aria-label="Jobs to review" onKeyDown={(event) => {
-        if (event.key === "ArrowDown" || event.key.toLowerCase() === "j") { event.preventDefault(); selectIndex(selectedIndex + 1); }
-        if (event.key === "ArrowUp" || event.key.toLowerCase() === "k") { event.preventDefault(); selectIndex(selectedIndex - 1); }
-        if (event.key === "Enter") { event.preventDefault(); setMobileOpen(true); }
-      }}>
-        {jobs.map((job) => <button type="button" role="option" aria-selected={job.id === selected.id} className="triage-list-row" data-job-id={job.id} key={job.id} onClick={() => { setSelectedId(job.id); setMobileOpen(true); }}>
-          <span className="triage-company-mark" aria-hidden="true">{job.company.slice(0, 1).toUpperCase()}</span>
-          <span className="triage-row-copy"><strong>{job.title}</strong><small>{job.company}</small><span>{[job.location, job.compensation].filter(Boolean).join(" · ") || "Details not provided"}</span></span>
-          <span className={`triage-state ${job.inbox_state}`}>{job.inbox_state === "maybe" ? job.inbox_review_at ? `Later · ${new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" }).format(new Date(job.inbox_review_at))}` : "Later" : "New"}</span>
-        </button>)}
-      </div>
-      <footer className="triage-list-footer"><span><kbd>J</kbd><kbd>K</kbd> Navigate</span><span><kbd>↵</kbd> Open</span></footer>
-    </aside>
+  return (
+    <section
+      className="inbox-review-list"
+      aria-label="Jobs awaiting review"
+      ref={listRef}
+      role="list"
+      onKeyDown={(event) => {
+        if (
+          (event.target as HTMLElement).closest(
+            "input, textarea, select, .inbox-review-actions",
+          )
+        )
+          return;
+        const row = (event.target as HTMLElement).closest<HTMLButtonElement>(
+          "[data-job-id]",
+        );
+        const currentIndex = row
+          ? jobs.findIndex((job) => job.id === row.dataset.jobId)
+          : jobs.findIndex((job) => job.id === expandedId);
+        if (event.key === "ArrowDown" || event.key.toLowerCase() === "j") {
+          event.preventDefault();
+          selectIndex((currentIndex < 0 ? 0 : currentIndex) + 1);
+        }
+        if (event.key === "ArrowUp" || event.key.toLowerCase() === "k") {
+          event.preventDefault();
+          selectIndex((currentIndex < 0 ? 0 : currentIndex) - 1);
+        }
+      }}
+    >
+      {jobs.map((job) => {
+        const expanded = job.id === expandedId;
+        const laterOpen = job.id === laterOpenId;
+        const reviewDate = job.inbox_review_at
+          ? new Date(job.inbox_review_at)
+          : null;
+        const reviewIsDue =
+          job.inbox_state === "maybe" &&
+          reviewDate !== null &&
+          reviewDate.getTime() <= referenceTimestamp;
+        return (
+          <article
+            className={`inbox-review-item${expanded ? " is-open" : ""}`}
+            key={job.id}
+            role="listitem"
+          >
+            <button
+              className="inbox-review-row"
+              type="button"
+              data-job-id={job.id}
+              aria-expanded={expanded}
+              aria-controls={`job-${job.id}-review`}
+              onClick={() =>
+                setExpandedId((current) => (current === job.id ? null : job.id))
+              }
+            >
+              <span className="inbox-company-mark" aria-hidden="true">
+                {job.company.slice(0, 1).toUpperCase()}
+              </span>
+              <span className="inbox-review-row-copy">
+                <span className="inbox-review-row-title">
+                  <strong>{job.title}</strong>
+                  {job.inbox_state === "maybe" ? (
+                    <span className={reviewIsDue ? "is-due" : undefined}>
+                      {reviewDate
+                        ? `${reviewIsDue ? "Due" : "Later"} · ${new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" }).format(reviewDate)}`
+                        : "Later"}
+                    </span>
+                  ) : null}
+                </span>
+                <small>{job.company}</small>
+                <span>
+                  {[job.location, job.compensation]
+                    .filter(Boolean)
+                    .join(" · ") || "Details not provided"}
+                </span>
+              </span>
+              <ChevronDown
+                className="inbox-review-chevron"
+                aria-hidden="true"
+              />
+            </button>
 
-    <article className="triage-detail" aria-labelledby={`job-${selected.id}-title`}>
-      <button className="button ghost triage-mobile-back" type="button" onClick={() => setMobileOpen(false)}><ArrowLeft aria-hidden="true" />Back to Inbox</button>
-      <header className="triage-detail-header">
-        <div className="triage-detail-identity"><span className="triage-company-mark large" aria-hidden="true">{selected.company.slice(0, 1).toUpperCase()}</span><div><span>{selected.company}</span><h2 id={`job-${selected.id}-title`}>{selected.title}</h2><p>{[selected.location, selected.remote_policy, selected.compensation].filter(Boolean).join(" · ") || "Role details not provided"}</p></div></div>
-        {selected.source_url ? <a className="button ghost" href={selected.source_url} target="_blank" rel="noreferrer">Open listing <ExternalLink aria-hidden="true" /></a> : null}
-      </header>
+            <AnimatedInboxDetail open={expanded}>
+              {() => (
+                <div
+                  className="inbox-review-detail"
+                  id={`job-${job.id}-review`}
+                >
+                  <div className="inbox-review-detail-top">
+                    <dl
+                      className="inbox-review-facts"
+                      aria-label="Listing details"
+                    >
+                      <div>
+                        <dt>Location</dt>
+                        <dd>{job.location || "Not provided"}</dd>
+                      </div>
+                      <div>
+                        <dt>Work arrangement</dt>
+                        <dd>{job.remote_policy || "Not provided"}</dd>
+                      </div>
+                      <div>
+                        <dt>Compensation</dt>
+                        <dd>{job.compensation || "Not provided"}</dd>
+                      </div>
+                      <div>
+                        <dt>Source</dt>
+                        <dd>{job.source}</dd>
+                      </div>
+                    </dl>
+                    {job.source_url ? (
+                      <a
+                        className="button ghost inbox-open-listing"
+                        href={job.source_url}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Open listing <ExternalLink aria-hidden="true" />
+                      </a>
+                    ) : null}
+                  </div>
 
-      <div className="triage-action-bar" aria-label="Triage actions">
-        <form action={trackJob}><input type="hidden" name="jobId" value={selected.id} /><SubmitButton pendingLabel="Tracking…"><CheckCircle2 aria-hidden="true" />Track Opportunity</SubmitButton></form>
-        <button className="button secondary" type="button" aria-expanded={laterOpen} aria-controls={`review-later-${selected.id}`} onClick={() => setLaterOpen((current) => !current)}><CalendarClock aria-hidden="true" />Review later</button>
-        <form action={setJobInboxState}><input type="hidden" name="jobId" value={selected.id} /><input type="hidden" name="state" value="dismissed" /><SubmitButton className="button ghost" pendingLabel="Dismissing…">Dismiss</SubmitButton></form>
-        <span className="triage-position">{selectedIndex + 1} of {jobs.length}</span>
-        {laterOpen ? <form action={setJobInboxState} className="triage-later-popover floating-panel" id={`review-later-${selected.id}`} key={selected.id}>
-          <input type="hidden" name="jobId" value={selected.id} />
-          <input type="hidden" name="state" value="maybe" />
-          <label htmlFor={`review-at-${selected.id}`}>Return to Inbox</label>
-          <input className="input" id={`review-at-${selected.id}`} name="reviewAt" type="date" required min={minReviewDate} defaultValue={selected.inbox_review_at?.slice(0, 10) ?? defaultReviewDate} autoFocus />
-          <div><button className="button ghost" type="button" onClick={() => setLaterOpen(false)}>Cancel</button><SubmitButton pendingLabel="Saving…">Schedule</SubmitButton></div>
-        </form> : null}
-      </div>
+                  <section className="inbox-review-description">
+                    <header>
+                      <h3>Role description</h3>
+                      <span>
+                        Saved{" "}
+                        {new Intl.DateTimeFormat(undefined, {
+                          month: "short",
+                          day: "numeric",
+                        }).format(new Date(job.imported_at))}
+                      </span>
+                    </header>
+                    {job.description ? (
+                      <div>{job.description}</div>
+                    ) : (
+                      <div className="inbox-review-empty-copy">
+                        <Inbox aria-hidden="true" />
+                        <p>
+                          No description was saved. Use the listing details to
+                          decide, open the original listing, or dismiss this
+                          Job.
+                        </p>
+                      </div>
+                    )}
+                  </section>
 
-      <div className="triage-detail-body">
-        <main>
-          <section><div className="triage-section-heading"><h3>Role description</h3><span>Captured {new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" }).format(new Date(selected.imported_at))}</span></div>{selected.description ? <div className="triage-description">{selected.description}</div> : <div className="triage-empty-copy"><Inbox aria-hidden="true" /><p>No description was captured. Open the source listing or add the Job again with more context.</p></div>}</section>
-        </main>
-        <aside>
-          <h3>Listing details</h3>
-          <dl><div><dt>Company</dt><dd>{selected.company}</dd></div><div><dt>Location</dt><dd>{selected.location || "Not provided"}</dd></div><div><dt>Arrangement</dt><dd>{selected.remote_policy || "Not provided"}</dd></div><div><dt>Compensation</dt><dd>{selected.compensation || "Not provided"}</dd></div><div><dt>Source</dt><dd>{selected.source}</dd></div></dl>
-          <div className="triage-guidance"><BriefcaseBusiness aria-hidden="true" /><div><strong>Decide before tracking</strong><p>Track creates an Opportunity in {projectName}. Later returns the Job on the date you choose. Dismiss keeps it out of active work.</p></div></div>
-        </aside>
-      </div>
-      <footer className="triage-detail-footer"><button className="icon-button" type="button" aria-label="Previous job" data-tooltip="Previous job" disabled={selectedIndex === 0} onClick={() => selectIndex(selectedIndex - 1)}><ArrowLeft aria-hidden="true" /></button><button className="icon-button" type="button" aria-label="Next job" data-tooltip="Next job" disabled={selectedIndex === jobs.length - 1} onClick={() => selectIndex(selectedIndex + 1)}><ArrowRight aria-hidden="true" /></button><span><MapPin aria-hidden="true" />{selected.location || "Location not provided"}</span></footer>
-    </article>
-  </section>;
+                  <footer
+                    className="inbox-review-actions"
+                    aria-label="Review actions"
+                  >
+                    <form action={trackJob} className="inbox-track-action">
+                      <input type="hidden" name="jobId" value={job.id} />
+                      <SubmitButton pendingLabel="Tracking…">
+                        <CheckCircle2 aria-hidden="true" />
+                        Track as opportunity
+                      </SubmitButton>
+                    </form>
+                    <Button
+                      className="button secondary inbox-review-later-trigger"
+                      variant="outline"
+                      type="button"
+                      aria-expanded={laterOpen}
+                      aria-controls={`review-later-${job.id}`}
+                      onClick={() =>
+                        setLaterOpenId((current) =>
+                          current === job.id ? null : job.id,
+                        )
+                      }
+                    >
+                      <CalendarClock aria-hidden="true" />
+                      Review later
+                    </Button>
+                    <form
+                      action={updateInboxState}
+                      className="inbox-dismiss-action"
+                    >
+                      <input type="hidden" name="jobId" value={job.id} />
+                      <input type="hidden" name="state" value="dismissed" />
+                      <SubmitButton
+                        className="button secondary inbox-dismiss-button"
+                        pendingLabel="Dismissing…"
+                      >
+                        <X aria-hidden="true" />
+                        Dismiss
+                      </SubmitButton>
+                    </form>
+                    {laterOpen ? (
+                      <form
+                        action={updateInboxState}
+                        className="inbox-later-popover floating-panel"
+                        id={`review-later-${job.id}`}
+                        key={job.id}
+                      >
+                        <input type="hidden" name="jobId" value={job.id} />
+                        <input type="hidden" name="state" value="maybe" />
+                        <label htmlFor={`review-at-${job.id}`}>
+                          Return to Inbox
+                        </label>
+                        <input
+                          className="input"
+                          id={`review-at-${job.id}`}
+                          name="reviewAt"
+                          type="date"
+                          required
+                          min={minReviewDate}
+                          defaultValue={
+                            job.inbox_review_at?.slice(0, 10) ??
+                            defaultReviewDate
+                          }
+                          autoFocus
+                        />
+                        <div>
+                          <Button
+                            className="button ghost"
+                            variant="ghost"
+                            type="button"
+                            onClick={() => setLaterOpenId(null)}
+                          >
+                            Cancel
+                          </Button>
+                          <SubmitButton pendingLabel="Saving…">
+                            Schedule
+                          </SubmitButton>
+                        </div>
+                      </form>
+                    ) : null}
+                  </footer>
+                </div>
+              )}
+            </AnimatedInboxDetail>
+          </article>
+        );
+      })}
+    </section>
+  );
+}
+
+function AnimatedInboxDetail({
+  open,
+  children,
+}: {
+  open: boolean;
+  children: () => ReactNode;
+}) {
+  const [present, setPresent] = useState(open);
+  const [visible, setVisible] = useState(open);
+
+  useEffect(() => {
+    if (open) {
+      setPresent(true);
+      const frame = requestAnimationFrame(() => setVisible(true));
+      return () => cancelAnimationFrame(frame);
+    }
+
+    setVisible(false);
+    const timeout = window.setTimeout(() => setPresent(false), 190);
+    return () => window.clearTimeout(timeout);
+  }, [open]);
+
+  if (!present && !open) return null;
+
+  return (
+    <div
+      className={`inbox-review-detail-motion${visible ? " is-open" : ""}`}
+      aria-hidden={!open}
+      inert={!open}
+    >
+      <div>{children()}</div>
+    </div>
+  );
 }

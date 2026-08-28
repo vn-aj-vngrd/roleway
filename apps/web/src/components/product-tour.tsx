@@ -4,6 +4,7 @@ import { ArrowRight, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { completeTour } from "@/app/(app)/tour-actions";
+import { Button } from "@/components/ui/button";
 
 const steps = [
   { target: "home", title: "Start from Home", body: "Workspace context, interviews, due tasks, and jobs waiting for review appear here. If it isn’t actionable, it stays out." },
@@ -58,7 +59,7 @@ export function ProductTour({ open }: { open: boolean }) {
         <header><span className="mono">{step + 1} / {steps.length}</span><button className="icon-button" data-tooltip="Skip tour" onClick={() => finish(false)} aria-label="Skip product tour"><X /></button></header>
         <h2 id="tour-title">{current.title}</h2>
         <p id="tour-body">{current.body}</p>
-        <footer><button className="button ghost" onClick={() => finish(false)} disabled={pending}>Skip tour</button><button ref={primaryRef} className="button primary" onClick={() => final ? finish(true) : setStep((value) => value + 1)} disabled={pending}>{final ? "Add my first job" : "Next"}<ArrowRight /></button></footer>
+        <footer><Button className="button ghost" variant="ghost" onClick={() => finish(false)} disabled={pending}>Skip tour</Button><Button ref={primaryRef} className="button primary" onClick={() => final ? finish(true) : setStep((value) => value + 1)} disabled={pending}>{final ? "Add my first job" : "Next"}<ArrowRight /></Button></footer>
       </section>
     </div>
   );

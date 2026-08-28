@@ -1,10 +1,9 @@
 "use client";
 
-import { Check, ExternalLink } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { SubmitButton } from "@/components/submit-button";
-import { updateOpportunityDetails } from "@/features/workspace/actions";
+import { ExternalLink } from "lucide-react";
+import { useRef, useState, useTransition } from "react";
+import { showToast } from "@/components/toast";
+import { updateOpportunityDetailField } from "@/features/workspace/actions";
 
 type EditableJob = {
   id: string;
@@ -19,51 +18,60 @@ type EditableJob = {
   application_url: string | null;
 };
 
-export function OpportunityPropertiesEditor({ opportunityId, job }: { opportunityId: string; job: EditableJob }) {
-  const router = useRouter();
-  const [dirty, setDirty] = useState(false);
+type DetailField = "company" | "location" | "compensation" | "remotePolicy" | "source" | "sourceUrl" | "applicationUrl";
+type DetailState = Record<DetailField, string>;
 
-  const save = async (formData: FormData) => {
-    await updateOpportunityDetails(formData);
-    setDirty(false);
-    router.refresh();
+const labels: Record<DetailField, string> = {
+  company: "Company",
+  location: "Location",
+  compensation: "Compensation",
+  remotePolicy: "Arrangement",
+  source: "Source",
+  sourceUrl: "Listing",
+  applicationUrl: "Application",
+};
+
+export function OpportunityPropertiesEditor({ opportunityId, job }: { opportunityId: string; job: EditableJob }) {
+  const initial: DetailState = { company: job.company, location: job.location, compensation: job.compensation, remotePolicy: job.remote_policy, source: job.source, sourceUrl: job.source_url ?? "", applicationUrl: job.application_url ?? "" };
+  const [details, setDetails] = useState(initial);
+  const persisted = useRef(initial);
+  const [saving, setSaving] = useState<DetailField | null>(null);
+  const [, startTransition] = useTransition();
+
+  const save = (field: DetailField) => {
+    const value = details[field].trim();
+    const previous = persisted.current[field];
+    if (value === previous) return;
+    setDetails((current) => ({ ...current, [field]: value }));
+    setSaving(field);
+    startTransition(async () => {
+      const formData = new FormData();
+      formData.set("opportunityId", opportunityId);
+      formData.set("jobId", job.id);
+      formData.set("field", field);
+      formData.set("value", value);
+      const result = await updateOpportunityDetailField(formData);
+      setSaving((current) => current === field ? null : current);
+      if (!result.success) {
+        setDetails((current) => ({ ...current, [field]: previous }));
+        showToast({ title: `${labels[field]} was not saved`, description: result.message, tone: "info" });
+        return;
+      }
+      persisted.current = { ...persisted.current, [field]: value };
+      showToast({ title: `${labels[field]} updated` });
+    });
   };
 
-  return <form action={save} className="issue-properties-form" onChange={() => setDirty(true)}>
-    <input type="hidden" name="opportunityId" value={opportunityId} />
-    <input type="hidden" name="jobId" value={job.id} />
-    <input type="hidden" name="title" value={job.title} />
-    <input type="hidden" name="description" value={job.description} />
+  const input = (field: DetailField, placeholder: string, type: "text" | "url" = "text") => <input id={`property-${field}`} name={field} type={type} value={details[field]} placeholder={placeholder} aria-label={labels[field]} onChange={(event) => setDetails((current) => ({ ...current, [field]: event.target.value }))} onBlur={() => save(field)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); event.currentTarget.blur(); } }} />;
 
-    <div className="issue-property-row">
-      <label htmlFor="property-company">Company</label>
-      <input id="property-company" name="company" required defaultValue={job.company} placeholder="Add company" />
-    </div>
-    <div className="issue-property-row">
-      <label htmlFor="property-location">Location</label>
-      <input id="property-location" name="location" defaultValue={job.location} placeholder="Add location" />
-    </div>
-    <div className="issue-property-row">
-      <label htmlFor="property-compensation">Compensation</label>
-      <input id="property-compensation" name="compensation" defaultValue={job.compensation} placeholder="Add compensation" />
-    </div>
-    <div className="issue-property-row">
-      <label htmlFor="property-arrangement">Arrangement</label>
-      <input id="property-arrangement" name="remotePolicy" defaultValue={job.remote_policy} placeholder="Remote, hybrid…" />
-    </div>
-    <div className="issue-property-row">
-      <label htmlFor="property-source">Source</label>
-      <input id="property-source" name="source" defaultValue={job.source} placeholder="Add source" />
-    </div>
-    <div className="issue-property-row issue-property-url">
-      <label htmlFor="property-source-url">Listing</label>
-      <div><input id="property-source-url" name="sourceUrl" type="url" defaultValue={job.source_url ?? ""} placeholder="Add URL" />{job.source_url ? <a href={job.source_url} target="_blank" rel="noreferrer" aria-label="Open job listing"><ExternalLink aria-hidden="true" /></a> : null}</div>
-    </div>
-    <div className="issue-property-row issue-property-url">
-      <label htmlFor="property-application-url">Application</label>
-      <div><input id="property-application-url" name="applicationUrl" type="url" defaultValue={job.application_url ?? ""} placeholder="Add URL" />{job.application_url ? <a href={job.application_url} target="_blank" rel="noreferrer" aria-label="Open application"><ExternalLink aria-hidden="true" /></a> : null}</div>
-    </div>
-
-    {dirty ? <div className="issue-properties-save"><SubmitButton className="button primary" pendingLabel="Saving…"><Check aria-hidden="true" />Save changes</SubmitButton></div> : null}
-  </form>;
+  return <section className="issue-properties-form" aria-busy={saving !== null}>
+    <div className="issue-property-row"><label htmlFor="property-company">Company</label>{input("company", "Add company")}</div>
+    <div className="issue-property-row"><label htmlFor="property-location">Location</label>{input("location", "Add location")}</div>
+    <div className="issue-property-row"><label htmlFor="property-compensation">Compensation</label>{input("compensation", "Add compensation")}</div>
+    <div className="issue-property-row"><label htmlFor="property-remotePolicy">Arrangement</label>{input("remotePolicy", "Remote, hybrid…")}</div>
+    <div className="issue-property-row"><label htmlFor="property-source">Source</label>{input("source", "Add source")}</div>
+    <div className="issue-property-row issue-property-url"><label htmlFor="property-sourceUrl">Listing</label><div>{input("sourceUrl", "Add URL", "url")}{details.sourceUrl ? <a href={details.sourceUrl} target="_blank" rel="noreferrer" aria-label="Open job listing"><ExternalLink aria-hidden="true" /></a> : null}</div></div>
+    <div className="issue-property-row issue-property-url"><label htmlFor="property-applicationUrl">Application</label><div>{input("applicationUrl", "Add URL", "url")}{details.applicationUrl ? <a href={details.applicationUrl} target="_blank" rel="noreferrer" aria-label="Open application"><ExternalLink aria-hidden="true" /></a> : null}</div></div>
+    {saving ? <span className="role-detail-save-status" aria-live="polite">Saving {labels[saving].toLowerCase()}…</span> : null}
+  </section>;
 }

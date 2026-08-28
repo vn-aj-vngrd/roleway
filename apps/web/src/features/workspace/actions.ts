@@ -84,7 +84,7 @@ export async function trackJob(formData: FormData) {
   }
   revalidatePath("/inbox");
   revalidatePath("/opportunities");
-  redirect(`/opportunities/${data}`);
+  redirect(`/opportunities/${data}?tracked=true`);
 }
 
 export async function updateOpportunityStage(formData: FormData) {
@@ -100,6 +100,37 @@ export async function updateOpportunityStage(formData: FormData) {
   }
   revalidatePath("/opportunities");
   revalidatePath(`/opportunities/${parsed.data.opportunityId}`);
+}
+
+export async function updateOpportunityStageOptimistic(formData: FormData) {
+  const parsed = z.object({ opportunityId: z.string().uuid(), stage: z.enum(["interested", "preparing", "applied", "interview", "offer", "closed"]), closedReason: z.string().trim().max(120).optional() }).safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { success: false as const, message: "That stage change is not valid." };
+  const auth = await authenticated();
+  const { data: opportunity } = await auth.supabase.from("opportunities").select("id").eq("id", parsed.data.opportunityId).eq("project_id", auth.project.id).maybeSingle();
+  if (!opportunity) return { success: false as const, message: "That Opportunity is not part of this Workspace." };
+  const { error } = await auth.supabase.rpc("move_opportunity", { input_opportunity_id: parsed.data.opportunityId, input_stage: parsed.data.stage, input_closed_reason: parsed.data.closedReason || null });
+  if (error) return { success: false as const, message: parsed.data.stage === "closed" ? "Choose a reason before closing this Opportunity." : "The stage could not be updated." };
+  revalidatePath("/opportunities");
+  revalidatePath(`/opportunities/${parsed.data.opportunityId}`);
+  return { success: true as const };
+}
+
+export async function updateOpportunityDetailField(formData: FormData) {
+  const parsed = z.object({ opportunityId: z.string().uuid(), jobId: z.string().uuid(), field: z.enum(["company", "location", "compensation", "remotePolicy", "source", "sourceUrl", "applicationUrl"]), value: z.string().trim().max(500) }).safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { success: false as const, message: "That role detail is not valid." };
+  if (parsed.data.field === "company" && !parsed.data.value) return { success: false as const, message: "Company cannot be empty." };
+  if (["sourceUrl", "applicationUrl"].includes(parsed.data.field) && parsed.data.value && !z.string().url().safeParse(parsed.data.value).success) return { success: false as const, message: "Enter a complete URL." };
+  const auth = await authenticated();
+  const { data: opportunity } = await auth.supabase.from("opportunities").select("job_id").eq("id", parsed.data.opportunityId).eq("user_id", auth.user.id).eq("project_id", auth.project.id).maybeSingle();
+  if (!opportunity || opportunity.job_id !== parsed.data.jobId) return { success: false as const, message: "The linked Job could not be verified." };
+  const columns = { company: "company", location: "location", compensation: "compensation", remotePolicy: "remote_policy", source: "source", sourceUrl: "source_url", applicationUrl: "application_url" } as const;
+  const nullable = parsed.data.field === "sourceUrl" || parsed.data.field === "applicationUrl";
+  const { error } = await auth.supabase.from("jobs").update({ [columns[parsed.data.field]]: nullable && !parsed.data.value ? null : parsed.data.value }).eq("id", parsed.data.jobId).eq("user_id", auth.user.id).eq("project_id", auth.project.id);
+  if (error) return { success: false as const, message: "The role detail could not be saved." };
+  revalidatePath(`/opportunities/${parsed.data.opportunityId}`);
+  revalidatePath("/inbox");
+  revalidatePath("/opportunities");
+  return { success: true as const };
 }
 
 export async function updateOpportunityDetails(formData: FormData) {
@@ -148,6 +179,7 @@ export async function updateNextAction(formData: FormData) {
   if (error) redirect(`/opportunities/${parsed.data.opportunityId}?error=The%20next%20action%20could%20not%20be%20saved.`);
   revalidatePath(`/opportunities/${parsed.data.opportunityId}`);
   revalidatePath("/home");
+  redirect(`/opportunities/${parsed.data.opportunityId}?nextActionSaved=true`);
 }
 
 export async function createTask(formData: FormData) {
@@ -186,7 +218,7 @@ export async function createDocument(formData: FormData) {
   const { data, error } = await auth.supabase.from("documents").insert({ user_id: auth.user.id, project_id: auth.project.id, opportunity_id: parsed.data.opportunityId || null, title: parsed.data.title, kind: parsed.data.kind, status: "draft" }).select("id").single();
   if (error || !data) redirect("/documents?error=The%20document%20could%20not%20be%20created.");
   revalidatePath("/documents");
-  redirect(`/documents/${data.id}`);
+  redirect(`/documents/${data.id}?documentCreated=true`);
 }
 
 export async function updateDocument(formData: FormData) {

@@ -27,6 +27,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { signOut } from "@/app/auth/actions";
+import { AgentPopoverLauncher } from "@/components/agent-popover-launcher";
 import { CreateModal } from "@/components/create-modal";
 import { JobCreateForm } from "@/components/job-create-form";
 import { JobWorkspacePicker } from "@/components/job-workspace-picker";
@@ -36,8 +37,10 @@ import { SearchProjectSwitcher } from "@/components/search-project-switcher";
 import { WorkspaceMark } from "@/components/workspace-mark";
 import { WorkspaceCreateForm } from "@/components/workspace-create-form";
 import { SettingsNav } from "@/components/settings-nav";
+import { CountBadge } from "@/components/ui-primitives";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { ToastViewport } from "@/components/toast";
 import type { SearchProject } from "@/features/projects/context";
 
 type NavEntry = { href: string; label: string; icon: LucideIcon };
@@ -156,7 +159,7 @@ function NavItem({ item, pathname, badge }: { item: NavEntry; pathname: string; 
     >
       <Icon aria-hidden="true" />
       <span>{item.label}</span>
-      {badge ? <span className="nav-badge" aria-label={`${badge} unread`}>{badge > 99 ? "99+" : badge}</span> : null}
+      {badge ? <CountBadge className="nav-badge" tone="accent" label={`${badge} unread`} value={badge > 99 ? "99+" : badge} /> : null}
     </Link>
   );
 }
@@ -327,7 +330,7 @@ function AccountMenu({ user, isAdmin }: { user: { name: string; email: string };
   );
 }
 
-export function AppShell({ children, user, projects, activeProject, showTour, notificationCount, isAdmin }: { children: ReactNode; user: { name: string; email: string }; projects: SearchProject[]; activeProject: SearchProject; showTour: boolean; notificationCount: number; isAdmin: boolean }) {
+export function AppShell({ children, user, projects, activeProject, showTour, notificationCount, isAdmin, agentConnection }: { children: ReactNode; user: { name: string; email: string }; projects: SearchProject[]; activeProject: SearchProject; showTour: boolean; notificationCount: number; isAdmin: boolean; agentConnection: { id: string; label: string } | null }) {
   const pathname = usePathname();
   const router = useRouter();
   const [searchOpen, setSearchOpen] = useState(false);
@@ -434,8 +437,9 @@ export function AppShell({ children, user, projects, activeProject, showTour, no
     <div className="settings-app-shell">
       <aside className="settings-shell-sidebar" aria-label="Settings navigation"><SettingsNav shell pathname={pathname} /></aside>
       <main className="settings-shell-main" id="main-content">{children}</main>
-      {pathname !== "/settings/ai" ? <Link className="global-agent-launch" href="/agent" aria-label="Open Roleway Agent" data-tooltip="Open Agent"><Navigation aria-hidden="true" /><span>Agent</span></Link> : null}
+      {pathname !== "/settings/ai" ? <AgentPopoverLauncher pathname={pathname} projectName={activeProject.name} breadcrumbs={breadcrumbs} connection={agentConnection} /> : null}
       {createWorkspaceOpen ? <CreateModal title="Create a workspace" description="Keep one job-search direction and its Opportunities together." context="New workspace" size="compact" hideContext onClose={closeCreateWorkspace}><WorkspaceCreateForm onCancel={closeCreateWorkspace} /></CreateModal> : null}
+      <ToastViewport />
     </div>
   </BreadcrumbContext.Provider>;
 
@@ -473,17 +477,18 @@ export function AppShell({ children, user, projects, activeProject, showTour, no
         </header>
         <div className="main-content-scroll">{children}</div>
       </main>
-      {pathname !== "/agent" ? <Link className="global-agent-launch" href="/agent" aria-label="Open Roleway Agent" data-tooltip="Open Agent"><Navigation aria-hidden="true" /><span>Agent</span></Link> : null}
+      {pathname !== "/agent" ? <AgentPopoverLauncher pathname={pathname} projectName={activeProject.name} breadcrumbs={breadcrumbs} connection={agentConnection} /> : null}
       <nav className="mobile-nav" aria-label="Mobile navigation">
         {mobileNav.map((item) => <NavItem key={item.href} item={item} pathname={pathname} />)}
         <button className={`nav-link mobile-more ${mobileMoreActive ? "active" : ""}`} aria-label="More destinations" aria-haspopup="dialog" aria-expanded={mobileMoreOpen} onClick={() => setMobileMoreOpen(true)}><MoreHorizontal aria-hidden="true" /><span>More</span></button>
         <button className="nav-link mobile-search" aria-label="Search Roleway" onClick={() => setSearchOpen(true)}><Search aria-hidden="true" /><span>Search</span></button>
       </nav>
-      {mobileMoreOpen ? <div className="mobile-more-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && setMobileMoreOpen(false)}><div className="mobile-more-sheet" role="dialog" aria-modal="true" aria-label="More destinations" ref={mobileMoreRef}><header><div><strong>More</strong><span>{isAccountWideRoute ? "All workspaces" : activeProject.name}</span></div><button className="icon-button" data-tooltip="Close" aria-label="Close more destinations" onClick={() => setMobileMoreOpen(false)}><X aria-hidden="true" /></button></header><nav aria-label="More workspace destinations">{mobileMoreEntries.map((item) => { const Icon = item.icon; const active = pathname === item.href || pathname.startsWith(`${item.href}/`); return <Link className={active ? "active" : ""} aria-current={active ? "page" : undefined} href={item.href} key={item.href}><Icon aria-hidden="true" /><span>{item.label}</span>{item.href === "/notifications" && notificationCount ? <small>{notificationCount}</small> : null}</Link>; })}</nav></div></div> : null}
+      {mobileMoreOpen ? <div className="mobile-more-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && setMobileMoreOpen(false)}><div className="mobile-more-sheet" role="dialog" aria-modal="true" aria-label="More destinations" ref={mobileMoreRef}><header><div><strong>More</strong><span>{isAccountWideRoute ? "All workspaces" : activeProject.name}</span></div><button className="icon-button" data-tooltip="Close" aria-label="Close more destinations" onClick={() => setMobileMoreOpen(false)}><X aria-hidden="true" /></button></header><nav aria-label="More workspace destinations">{mobileMoreEntries.map((item) => { const Icon = item.icon; const active = pathname === item.href || pathname.startsWith(`${item.href}/`); return <Link className={active ? "active" : ""} aria-current={active ? "page" : undefined} href={item.href} key={item.href}><Icon aria-hidden="true" /><span>{item.label}</span>{item.href === "/notifications" && notificationCount ? <CountBadge className="nav-badge" tone="accent" label={`${notificationCount} unread`} value={notificationCount > 99 ? "99+" : notificationCount} /> : null}</Link>; })}</nav></div></div> : null}
       <SearchDialog open={searchOpen} onClose={closeSearch} projectName={activeProject.name} />
       {createJobOpen ? <CreateModal title="Add a job" description="Capture the listing now. Decide whether it belongs in your pipeline after review." context="New job" identity={<JobWorkspacePicker projects={projects} value={createJobProjectId} onValueChange={setCreateJobProjectId} />} size="large" onClose={closeCreateJob}><JobCreateForm projectId={createJobProjectId} projectName={projects.find((project) => project.id === createJobProjectId)?.name ?? activeProject.name} onCancel={closeCreateJob} /></CreateModal> : null}
       {createWorkspaceOpen ? <CreateModal title="Create a workspace" description="Keep one job-search direction and its Opportunities together." context="New workspace" size="compact" hideContext onClose={closeCreateWorkspace}><WorkspaceCreateForm onCancel={closeCreateWorkspace} /></CreateModal> : null}
       <ProductTour open={showTour} />
+      <ToastViewport />
     </div>
     </BreadcrumbContext.Provider>
   );

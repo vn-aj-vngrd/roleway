@@ -3,7 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { SettingsNav } from "@/components/settings-nav";
 import { SubmitButton } from "@/components/submit-button";
-import { PageHeader } from "@/components/ui-primitives";
+import { CountBadge, PageHeader } from "@/components/ui-primitives";
 import { CreateWorkspaceButton } from "@/components/workspace-create-form";
 import { WorkspaceMark } from "@/components/workspace-mark";
 import { archiveSearchProject, restoreSearchProject } from "@/features/projects/actions";
@@ -35,7 +35,7 @@ export default async function WorkspaceSettingsPage(props: { searchParams: Promi
         {query.error ? <div className="form-alert error" role="alert">{query.error}</div> : null}
 
         <section className="search-project-directory" aria-labelledby="workspaces-heading">
-          <header><div><h2 id="workspaces-heading">Workspaces <span>{visibleProjects.length}</span></h2><p>Each Workspace keeps its own focus, Opportunity key, preferences, and history.</p></div><form className="workspace-directory-search" action="/settings/workspaces"><label><Search aria-hidden="true" /><span className="sr-only">Search Workspaces</span><input name="q" defaultValue={query.q ?? ""} placeholder="Search Workspaces…" /></label>{normalizedQuery ? <Link href="/settings/workspaces" aria-label="Clear Workspace search"><X aria-hidden="true" /></Link> : null}</form></header>
+          <header><div><h2 id="workspaces-heading">Workspaces <CountBadge value={visibleProjects.length} /></h2><p>Each Workspace keeps its own focus, Opportunity key, preferences, and history.</p></div><form className="workspace-directory-search" action="/settings/workspaces"><label><Search aria-hidden="true" /><span className="sr-only">Search Workspaces</span><input name="q" defaultValue={query.q ?? ""} placeholder="Search Workspaces…" /></label>{normalizedQuery ? <Link href="/settings/workspaces" aria-label="Clear Workspace search"><X aria-hidden="true" /></Link> : null}</form></header>
           <div className="search-project-list">
             {visibleProjects.map((project) => {
               return <article key={project.id}>

@@ -65,6 +65,31 @@ export async function submitApplication(formData: FormData) {
   redirect(`/opportunities/${parsed.data.opportunityId}?applied=true`);
 }
 
+export async function updateOpportunityDecisionField(formData: FormData) {
+  const parsed = z.object({ opportunityId: z.string().uuid(), field: z.enum(["priority", "excitement", "deadline"]), value: z.string() }).safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { success: false as const, message: "That decision value is not valid." };
+  const active = await ownsOpportunity(parsed.data.opportunityId);
+  let update: { priority?: "low" | "medium" | "high" | "urgent"; excitement?: number | null; deadline?: string | null };
+  if (parsed.data.field === "priority") {
+    const value = z.enum(["low", "medium", "high", "urgent"]).safeParse(parsed.data.value);
+    if (!value.success) return { success: false as const, message: "Choose a valid priority." };
+    update = { priority: value.data };
+  } else if (parsed.data.field === "excitement") {
+    const value = z.union([z.literal(""), z.coerce.number().int().min(1).max(5)]).safeParse(parsed.data.value);
+    if (!value.success) return { success: false as const, message: "Choose an excitement rating from 1 to 5." };
+    update = { excitement: value.data === "" ? null : value.data };
+  } else {
+    const value = z.union([z.literal(""), z.string().date()]).safeParse(parsed.data.value);
+    if (!value.success) return { success: false as const, message: "Choose a valid application deadline." };
+    update = { deadline: value.data || null };
+  }
+  const { error } = await active.supabase.from("opportunities").update(update).eq("id", parsed.data.opportunityId).eq("project_id", active.project.id);
+  if (error) return { success: false as const, message: "The decision field could not be saved." };
+  revalidatePath(`/opportunities/${parsed.data.opportunityId}`);
+  revalidatePath("/opportunities");
+  return { success: true as const };
+}
+
 export async function updateOpportunityAssessment(formData: FormData) {
   const parsed = z.object({
     opportunityId: z.string().uuid(),
@@ -116,37 +141,37 @@ function contactPayload(data: z.infer<typeof contactSchema>) {
 export async function createContact(formData: FormData) {
   const parsed = contactSchema.safeParse(Object.fromEntries(formData));
   const opportunityId = String(formData.get("opportunityId") ?? "");
-  if (!parsed.success) redirect(`/opportunities/${opportunityId}?contact=true&error=${encodeURIComponent(parsed.error.issues[0]?.message ?? "Check the contact details.")}`);
+  if (!parsed.success) redirect(`/opportunities/${opportunityId}?tab=people&contact=true&error=${encodeURIComponent(parsed.error.issues[0]?.message ?? "Check the contact details.")}`);
   const active = await ownsOpportunity(parsed.data.opportunityId);
   let followUpAt: string | null;
   try { followUpAt = formDateTimeToIso(formData, "followUpAt"); }
-  catch (error) { redirect(`/opportunities/${parsed.data.opportunityId}?contact=true&error=${encodeURIComponent(error instanceof Error ? error.message : "Check the follow-up time.")}`); }
+  catch (error) { redirect(`/opportunities/${parsed.data.opportunityId}?tab=people&contact=true&error=${encodeURIComponent(error instanceof Error ? error.message : "Check the follow-up time.")}`); }
   const { data, error } = await active.supabase.from("contacts").insert({
     user_id: active.user.id,
     project_id: active.project.id,
     opportunity_id: parsed.data.opportunityId,
     ...contactPayload({ ...parsed.data, followUpAt: followUpAt ?? "" }),
   }).select("id").single();
-  if (error || !data) redirect(`/opportunities/${parsed.data.opportunityId}?contact=true&error=The%20contact%20could%20not%20be%20saved.`);
+  if (error || !data) redirect(`/opportunities/${parsed.data.opportunityId}?tab=people&contact=true&error=The%20contact%20could%20not%20be%20saved.`);
   await active.supabase.from("opportunity_events").insert({ user_id: active.user.id, opportunity_id: parsed.data.opportunityId, actor: "user", event_type: "contact_added", payload: { contact_id: data.id, name: parsed.data.name, relationship: parsed.data.relationship } });
   revalidatePath(`/opportunities/${parsed.data.opportunityId}`);
   revalidatePath("/home");
-  redirect(`/opportunities/${parsed.data.opportunityId}?contactCreated=true`);
+  redirect(`/opportunities/${parsed.data.opportunityId}?tab=people&contactCreated=true`);
 }
 
 export async function updateContact(formData: FormData) {
   const parsed = contactSchema.required({ contactId: true }).safeParse(Object.fromEntries(formData));
   const opportunityId = String(formData.get("opportunityId") ?? "");
-  if (!parsed.success) redirect(`/opportunities/${opportunityId}?error=${encodeURIComponent(parsed.error.issues[0]?.message ?? "Check the contact details.")}`);
+  if (!parsed.success) redirect(`/opportunities/${opportunityId}?tab=people&error=${encodeURIComponent(parsed.error.issues[0]?.message ?? "Check the contact details.")}`);
   const active = await ownsOpportunity(parsed.data.opportunityId);
   let followUpAt: string | null;
   try { followUpAt = formDateTimeToIso(formData, "followUpAt"); }
-  catch (error) { redirect(`/opportunities/${parsed.data.opportunityId}?error=${encodeURIComponent(error instanceof Error ? error.message : "Check the follow-up time.")}`); }
+  catch (error) { redirect(`/opportunities/${parsed.data.opportunityId}?tab=people&error=${encodeURIComponent(error instanceof Error ? error.message : "Check the follow-up time.")}`); }
   const { error } = await active.supabase.from("contacts").update(contactPayload({ ...parsed.data, followUpAt: followUpAt ?? "" })).eq("id", parsed.data.contactId).eq("opportunity_id", parsed.data.opportunityId).eq("project_id", active.project.id);
-  if (error) redirect(`/opportunities/${parsed.data.opportunityId}?error=The%20contact%20could%20not%20be%20updated.`);
+  if (error) redirect(`/opportunities/${parsed.data.opportunityId}?tab=people&error=The%20contact%20could%20not%20be%20updated.`);
   revalidatePath(`/opportunities/${parsed.data.opportunityId}`);
   revalidatePath("/home");
-  redirect(`/opportunities/${parsed.data.opportunityId}?contactSaved=true`);
+  redirect(`/opportunities/${parsed.data.opportunityId}?tab=people&contactSaved=true`);
 }
 
 export async function deleteContact(formData: FormData) {
@@ -154,7 +179,7 @@ export async function deleteContact(formData: FormData) {
   if (!parsed.success) return;
   const active = await ownsOpportunity(parsed.data.opportunityId);
   const { error } = await active.supabase.from("contacts").delete().eq("id", parsed.data.contactId).eq("opportunity_id", parsed.data.opportunityId).eq("project_id", active.project.id);
-  if (error) redirect(`/opportunities/${parsed.data.opportunityId}?error=The%20contact%20could%20not%20be%20deleted.`);
+  if (error) redirect(`/opportunities/${parsed.data.opportunityId}?tab=people&error=The%20contact%20could%20not%20be%20deleted.`);
   revalidatePath(`/opportunities/${parsed.data.opportunityId}`);
   revalidatePath("/home");
 }

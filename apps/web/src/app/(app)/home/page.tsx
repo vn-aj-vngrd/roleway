@@ -4,7 +4,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CreateJobButton } from "@/components/app-shell";
 import { HomeWorkspaceDetails, HomeWorkspaceOverview } from "@/components/home-workspace-overview";
-import { WorkspaceHeader, WorkspaceListGroup } from "@/components/ui-primitives";
+import { CountBadge, WorkspaceHeader, WorkspaceListGroup } from "@/components/ui-primitives";
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
@@ -21,7 +21,7 @@ type AttentionItem =
   | { kind: "contact"; id: string; timestamp: number; dateLabel: string; title: string; meta: string; opportunityId: string | null }
   | { kind: "inbox"; id: string; timestamp: number; dateLabel: string; title: string; meta: string };
 
-export default async function HomePage({ searchParams }: { searchParams: Promise<{ welcome?: string; projectCreated?: string; projectArchived?: string; workspaceSaved?: string; error?: string }> }) {
+export default async function HomePage({ searchParams }: { searchParams: Promise<{ welcome?: string; projectCreated?: string; projectArchived?: string; workspaceSaved?: string; error?: string; focus?: string }> }) {
   const [context, query] = await Promise.all([requireSearchContext(), searchParams]);
   if (!context) redirect("/login");
   if (!context.project || !context.profile) redirect("/onboarding");
@@ -45,7 +45,9 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
   const contacts = contactsResult.data ?? [];
   const inboxCount = (jobsResult.data ?? []).filter((job) => job.inbox_state === "new" || !job.inbox_review_at || new Date(job.inbox_review_at) <= now).length;
   const activeCount = activeCountResult.count ?? 0;
-  const attention = buildAttentionItems({ interviews, tasks, opportunities, contacts, inboxCount, now, ticketKey: context.project.ticket_key });
+  const taskFocus = query.focus === "tasks";
+  const allAttention = buildAttentionItems({ interviews, tasks, opportunities, contacts, inboxCount, now, ticketKey: context.project.ticket_key });
+  const attention = (taskFocus ? allAttention.filter((item) => item.kind === "task") : allAttention).slice(0, 12);
   const attentionGroups = groupAttentionItems(attention);
   const loadError = tasksResult.error || interviewsResult.error || opportunitiesResult.error || activeCountResult.error || jobsResult.error || contactsResult.error;
 
@@ -61,27 +63,27 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
     {loadError ? <Alert variant="destructive" className="home-notice"><AlertTitle>Some items could not be loaded</AlertTitle><AlertDescription>Refresh the page to try again.</AlertDescription></Alert> : null}
     {query.welcome ? <Alert className="home-notice"><CheckCircle2 aria-hidden="true" /><AlertTitle>{context.project.name} is ready</AlertTitle><AlertDescription>Add a promising Job, review it in this Workspace’s Inbox, then track it when it deserves your attention.</AlertDescription><AlertAction><CreateJobButton size="sm">Add a job</CreateJobButton></AlertAction></Alert> : null}
     {query.projectCreated ? <Alert className="home-notice"><CheckCircle2 aria-hidden="true" /><AlertTitle>Workspace created</AlertTitle><AlertDescription>{context.project.name} now has its own preferences, Opportunities, documents, and results.</AlertDescription><AlertAction><CreateJobButton size="sm">Add the first job</CreateJobButton></AlertAction></Alert> : null}
-    {query.projectArchived ? <Alert className="home-notice" role="status"><CheckCircle2 aria-hidden="true" /><AlertTitle>Workspace archived</AlertTitle><AlertDescription>You are now in {context.project.name}.</AlertDescription></Alert> : null}
+    {query.projectArchived ? <Alert className="home-notice" role="status" data-toast="Workspace archived. The next active Workspace is now open."><CheckCircle2 aria-hidden="true" /><AlertTitle>Workspace archived</AlertTitle><AlertDescription>You are now in {context.project.name}.</AlertDescription></Alert> : null}
 
-    {query.workspaceSaved ? <Alert className="home-notice"><CheckCircle2 aria-hidden="true" /><AlertTitle>Workspace details updated</AlertTitle><AlertDescription>Your Home overview now reflects this search direction.</AlertDescription></Alert> : null}
+    {query.workspaceSaved ? <Alert className="home-notice" role="status" data-toast="Workspace details updated. Home now reflects this search direction."><CheckCircle2 aria-hidden="true" /><AlertTitle>Workspace details updated</AlertTitle><AlertDescription>Your Home overview now reflects this search direction.</AlertDescription></Alert> : null}
 
     <div className="home-v2-layout">
       <main className="home-focus-panel">
         <HomeWorkspaceOverview project={context.project} />
-        <header className="home-section-header"><div><h2>Next up</h2><span>{attention.length} items</span></div><p>Actions, follow-ups, and interviews that can move this Workspace forward.</p></header>
-        {attention.length === 0 ? <Empty className="home-clear-state"><EmptyHeader><EmptyMedia className="home-empty-media"><CheckCircle2 aria-hidden="true" /></EmptyMedia><EmptyTitle>Nothing needs attention</EmptyTitle><EmptyDescription>Your follow-ups, preparation, interviews, and Inbox are clear.</EmptyDescription></EmptyHeader><EmptyContent><CreateJobButton variant="outline">Add a job</CreateJobButton></EmptyContent></Empty> : <div className="home-action-groups" aria-label="Items needing attention">{attentionGroups.map((group) => <WorkspaceListGroup title={group.label} count={group.items.length} className={`home-group home-group-${group.label.toLowerCase()}`} key={group.label}><div className="home-action-list">{group.items.map((item) => <AttentionRow item={item} group={group.label} key={`${item.kind}-${item.id}`} />)}</div></WorkspaceListGroup>)}</div>}
+        <header className="home-section-header" id="next-up"><div><h2>{taskFocus ? "Due tasks" : "Next up"}</h2><CountBadge value={attention.length} /><span>{attention.length === 1 ? "item" : "items"}</span>{taskFocus ? <Link className="home-section-clear" href="/home#next-up">View all</Link> : null}</div><p>{taskFocus ? "Open tasks due by tomorrow, ordered by date." : "Actions, follow-ups, and interviews that can move this Workspace forward."}</p></header>
+        {attention.length === 0 ? <Empty className="home-clear-state"><EmptyHeader><EmptyMedia className="home-empty-media"><CheckCircle2 aria-hidden="true" /></EmptyMedia><EmptyTitle>{taskFocus ? "No tasks are due" : "Nothing needs attention"}</EmptyTitle><EmptyDescription>{taskFocus ? "No open tasks are due by tomorrow." : "Your follow-ups, preparation, interviews, and Inbox are clear."}</EmptyDescription></EmptyHeader><EmptyContent>{taskFocus ? <Link className="button secondary" href="/home#next-up">View all next up</Link> : <CreateJobButton variant="outline">Add a job</CreateJobButton>}</EmptyContent></Empty> : <div className="home-action-groups" aria-label={taskFocus ? "Due tasks" : "Items needing attention"}>{attentionGroups.map((group) => <WorkspaceListGroup title={group.label} count={group.items.length} className={`home-group home-group-${group.label.toLowerCase()}`} key={group.label}><div className="home-action-list">{group.items.map((item) => <AttentionRow item={item} group={group.label} key={`${item.kind}-${item.id}`} />)}</div></WorkspaceListGroup>)}</div>}
       </main>
 
       <aside className="home-context-rail">
         <HomeWorkspaceDetails project={context.project} />
         <section className="home-pulse" aria-labelledby="workspace-pulse-heading">
           <div className="home-rail-heading"><h2 id="workspace-pulse-heading">Workspace pulse</h2></div>
-          <dl>
-            <div><dt>Due tasks</dt><dd>{tasks.length}</dd></div>
-            <div><dt>Interviews this week</dt><dd>{interviews.length}</dd></div>
-            <div><dt>Active opportunities</dt><dd>{activeCount}</dd></div>
-            <div><dt>Jobs to review</dt><dd>{inboxCount}</dd></div>
-          </dl>
+          <nav className="home-pulse-links" aria-label="Workspace pulse details">
+            <Link href="/home?focus=tasks#next-up"><span>Due tasks</span><span className="home-pulse-value"><CountBadge value={tasks.length} /><ArrowRight aria-hidden="true" /></span></Link>
+            <Link href="/interview?range=week"><span>Interviews this week</span><span className="home-pulse-value"><CountBadge value={interviews.length} /><ArrowRight aria-hidden="true" /></span></Link>
+            <Link href="/opportunities?view=active"><span>Active opportunities</span><span className="home-pulse-value"><CountBadge value={activeCount} /><ArrowRight aria-hidden="true" /></span></Link>
+            <Link href="/inbox"><span>Jobs to review</span><span className="home-pulse-value"><CountBadge value={inboxCount} /><ArrowRight aria-hidden="true" /></span></Link>
+          </nav>
         </section>
 
         <section className="home-active-opportunities" aria-labelledby="active-opportunities-heading">
@@ -135,7 +137,7 @@ function buildAttentionItems({ interviews, tasks, opportunities, contacts, inbox
     }
   });
   if (inboxCount > 0) items.push({ kind: "inbox", id: "inbox", timestamp: Number.MAX_SAFE_INTEGER, dateLabel: "Inbox", title: `Review ${inboxCount} ${inboxCount === 1 ? "job" : "jobs"}`, meta: "Decide what deserves to become an Opportunity." });
-  return items.sort((a, b) => a.timestamp - b.timestamp).slice(0, 12);
+  return items.sort((a, b) => a.timestamp - b.timestamp);
 }
 
 function relativeDate(value: string, now: Date) {

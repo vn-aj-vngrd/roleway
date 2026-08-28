@@ -110,6 +110,7 @@ export async function createSearchProject(formData: FormData) {
   const returnToValue = formData.get("returnTo");
   const returnTo = typeof returnToValue === "string" && returnToValue.startsWith("/") && !returnToValue.startsWith("//") ? returnToValue : "/home";
   const createErrorHref = (message: string) => `${returnTo}${returnTo.includes("?") ? "&" : "?"}workspaceCreate=true&workspaceError=${encodeURIComponent(message)}`;
+  const successHref = `${returnTo}${returnTo.includes("?") ? "&" : "?"}workspaceCreated=true`;
   const parsed = projectSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) redirect(createErrorHref(parsed.error.issues[0]?.message ?? "Check the workspace details."));
   const auth = await authenticated();
@@ -126,7 +127,7 @@ export async function createSearchProject(formData: FormData) {
   const { error: switchError } = await auth.supabase.rpc("set_active_search_project", { input_project_id: data.id });
   if (switchError) redirect(createErrorHref("The new Workspace was created but could not be opened."));
   revalidatePath("/", "layout");
-  redirect(returnTo);
+  redirect(successHref);
 }
 
 export async function updateWorkspaceHomeDetails(formData: FormData) {

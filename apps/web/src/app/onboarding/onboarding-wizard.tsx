@@ -3,6 +3,7 @@
 import { Check } from "lucide-react";
 import { useRef, useState } from "react";
 import { SubmitButton } from "@/components/submit-button";
+import { Button } from "@/components/ui/button";
 import { completeOnboarding } from "./actions";
 
 const steps = ["Profile", "Workspace"] as const;
@@ -45,8 +46,8 @@ export function OnboardingWizard({ email }: { email: string }) {
       <input type="hidden" name="currency" value="USD" />
 
       <div className="onboarding-actions wizard-actions">
-        {step > 0 ? <button className="button ghost" type="button" onClick={() => setStep(0)}>Back</button> : <span className="muted small">Private by default · Editable later</span>}
-        {step === 0 ? <button className="button primary" type="button" onClick={continueToWorkspace}>Continue</button> : <SubmitButton pendingLabel="Creating Workspace…">Create Workspace and add a Job</SubmitButton>}
+        {step > 0 ? <Button className="button ghost" variant="ghost" type="button" onClick={() => setStep(0)}>Back</Button> : <span className="muted small">Private by default · Editable later</span>}
+        {step === 0 ? <Button className="button primary" type="button" onClick={continueToWorkspace}>Continue</Button> : <SubmitButton pendingLabel="Creating Workspace…">Create Workspace and add a Job</SubmitButton>}
       </div>
     </form>
   );

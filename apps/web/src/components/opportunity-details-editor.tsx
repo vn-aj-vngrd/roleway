@@ -2,9 +2,10 @@
 
 import { Check, ExternalLink } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import { SubmitButton } from "@/components/submit-button";
+import { showToast } from "@/components/toast";
 import { updateOpportunityDetails } from "@/features/workspace/actions";
 
 type RoleDetails = {
@@ -20,12 +21,13 @@ type RoleDetails = {
   application_url: string | null;
 };
 
-export function OpportunityDetailsEditor({ opportunityId, importedAt, ticket, descriptionHtml, job }: { opportunityId: string; importedAt: string; ticket: string; descriptionHtml: string; job: RoleDetails }) {
+export function OpportunityDetailsEditor({ opportunityId, ticket, descriptionHtml, job, navigation, showOverview }: { opportunityId: string; ticket: string; descriptionHtml: string; job: RoleDetails; navigation: ReactNode; showOverview: boolean }) {
   const router = useRouter();
   const [dirty, setDirty] = useState(false);
 
   const save = async (formData: FormData) => {
     await updateOpportunityDetails(formData);
+    showToast({ title: "Opportunity updated" });
     setDirty(false);
     router.refresh();
   };
@@ -42,17 +44,18 @@ export function OpportunityDetailsEditor({ opportunityId, importedAt, ticket, de
       </div>
       <label className="sr-only" htmlFor="opportunity-title">Opportunity title</label>
       <input className="ticket-title-input" id="opportunity-title" name="title" required defaultValue={job.title} placeholder="Untitled opportunity" />
-      <RichTextEditor id="roleDescription" name="description" initialHtml={descriptionHtml} placeholder="Add the role description, responsibilities, and requirements…" className="issue-description-editor" onDirty={() => setDirty(true)} />
+      {navigation}
 
-      <div className="ticket-editor-toolbar">
+      {showOverview ? <RichTextEditor id="roleDescription" name="description" initialHtml={descriptionHtml} placeholder="Add the role description, responsibilities, and requirements…" className="issue-description-editor" onDirty={() => setDirty(true)} /> : <input type="hidden" name="description" value={job.description} />}
+
+      {showOverview || dirty ? <div className="ticket-editor-toolbar">
         <div className="ticket-editor-meta">
-          <span>Imported {new Date(importedAt).toLocaleDateString()}</span>
-          {job.source_url ? <a href={job.source_url} target="_blank" rel="noreferrer"><ExternalLink aria-hidden="true" />Open listing</a> : null}
+          {showOverview && job.source_url ? <a href={job.source_url} target="_blank" rel="noreferrer"><ExternalLink aria-hidden="true" />Open listing</a> : null}
         </div>
         <div className="ticket-editor-actions">
           {dirty ? <SubmitButton className="button primary" pendingLabel="Saving…"><Check aria-hidden="true" />Save changes</SubmitButton> : null}
         </div>
-      </div>
+      </div> : null}
 
       <input type="hidden" name="company" value={job.company} />
       <input type="hidden" name="location" value={job.location} />

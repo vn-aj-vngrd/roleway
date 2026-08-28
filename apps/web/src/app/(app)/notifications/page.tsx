@@ -1,6 +1,7 @@
 import { Bell, CalendarClock, Check, GitBranch, Inbox } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Button } from "@/components/ui/button";
 import { EmptyState, PageHeader } from "@/components/ui-primitives";
 import { requireSearchContext } from "@/features/projects/context";
 import { markAllNotificationsRead, markNotificationRead, openNotification } from "./actions";
@@ -27,7 +28,7 @@ export default async function NotificationsPage() {
     <PageHeader
       title="Notifications"
       description={<>Important changes and reminders across all workspaces.</>}
-      actions={unread > 0 ? <form action={markAllNotificationsRead}><button className="button secondary"><Check aria-hidden="true" />Mark all read</button></form> : null}
+      actions={unread > 0 ? <form action={markAllNotificationsRead}><Button className="button secondary" variant="outline"><Check aria-hidden="true" />Mark all read</Button></form> : null}
     />
     {error ? <div className="form-alert error" role="alert">Notifications could not be loaded. Refresh to try again.</div> : null}
     {!error && accountNotifications.length === 0 ? <EmptyState
@@ -44,7 +45,7 @@ export default async function NotificationsPage() {
             <strong>{notification.title}</strong>
             <time dateTime={notification.created_at}>{notification.search_projects?.name ? `${notification.search_projects.name} · ` : ""}{new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(notification.created_at))}</time>
           </div>
-          {notification.href ? <form action={openNotification}><input type="hidden" name="notificationId" value={notification.id} /><button className="button ghost">Open</button></form> : null}
+          {notification.href ? <form action={openNotification}><input type="hidden" name="notificationId" value={notification.id} /><Button className="button ghost" variant="ghost">Open</Button></form> : null}
           {!notification.read_at ? <form action={markNotificationRead}>
             <input type="hidden" name="notificationId" value={notification.id} />
             <button className="icon-button" data-tooltip="Mark as read" aria-label={`Mark ${notification.title} as read`}><Check aria-hidden="true" /></button>

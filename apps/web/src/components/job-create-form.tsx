@@ -4,6 +4,7 @@ import { Banknote, BriefcaseBusiness, Building2, Download, Globe2, Link2, MapPin
 import { useActionState, useEffect, useState } from "react";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import { SubmitButton } from "@/components/submit-button";
+import { Button } from "@/components/ui/button";
 import { inspectJobUrl, type JobUrlCaptureState } from "@/features/capture/actions";
 import { createJob } from "@/features/workspace/actions";
 
@@ -46,7 +47,7 @@ export function JobCreateForm({ projectId, projectName, onCancel }: { projectId:
 
       <footer className="composer-footer">
         <span className="composer-save-note">Save to {projectName} Inbox</span>
-        {onCancel ? <button className="button secondary" type="button" onClick={onCancel}>Cancel</button> : null}
+        {onCancel ? <Button className="button secondary" variant="outline" type="button" onClick={onCancel}>Cancel</Button> : null}
         <SubmitButton pendingLabel="Saving…">Save job</SubmitButton>
       </footer>
     </form>

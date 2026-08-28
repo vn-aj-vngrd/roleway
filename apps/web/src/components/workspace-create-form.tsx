@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { SelectField } from "@/components/form-controls";
 import { SubmitButton } from "@/components/submit-button";
+import { Button } from "@/components/ui/button";
 import { WorkspaceIconPicker } from "@/components/workspace-icon-picker";
 import { createSearchProject } from "@/features/projects/actions";
 import type { SearchProject } from "@/features/projects/context";
@@ -64,6 +65,6 @@ export function WorkspaceCreateForm({ onCancel }: { onCancel: () => void }) {
     <input type="hidden" name="weeklyApplicationGoal" value="0" />
     <WorkspaceComposerFields />
     {error ? <div className="form-alert error workspace-create-error" role="alert">{error}</div> : null}
-    <footer className="composer-footer"><span className="composer-footer-spacer" /><button className="button secondary" type="button" onClick={onCancel}>Cancel</button><SubmitButton pendingLabel="Creating…">Create workspace</SubmitButton></footer>
+    <footer className="composer-footer"><span className="composer-footer-spacer" /><Button className="button secondary" variant="outline" type="button" onClick={onCancel}>Cancel</Button><SubmitButton pendingLabel="Creating…">Create workspace</SubmitButton></footer>
   </form>;
 }
