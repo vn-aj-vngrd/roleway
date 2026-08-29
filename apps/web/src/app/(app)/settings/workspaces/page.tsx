@@ -6,7 +6,7 @@ import { SubmitButton } from "@/components/submit-button";
 import { CountBadge, PageHeader } from "@/components/ui-primitives";
 import { CreateWorkspaceButton } from "@/components/workspace-create-form";
 import { WorkspaceMark } from "@/components/workspace-mark";
-import { archiveSearchProject, restoreSearchProject } from "@/features/projects/actions";
+import { restoreSearchProject } from "@/features/projects/actions";
 import { requireSearchContext, type SearchProject } from "@/features/projects/context";
 
 export default async function WorkspaceSettingsPage(props: { searchParams: Promise<{ create?: string; restored?: string; archived?: string; q?: string; error?: string }> }) {

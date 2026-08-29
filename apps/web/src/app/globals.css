@@ -1482,9 +1482,9 @@ h3 {
   font-weight: 450;
 }
 .onboarding-content {
-  width: min(760px, calc(100% - 36px));
+  width: min(820px, calc(100% - 36px));
   margin: 0 auto;
-  padding: 54px 0 90px;
+  padding: 48px 0 90px;
 }
 .onboarding-copy {
   margin-bottom: 34px;
@@ -1497,8 +1497,23 @@ h3 {
   color: var(--muted);
 }
 .onboarding-form .form-section {
-  padding-bottom: 32px;
-  margin-bottom: 32px;
+  margin-bottom: 0;
+  padding-bottom: 24px;
+  border-bottom: 0;
+}
+.onboarding-section-heading {
+  margin-bottom: 20px;
+}
+.onboarding-section-heading h2 {
+  font-size: 16px;
+  font-weight: 620;
+}
+.onboarding-section-heading p {
+  max-width: 62ch;
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
 }
 .field-grid {
   display: grid;
@@ -1519,7 +1534,7 @@ h3 {
 }
 .wizard-progress {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 8px;
 }
 .wizard-progress-item {
@@ -1608,6 +1623,28 @@ h3 {
   color: var(--muted);
   font-size: 13px;
 }
+.onboarding-ready-copy {
+  margin-bottom: 24px;
+}
+.onboarding-feature-preview > div {
+  min-height: 70px;
+  padding-block: 12px;
+}
+.onboarding-feature-preview > div > span {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+}
+.onboarding-feature-preview strong {
+  font-size: 14px;
+  font-weight: 600;
+}
+.onboarding-feature-preview small {
+  margin-top: 5px;
+  color: var(--faint);
+  display: block;
+  font-size: 12px;
+}
 .tour-preview-note {
   padding: 14px 16px;
   background: var(--primary-soft);
@@ -1635,17 +1672,18 @@ h3 {
 .tour-scrim {
   position: absolute;
   inset: 0;
-  background: oklch(0.08 0 0 / 0.28);
+  background: oklch(0.08 0 0 / 0.32);
+  pointer-events: auto;
 }
 .tour-card {
   position: absolute;
   right: 22px;
   bottom: 22px;
-  width: min(390px, calc(100vw - 32px));
-  padding: 18px;
+  width: min(410px, calc(100vw - 32px));
+  padding: 20px;
   color: var(--ink);
   background: var(--canvas);
-  border: 0;
+  border: 1px solid var(--line);
   border-radius: var(--radius-dialog);
   box-shadow: var(--dialog-shadow);
   pointer-events: auto;
@@ -1656,11 +1694,33 @@ h3 {
   align-items: center;
 }
 .tour-card header {
+  gap: 9px;
   color: var(--muted);
   font-size: 13px;
 }
-.tour-card header .icon-button {
+.tour-progress-track {
+  height: 2px;
+  margin: -20px -20px 18px;
+  overflow: hidden;
+  border-radius: var(--radius-dialog) var(--radius-dialog) 0 0;
+  background: var(--surface-2);
+}
+.tour-progress-track span {
+  width: var(--tour-progress);
+  height: 100%;
+  background: var(--primary);
+  display: block;
+  transition: width var(--motion-medium) ease-out;
+}
+.tour-step-label {
+  color: var(--primary);
+  font-weight: 600;
+}
+.tour-card header .mono {
   margin-left: auto;
+}
+.tour-card header .icon-button {
+  margin-left: 2px;
 }
 .tour-card h2 {
   margin-top: 8px;
@@ -1675,16 +1735,63 @@ h3 {
   justify-content: space-between;
   gap: 8px;
 }
+.tour-card footer > div {
+  min-width: 88px;
+}
 .tour-target {
   position: relative;
-  outline: 2px solid var(--primary);
-  outline-offset: 3px;
+  border: 2px solid var(--primary) !important;
+  outline: 0;
   background: var(--canvas) !important;
+  box-shadow: inset 0 0 0 3px color-mix(in oklch, var(--primary) 12%, transparent) !important;
+  pointer-events: none;
 }
 .sidebar:has(.tour-target),
 .topbar:has(.tour-target),
 .mobile-nav:has(.tour-target) {
   z-index: calc(var(--z-overlay) + 1);
+}
+
+@media (max-width: 760px) {
+  .onboarding-head {
+    padding-inline: 16px;
+  }
+  .onboarding-content {
+    width: calc(100% - 32px);
+    padding-top: 36px;
+  }
+  .onboarding-copy {
+    margin-bottom: 26px;
+  }
+  .onboarding-copy h1 {
+    font-size: 25px;
+  }
+  .onboarding-form .field-grid {
+    grid-template-columns: 1fr;
+  }
+  .wizard-form {
+    gap: 24px;
+  }
+  .wizard-progress-item {
+    gap: 6px;
+  }
+  .wizard-progress-item b {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .onboarding-actions {
+    align-items: stretch;
+  }
+  .onboarding-actions > .button,
+  .onboarding-actions > button {
+    min-height: 44px;
+  }
+  .tour-card {
+    width: calc(100vw - 32px);
+    max-height: calc(100dvh - 92px);
+    overflow-y: auto;
+  }
 }
 
 /* Live workspace records */

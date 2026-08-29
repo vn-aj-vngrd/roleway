@@ -28,14 +28,20 @@ test("mark all read clears every unread notification", async ({ page }) => {
     await page.getByRole("button", { name: "Continue" }).click();
     await page.getByLabel("Workspace name").fill("Notification workspace");
     await page.getByLabel("Target role").fill("Product Engineer");
+    await page.getByRole("button", { name: "Continue" }).click();
     await page
-      .getByRole("button", { name: "Create Workspace and add a Job" })
+      .getByRole("button", { name: "Create Workspace and start tour" })
       .click();
-    await page.waitForURL("**/inbox?create=true&welcome=true");
+    await page.waitForURL("**/home?tour=true");
+    await page.getByRole("button", { name: "Skip product tour" }).click();
+    await expect(
+      page.getByRole("dialog", { name: "Keep each search focused" }),
+    ).toBeHidden();
 
     const admin = adminClient();
-    const { data: users, error: usersError } =
-      await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+    const { data: users, error: usersError } = await admin.auth.admin.listUsers(
+      { page: 1, perPage: 1000 },
+    );
     if (usersError) throw usersError;
     userId = users.users.find((user) => user.email === email)?.id ?? "";
     expect(userId).not.toBe("");

@@ -363,6 +363,18 @@ function WorkspaceRouteAction({ pathname }: { pathname: string }) {
   return null;
 }
 
+const tourTargetByHref: Record<string, string> = {
+  "/home": "home",
+  "/inbox": "inbox",
+  "/opportunities": "opportunities",
+  "/interview": "interviews",
+  "/contacts": "contacts",
+  "/documents": "documents",
+  "/agent": "agent",
+  "/insights": "insights",
+  "/notifications": "notifications",
+};
+
 function NavItem({
   item,
   pathname,
@@ -379,15 +391,7 @@ function NavItem({
   return (
     <Link
       href={item.href}
-      data-tour={
-        item.href === "/home"
-          ? "home"
-          : item.href === "/inbox"
-            ? "jobs"
-            : item.href === "/opportunities"
-              ? "opportunities"
-              : undefined
-      }
+      data-tour={tourTargetByHref[item.href]}
       className={`nav-link ${active ? "active" : ""}`}
       aria-current={active ? "page" : undefined}
       data-tooltip={item.label}
@@ -731,6 +735,7 @@ function AccountMenu({
       ) : null}
       <button
         className="sidebar-profile"
+        data-tour="account"
         data-tooltip="Account"
         aria-label={`${open ? "Close" : "Open"} account menu for ${user.name}`}
         aria-haspopup="menu"
@@ -804,8 +809,10 @@ export function AppShell({
       router.replace(pathname);
   }, [pathname, router]);
   useEffect(() => {
-    setCompactSidebar(localStorage.getItem("roleway-sidebar") === "compact");
-  }, []);
+    setCompactSidebar(
+      showTour ? false : localStorage.getItem("roleway-sidebar") === "compact",
+    );
+  }, [showTour]);
 
   useEffect(() => {
     const openJob = () => {
@@ -982,14 +989,13 @@ export function AppShell({
             >
               <LogoMark tile size={24} />
             </Link>
-            <div className="sidebar-quick-actions">
+            <div className="sidebar-quick-actions" data-tour="commands">
               <Tooltip>
                 <TooltipTrigger
                   ref={searchTriggerRef}
                   render={
                     <button
                       className="sidebar-search"
-                      data-tour="commands"
                       aria-label="Search Roleway"
                       onClick={() => setSearchOpen(true)}
                     />
@@ -1137,6 +1143,7 @@ export function AppShell({
           ))}
           <button
             className={`nav-link mobile-more ${mobileMoreActive ? "active" : ""}`}
+            data-tour="more"
             aria-label="More destinations"
             aria-haspopup="dialog"
             aria-expanded={mobileMoreOpen}
@@ -1147,6 +1154,7 @@ export function AppShell({
           </button>
           <button
             className="nav-link mobile-search"
+            data-tour="commands"
             aria-label="Search Roleway"
             onClick={() => setSearchOpen(true)}
           >

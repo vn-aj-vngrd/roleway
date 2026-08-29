@@ -144,11 +144,19 @@ test.describe.serial("critical product journey", () => {
     await page
       .getByLabel("Target role")
       .fill("Product Engineer, Full-Stack Engineer");
+    await page.getByRole("button", { name: "Continue" }).click();
     await page
-      .getByRole("button", { name: "Create Workspace and add a Job" })
+      .getByRole("button", { name: "Create Workspace and start tour" })
       .click();
-    await expect(page).toHaveURL(/\/inbox\?create=true&welcome=true/);
-    await expect(page.getByText("Product engineering is ready.")).toBeVisible();
+    await expect(page).toHaveURL(/\/home\?tour=true/);
+    await expect(
+      page.getByRole("dialog", { name: "Keep each search focused" }),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Skip product tour" }).click();
+    await expect(
+      page.getByRole("dialog", { name: "Keep each search focused" }),
+    ).toBeHidden();
+    await page.getByRole("button", { name: "Add job" }).click();
     userId = await findUserId();
     expect(userId).not.toBe("");
 
@@ -597,7 +605,7 @@ test.describe.serial("critical product journey", () => {
       .fill("What would make someone exceptional after six months?");
     await page.getByRole("button", { name: "Save interview" }).click();
     await expect(page.locator(".app-toast").last()).toContainText(
-      "Interview saved",
+      "Interview scheduled",
     );
     await page.goto("/interview?view=calendar");
     await expect(

@@ -185,6 +185,7 @@ export function SearchProjectSwitcher({
                       className="sidebar-search-project-button"
                       aria-current={active ? "true" : undefined}
                       aria-expanded={expanded}
+                      data-tour={active ? "workspace" : undefined}
                       onClick={() => toggleExpanded(project.id)}
                       data-tooltip={project.name}
                     >

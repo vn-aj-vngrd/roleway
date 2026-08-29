@@ -6,7 +6,10 @@ import { commaSeparatedList, onboardingFormSchema } from "@/lib/validation";
 
 export async function completeOnboarding(formData: FormData) {
   const parsed = onboardingFormSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) redirect(`/onboarding?error=${encodeURIComponent(parsed.error.issues[0]?.message ?? "Check your profile.")}`);
+  if (!parsed.success)
+    redirect(
+      `/onboarding?error=${encodeURIComponent(parsed.error.issues[0]?.message ?? "Check your profile.")}`,
+    );
 
   const auth = await requireUser();
   if (!auth) redirect("/login");
@@ -20,11 +23,20 @@ export async function completeOnboarding(formData: FormData) {
     input_technologies: commaSeparatedList(parsed.data.technologies),
     input_remote_preference: parsed.data.remotePreference,
     input_locations: commaSeparatedList(parsed.data.locations),
-    input_minimum_compensation: parsed.data.minimumCompensation === "" ? null : parsed.data.minimumCompensation,
+    input_minimum_compensation:
+      parsed.data.minimumCompensation === ""
+        ? null
+        : parsed.data.minimumCompensation,
     input_currency: parsed.data.currency,
   });
 
-  if (error) redirect(`/onboarding?error=${encodeURIComponent("Your first Workspace could not be created. Try again.")}`);
-  await auth.supabase.from("profiles").update({ tour_completed: true }).eq("user_id", auth.user.id);
-  redirect("/inbox?create=true&welcome=true");
+  if (error)
+    redirect(
+      `/onboarding?error=${encodeURIComponent("Your first Workspace could not be created. Try again.")}`,
+    );
+  await auth.supabase
+    .from("profiles")
+    .update({ tour_completed: false })
+    .eq("user_id", auth.user.id);
+  redirect("/home?tour=true");
 }
