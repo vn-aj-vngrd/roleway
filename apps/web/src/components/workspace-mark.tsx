@@ -1,3 +1,4 @@
+import { createElement } from "react";
 import {
   BookOpen,
   BrainCircuit,
@@ -39,13 +40,53 @@ export const workspaceIconOptions = [
   ["star", "Star", Star],
 ] as const satisfies readonly (readonly [string, string, LucideIcon])[];
 
-export const workspaceEmojiOptions = ["💼", "🎯", "🧭", "🚀", "✨", "🧠", "💻", "🎨", "🏢", "🌍", "📚", "💎", "⚡", "🌱", "🔬", "🛠️", "📈", "🧩", "🔥", "⭐"] as const;
+export const workspaceEmojiOptions = [
+  "💼",
+  "🎯",
+  "🧭",
+  "🚀",
+  "✨",
+  "🧠",
+  "💻",
+  "🎨",
+  "🏢",
+  "🌍",
+  "📚",
+  "💎",
+  "⚡",
+  "🌱",
+  "🔬",
+  "🛠️",
+  "📈",
+  "🧩",
+  "🔥",
+  "⭐",
+] as const;
 
-const iconMap = new Map<string, LucideIcon>(workspaceIconOptions.map(([value, , Icon]) => [value, Icon]));
+const iconMap = new Map<string, LucideIcon>(
+  workspaceIconOptions.map(([value, , Icon]) => [value, Icon]),
+);
 
-export function WorkspaceMark({ type = "icon", value = "briefcase", color = "#5E6AD2", className = "" }: { type?: string; value?: string; color?: string; className?: string }) {
-  const Icon = iconMap.get(value) ?? BriefcaseBusiness;
-  return <span className={`workspace-mark${className ? ` ${className}` : ""}`} data-mark-type={type} style={{ color, backgroundColor: `${color}18` }} aria-hidden="true">
-    {type === "emoji" ? <span>{value}</span> : <Icon />}
-  </span>;
+export function WorkspaceMark({
+  type = "icon",
+  value = "briefcase",
+  color = "#5E6AD2",
+  className = "",
+}: {
+  type?: string;
+  value?: string;
+  color?: string;
+  className?: string;
+}) {
+  const icon = iconMap.get(value) ?? BriefcaseBusiness;
+  return (
+    <span
+      className={`workspace-mark${className ? ` ${className}` : ""}`}
+      data-mark-type={type}
+      style={{ color, backgroundColor: `${color}18` }}
+      aria-hidden="true"
+    >
+      {type === "emoji" ? <span>{value}</span> : createElement(icon)}
+    </span>
+  );
 }
