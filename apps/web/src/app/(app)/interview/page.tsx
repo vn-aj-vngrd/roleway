@@ -3,6 +3,7 @@ import {
   ArrowRight,
   CalendarClock,
   CheckCircle2,
+  ChevronLeft,
   ChevronRight,
   Circle,
   Plus,
@@ -59,6 +60,8 @@ export default async function PreparationPage(props: {
     error?: string;
     deleted?: string;
     range?: string;
+    view?: string;
+    month?: string;
     type?: string;
     status?: string;
     sort?: string;
@@ -104,8 +107,9 @@ export default async function PreparationPage(props: {
   const interviewsThisWeek = upcoming.filter(
     (item) => new Date(item.starts_at).getTime() <= now + 7 * 86_400_000,
   );
-  const weekFilter = query.range === "week";
-  const historyFilter = query.range === "history";
+  const calendarView = query.view === "calendar";
+  const weekFilter = !calendarView && query.range === "week";
+  const historyFilter = !calendarView && query.range === "history";
   const interviewTypes = [
     ...new Set(interviews.map((interview) => interview.interview_type)),
   ].sort();
@@ -128,25 +132,26 @@ export default async function PreparationPage(props: {
     ? query.sort!
     : "schedule";
   const normalizedQuery = query.q?.trim().toLowerCase() ?? "";
+  const matchesFilters = (interview: InterviewRow) => {
+    if (type !== "all" && interview.interview_type !== type) return false;
+    if (status !== "all" && interview.status !== status) return false;
+    if (!normalizedQuery) return true;
+    return [
+      interview.interview_type,
+      interview.interviewers,
+      interview.opportunities?.jobs?.company,
+      interview.opportunities?.jobs?.title,
+    ]
+      .filter(Boolean)
+      .some((value) => value!.toLowerCase().includes(normalizedQuery));
+  };
   const baseInterviews = historyFilter
     ? history
     : weekFilter
       ? interviewsThisWeek
       : upcoming;
   const visibleInterviews = baseInterviews
-    .filter((interview) => {
-      if (type !== "all" && interview.interview_type !== type) return false;
-      if (status !== "all" && interview.status !== status) return false;
-      if (!normalizedQuery) return true;
-      return [
-        interview.interview_type,
-        interview.interviewers,
-        interview.opportunities?.jobs?.company,
-        interview.opportunities?.jobs?.title,
-      ]
-        .filter(Boolean)
-        .some((value) => value!.toLowerCase().includes(normalizedQuery));
-    })
+    .filter(matchesFilters)
     .sort((left, right) => {
       if (sort === "oldest")
         return (
@@ -169,6 +174,14 @@ export default async function PreparationPage(props: {
     : weekFilter
       ? "This week"
       : "Upcoming";
+  const calendarMonth = parseCalendarMonth(query.month);
+  const calendarInterviews = interviews.filter(
+    (interview) =>
+      matchesFilters(interview) &&
+      interviewCalendarDayKey(interview).startsWith(
+        calendarMonthKey(calendarMonth),
+      ),
+  );
   const selectedOpportunityId = opportunities.some(
     (item) => item.id === query.opportunity,
   )
@@ -180,7 +193,7 @@ export default async function PreparationPage(props: {
     <div className="workspace-page workspace-index-page interview-index-page">
       <WorkspaceHeader
         title="Interviews"
-        count={visibleInterviews.length}
+        count={calendarView ? calendarInterviews.length : visibleInterviews.length}
         context={
           <>Scheduled conversations and preparation for {project.name}.</>
         }
@@ -204,7 +217,7 @@ export default async function PreparationPage(props: {
               {
                 href: "/interview",
                 label: "Upcoming",
-                active: !weekFilter && !historyFilter,
+                active: !calendarView && !weekFilter && !historyFilter,
                 count: upcoming.length,
               },
               {
@@ -218,6 +231,11 @@ export default async function PreparationPage(props: {
                 label: "History",
                 active: historyFilter,
                 count: history.length,
+              },
+              {
+                href: `/interview?view=calendar&month=${calendarMonthKey(calendarMonth)}`,
+                label: "Calendar",
+                active: calendarView,
               },
             ]}
           />
@@ -291,20 +309,30 @@ export default async function PreparationPage(props: {
           <header className="interview-schedule-header">
             <div>
               <h2>
-                {historyFilter
-                  ? "Interview history"
-                  : weekFilter
-                    ? "Interviews in the next 7 days"
-                    : "Upcoming interviews"}
+                {calendarView
+                  ? new Intl.DateTimeFormat(undefined, {
+                      month: "long",
+                      year: "numeric",
+                    }).format(calendarMonth)
+                  : historyFilter
+                    ? "Interview history"
+                    : weekFilter
+                      ? "Interviews in the next 7 days"
+                      : "Upcoming interviews"}
               </h2>
               <p>
-                Open a conversation to prepare, capture notes, and record what
-                happens next.
+                {calendarView
+                  ? "See scheduled conversations in the month they happen."
+                  : "Open a conversation to prepare, capture notes, and record what happens next."}
               </p>
             </div>
             <span>
-              {visibleInterviews.length}{" "}
-              {visibleInterviews.length === 1
+              {calendarView
+                ? calendarInterviews.length
+                : visibleInterviews.length}{" "}
+              {(calendarView
+                ? calendarInterviews.length
+                : visibleInterviews.length) === 1
                 ? "conversation"
                 : "conversations"}
             </span>
@@ -337,6 +365,12 @@ export default async function PreparationPage(props: {
                   </Link>
                 )
               }
+            />
+          ) : calendarView ? (
+            <InterviewCalendar
+              interviews={calendarInterviews}
+              month={calendarMonth}
+              ticketKey={project.ticket_key}
             />
           ) : (
             <div className="interview-groups">
@@ -510,6 +544,119 @@ export default async function PreparationPage(props: {
         </CreateModal>
       ) : null}
     </div>
+  );
+}
+
+function InterviewCalendar({
+  interviews,
+  month,
+  ticketKey,
+}: {
+  interviews: InterviewRow[];
+  month: Date;
+  ticketKey: string;
+}) {
+  const days = calendarDays(month);
+  const eventsByDay = new Map<string, InterviewRow[]>();
+  for (const interview of interviews) {
+    const key = interviewCalendarDayKey(interview);
+    const events = eventsByDay.get(key) ?? [];
+    events.push(interview);
+    eventsByDay.set(key, events);
+  }
+  const previousMonth = new Date(month.getFullYear(), month.getMonth() - 1, 1);
+  const nextMonth = new Date(month.getFullYear(), month.getMonth() + 1, 1);
+  const currentMonth = new Date();
+  currentMonth.setDate(1);
+  currentMonth.setHours(0, 0, 0, 0);
+  const isCurrentMonth = calendarMonthKey(month) === calendarMonthKey(currentMonth);
+
+  return (
+    <section className="interview-calendar" aria-label="Interview calendar">
+      <nav className="interview-calendar-navigation" aria-label="Calendar months">
+        <Link
+          className="icon-button"
+          href={`/interview?view=calendar&month=${calendarMonthKey(previousMonth)}`}
+          aria-label={`Previous month, ${new Intl.DateTimeFormat(undefined, { month: "long", year: "numeric" }).format(previousMonth)}`}
+        >
+          <ChevronLeft aria-hidden="true" />
+        </Link>
+        {!isCurrentMonth ? (
+          <Link className="button ghost" href="/interview?view=calendar">
+            Today
+          </Link>
+        ) : (
+          <span />
+        )}
+        <Link
+          className="icon-button"
+          href={`/interview?view=calendar&month=${calendarMonthKey(nextMonth)}`}
+          aria-label={`Next month, ${new Intl.DateTimeFormat(undefined, { month: "long", year: "numeric" }).format(nextMonth)}`}
+        >
+          <ChevronRight aria-hidden="true" />
+        </Link>
+      </nav>
+      {interviews.length === 0 ? (
+        <p className="interview-calendar-empty">No conversations this month.</p>
+      ) : null}
+      <div className="interview-calendar-weekdays" aria-hidden="true">
+        {weekdays().map((day) => (
+          <span key={day}>{day}</span>
+        ))}
+      </div>
+      <div className="interview-calendar-grid">
+        {days.map((day) => {
+          const key = calendarDayKey(day);
+          const dayInterviews = eventsByDay.get(key) ?? [];
+          const outsideMonth = day.getMonth() !== month.getMonth();
+          const isToday = calendarDayKey(day) === calendarDayKey(new Date());
+          return (
+            <section
+              className="interview-calendar-day"
+              data-outside-month={outsideMonth || undefined}
+              data-today={isToday || undefined}
+              key={key}
+              aria-label={new Intl.DateTimeFormat(undefined, {
+                weekday: "long",
+                month: "long",
+                day: "numeric",
+              }).format(day)}
+            >
+              <time dateTime={key}>{day.getDate()}</time>
+              <div className="interview-calendar-events">
+                {dayInterviews.map((interview) => (
+                  <Link
+                    href={`/interview/${interview.id}`}
+                    key={interview.id}
+                    data-status={interview.status}
+                  >
+                    <strong>
+                      {new Intl.DateTimeFormat(undefined, {
+                        hour: "numeric",
+                        minute: "2-digit",
+                        timeZone: interview.timezone,
+                      }).format(new Date(interview.starts_at))}
+                    </strong>
+                    <span>{interview.interview_type}</span>
+                    <small>
+                      {interview.opportunities
+                        ? formatOpportunityTicket(
+                            ticketKey,
+                            interview.opportunities.reference_number,
+                          )
+                        : "Opportunity"}
+                      {interview.opportunities?.jobs?.company
+                        ? ` · ${interview.opportunities.jobs.company}`
+                        : ""}
+                    </small>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 
@@ -695,6 +842,58 @@ function InterviewInsights({
       ) : null}
     </aside>
   );
+}
+
+function parseCalendarMonth(value: string | undefined) {
+  if (value && /^\d{4}-\d{2}$/.test(value)) {
+    const [year, month] = value.split("-").map(Number);
+    if (year && month && month >= 1 && month <= 12)
+      return new Date(year, month - 1, 1);
+  }
+  const today = new Date();
+  return new Date(today.getFullYear(), today.getMonth(), 1);
+}
+
+function calendarMonthKey(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function calendarDayKey(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function interviewCalendarDayKey(
+  interview: Pick<InterviewRow, "starts_at" | "timezone">,
+) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    timeZone: interview.timezone,
+  }).formatToParts(new Date(interview.starts_at));
+  const value = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((part) => part.type === type)?.value ?? "";
+  return `${value("year")}-${value("month")}-${value("day")}`;
+}
+
+function calendarDays(month: Date) {
+  const first = new Date(month.getFullYear(), month.getMonth(), 1);
+  const start = new Date(first);
+  start.setDate(first.getDate() - first.getDay());
+  return Array.from({ length: 42 }, (_, index) => {
+    const day = new Date(start);
+    day.setDate(start.getDate() + index);
+    return day;
+  });
+}
+
+function weekdays() {
+  const sunday = new Date(2026, 7, 30);
+  return Array.from({ length: 7 }, (_, index) => {
+    const day = new Date(sunday);
+    day.setDate(sunday.getDate() + index);
+    return new Intl.DateTimeFormat(undefined, { weekday: "short" }).format(day);
+  });
 }
 
 function interviewDateParts(

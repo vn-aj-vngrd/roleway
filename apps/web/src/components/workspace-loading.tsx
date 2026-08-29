@@ -1,11 +1,11 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { LogoMark } from "@/components/logo";
 
-function Bone({ className = "" }: { className?: string }) {
-  return <span className={`skeleton-bone ${className}`} aria-hidden="true" />;
+function Bone({ className = "", style }: { className?: string; style?: CSSProperties }) {
+  return <span className={`skeleton-bone ${className}`} style={style} aria-hidden="true" />;
 }
 
 function PageHeading() {
@@ -835,6 +835,122 @@ function DocumentsSkeleton() {
   );
 }
 
+function InsightsSkeleton() {
+  return (
+    <div className="insights-page skeleton-page skeleton-insights-page">
+      <PageHeading />
+      <div className="insights-layout">
+        <main className="insights-main">
+          <section className="insights-summary">
+            {Array.from({ length: 4 }, (_, item) => (
+              <div key={item}>
+                <Bone className="skeleton-number" />
+                <Bone className="skeleton-line short" />
+              </div>
+            ))}
+          </section>
+          <section className="insight-section">
+            <Bone className="skeleton-line short" />
+            <Bone className="skeleton-line medium skeleton-insights-copy" />
+            <div className="skeleton-insight-signal">
+              <Bone className="skeleton-icon" />
+              <span>
+                <Bone className="skeleton-line medium" />
+                <Bone className="skeleton-line long" />
+              </span>
+            </div>
+          </section>
+          <section className="insight-section">
+            <Bone className="skeleton-line medium" />
+            <Bone className="skeleton-line long skeleton-insights-copy" />
+            <div className="skeleton-insight-chart">
+              {[42, 68, 35, 82, 56, 74].map((height, item) => (
+                <Bone style={{ height: `${height}%` }} key={item} />
+              ))}
+            </div>
+          </section>
+          <section className="insight-section skeleton-insight-rows">
+            <Bone className="skeleton-line medium" />
+            <Bone className="skeleton-line long skeleton-insights-copy" />
+            {Array.from({ length: 3 }, (_, item) => (
+              <div key={item}>
+                <Bone className="skeleton-line medium" />
+                <Bone className="skeleton-line long" />
+                <Bone className="skeleton-tag" />
+              </div>
+            ))}
+          </section>
+        </main>
+        <aside className="insights-rail skeleton-insights-rail">
+          {Array.from({ length: 3 }, (_, section) => (
+            <section key={section}>
+              <Bone className="skeleton-line medium" />
+              {Array.from({ length: section === 1 ? 3 : 4 }, (_, item) => (
+                <div key={item}>
+                  <Bone className="skeleton-line medium" />
+                  <Bone className="skeleton-number" />
+                </div>
+              ))}
+            </section>
+          ))}
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+function NotificationsSkeleton() {
+  return (
+    <div className="notifications-page skeleton-page skeleton-notifications-page">
+      <PageHeading />
+      <div className="notifications-layout">
+        <main className="notifications-main">
+          <div className="notification-filters">
+            <Bone className="skeleton-tag" />
+            <Bone className="skeleton-tag" />
+          </div>
+          <div className="skeleton-notification-groups">
+            {[3, 2].map((rows, group) => (
+              <section className="notification-group" key={group}>
+                <header>
+                  <Bone className="skeleton-line short" />
+                  <Bone className="skeleton-number" />
+                </header>
+                <div className="notification-list">
+                  {Array.from({ length: rows }, (_, row) => (
+                    <div className="notification-row" key={row}>
+                      <Bone className="skeleton-dot" />
+                      <Bone className="skeleton-icon" />
+                      <div className="notification-copy">
+                        <Bone className="skeleton-line long" />
+                        <Bone className="skeleton-line medium" />
+                      </div>
+                      <Bone className="skeleton-action" />
+                    </div>
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
+        </main>
+        <aside className="notifications-rail skeleton-notifications-rail">
+          {Array.from({ length: 4 }, (_, section) => (
+            <section key={section}>
+              <Bone className="skeleton-line medium" />
+              {Array.from({ length: section === 3 ? 1 : 3 }, (_, item) => (
+                <div key={item}>
+                  <Bone className="skeleton-line medium" />
+                  <Bone className="skeleton-number" />
+                </div>
+              ))}
+            </section>
+          ))}
+        </aside>
+      </div>
+    </div>
+  );
+}
+
 function GenericListSkeleton() {
   return (
     <div className="page narrow skeleton-page">
@@ -862,6 +978,8 @@ export function WorkspaceLoading() {
   else if (pathname.startsWith("/settings") || pathname === "/admin")
     content = <SettingsSkeleton />;
   else if (pathname === "/agent") content = <AgentSkeleton />;
+  else if (pathname === "/insights") content = <InsightsSkeleton />;
+  else if (pathname === "/notifications") content = <NotificationsSkeleton />;
   else content = <GenericListSkeleton />;
 
   return (

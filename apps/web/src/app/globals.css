@@ -14084,7 +14084,7 @@ body [data-tooltip]::after {
 }
 .agent-native-routebar {
   position: sticky;
-  top: var(--topbar-height);
+  top: 0;
   z-index: calc(var(--z-sticky) - 1);
   min-height: 44px;
   padding: 0 10px 0 12px;

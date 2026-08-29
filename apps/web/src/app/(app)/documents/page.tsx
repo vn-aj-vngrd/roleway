@@ -1,7 +1,11 @@
 import { formatOpportunityTicket } from "@roleway/core";
 import {
+  Archive,
   ArrowRight,
   ChevronRight,
+  CircleCheck,
+  CircleDashed,
+  CircleHelp,
   Clock3,
   FileCheck2,
   Files,
@@ -82,6 +86,7 @@ export default async function DocumentsPage(props: {
   const documents = (data ?? []) as unknown as DocumentRow[];
   const drafts = documents.filter((document) => document.status === "draft");
   const draftView = query.view === "drafts";
+  const galleryView = query.view === "gallery";
   const kind = documentKinds.some((option) => option.value === query.kind)
     ? query.kind!
     : "all";
@@ -166,7 +171,7 @@ export default async function DocumentsPage(props: {
               {
                 href: "/documents",
                 label: "All documents",
-                active: !draftView,
+                active: !draftView && !galleryView,
                 count: documents.length,
               },
               {
@@ -174,6 +179,11 @@ export default async function DocumentsPage(props: {
                 label: "Drafts",
                 active: draftView,
                 count: drafts.length,
+              },
+              {
+                href: "/documents?view=gallery",
+                label: "Gallery",
+                active: galleryView,
               },
             ]}
           />
@@ -235,10 +245,17 @@ export default async function DocumentsPage(props: {
         <main className="documents-library">
           <header className="documents-library-header">
             <div>
-              <h2>{draftView ? "Draft documents" : "Document library"}</h2>
+              <h2>
+                {galleryView
+                  ? "Document gallery"
+                  : draftView
+                    ? "Draft documents"
+                    : "Document library"}
+              </h2>
               <p>
-                Keep each working draft, approved version, and submission
-                artifact attached to its purpose.
+                {galleryView
+                  ? "Browse working material by document, purpose, and readiness."
+                  : "Keep each working draft, approved version, and submission artifact attached to its purpose."}
               </p>
             </div>
             <span>
@@ -285,6 +302,11 @@ export default async function DocumentsPage(props: {
                   View all documents
                 </Link>
               }
+            />
+          ) : galleryView ? (
+            <DocumentGallery
+              documents={visibleDocuments}
+              ticketKey={project.ticket_key}
             />
           ) : (
             <section
@@ -521,16 +543,75 @@ export default async function DocumentsPage(props: {
   );
 }
 
+function DocumentGallery({
+  documents,
+  ticketKey,
+}: {
+  documents: DocumentRow[];
+  ticketKey: string;
+}) {
+  return (
+    <section className="document-gallery" aria-label="Document gallery">
+      {documents.map((document) => {
+        const KindIcon = documentKindIcon(document.kind);
+        const opportunity = document.opportunities;
+        return (
+          <Link
+            className="document-gallery-item"
+            href={`/documents/${document.id}`}
+            key={document.id}
+          >
+            <span className="document-gallery-sheet" aria-hidden="true">
+              <KindIcon />
+              <i />
+              <i />
+              <i />
+            </span>
+            <span className="document-gallery-copy">
+              <strong>{document.title}</strong>
+              <span>
+                {documentKindLabel(document.kind)}
+                {opportunity
+                  ? ` · ${formatOpportunityTicket(ticketKey, opportunity.reference_number)}`
+                  : " · Workspace document"}
+              </span>
+            </span>
+            <span className="document-gallery-meta">
+              <DocumentStatusBadge status={document.status} />
+              <time dateTime={document.updated_at}>
+                {new Intl.DateTimeFormat(undefined, {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                }).format(new Date(document.updated_at))}
+              </time>
+            </span>
+          </Link>
+        );
+      })}
+    </section>
+  );
+}
+
 function DocumentStatusBadge({ status }: { status: string }) {
   const label = status
     ? `${status.charAt(0).toUpperCase()}${status.slice(1).replaceAll("_", " ")}`
     : "Unknown";
+  const StatusIcon =
+    {
+      draft: CircleDashed,
+      approved: CircleCheck,
+      submitted: Send,
+      archived: Archive,
+    }[status] ?? CircleHelp;
+
   return (
     <Badge
       className="document-status-badge"
       data-status={status}
       variant="outline"
     >
+      <StatusIcon aria-hidden="true" />
       {label}
     </Badge>
   );

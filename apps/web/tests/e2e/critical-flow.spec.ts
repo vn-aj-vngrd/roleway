@@ -285,6 +285,11 @@ test.describe.serial("critical product journey", () => {
       page.getByRole("heading", { name: "People and follow-ups" }),
     ).toBeVisible();
     await auditAuthenticatedSurface(page, "/contacts");
+    await page.getByRole("link", { name: /^Timeline/ }).click();
+    await expect(
+      page.getByRole("heading", { name: "Follow-up timeline" }),
+    ).toBeVisible();
+    await expect(page.getByText("No follow-ups scheduled")).toBeVisible();
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/contacts");
     await expect(page.getByText("Maya Chen", { exact: true })).toBeVisible();
@@ -299,6 +304,26 @@ test.describe.serial("critical product journey", () => {
       ),
     ).toBeLessThanOrEqual(1);
     await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto("/insights");
+    const insightsRange = page.getByRole("combobox", {
+      name: "Insight timeline",
+    });
+    await insightsRange.click();
+    await page.getByRole("option", { name: "Last 90 days" }).click();
+    await expect(page).toHaveURL(/\/insights\?range=90/);
+    await expect(insightsRange).toContainText("Last 90 days");
+    await page.goto("/agent");
+    const appToolbarBox = await page.locator(".workspace-toolbar").boundingBox();
+    const agentRoutebarBox = await page
+      .locator(".agent-native-routebar")
+      .boundingBox();
+    expect(appToolbarBox).not.toBeNull();
+    expect(agentRoutebarBox).not.toBeNull();
+    expect(
+      Math.abs(
+        agentRoutebarBox!.y - (appToolbarBox!.y + appToolbarBox!.height),
+      ),
+    ).toBeLessThanOrEqual(1);
     await page.goto(opportunityPath);
 
     const stageControl = page.getByRole("combobox", {
@@ -418,8 +443,15 @@ test.describe.serial("critical product journey", () => {
     await expect(
       page.getByText("Northstar tailored resume", { exact: true }).first(),
     ).toBeVisible();
+    await page.getByRole("link", { name: "Gallery" }).click();
+    await expect(
+      page.getByRole("heading", { name: "Document gallery" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("region", { name: "Document gallery" }),
+    ).toBeVisible();
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto("/documents");
+    await page.goto("/documents?view=gallery");
     await expect(
       page.getByText("Northstar tailored resume", { exact: true }).first(),
     ).toBeVisible();
@@ -458,6 +490,20 @@ test.describe.serial("critical product journey", () => {
     await expect(page.locator(".app-toast").last()).toContainText(
       "Interview saved",
     );
+    await page.goto("/interview?view=calendar");
+    await expect(
+      page.getByRole("region", { name: "Interview calendar" }),
+    ).toBeVisible();
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/interview?view=calendar");
+    expect(
+      await page.evaluate(
+        () =>
+          document.documentElement.scrollWidth -
+          document.documentElement.clientWidth,
+      ),
+    ).toBeLessThanOrEqual(1);
+    await page.setViewportSize({ width: 1440, height: 900 });
 
     await page.goto("/home");
     await expect(

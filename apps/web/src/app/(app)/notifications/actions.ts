@@ -16,12 +16,27 @@ export async function markNotificationRead(formData: FormData) {
   revalidatePath("/", "layout");
 }
 
-export async function markAllNotificationsRead() {
+export async function markAllNotificationsRead(formData: FormData) {
   const context = await requireSearchContext();
-  if (!context) return;
-  await context.supabase.from("notifications").update({ read_at: new Date().toISOString() }).eq("user_id", context.user.id).is("read_at", null);
+  if (!context) redirect("/login");
+  const unreadView = formData.get("view") === "unread";
+  const returnPath = unreadView
+    ? "/notifications?view=unread"
+    : "/notifications";
+  const { error } = await context.supabase
+    .from("notifications")
+    .update({ read_at: new Date().toISOString() })
+    .eq("user_id", context.user.id)
+    .is("read_at", null);
+  if (error) {
+    const separator = unreadView ? "&" : "?";
+    redirect(
+      `${returnPath}${separator}error=Notifications%20could%20not%20be%20marked%20as%20read.%20Try%20again.`,
+    );
+  }
   revalidatePath("/notifications");
   revalidatePath("/", "layout");
+  redirect(returnPath);
 }
 
 export async function openNotification(formData: FormData) {

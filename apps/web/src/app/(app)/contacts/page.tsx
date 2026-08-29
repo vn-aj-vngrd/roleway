@@ -2,6 +2,7 @@ import { formatOpportunityTicket } from "@roleway/core";
 import {
   ArrowRight,
   CalendarClock,
+  ChevronRight,
   Clock3,
   Link2,
   Mail,
@@ -75,6 +76,7 @@ export default async function ContactsPage(props: {
     q?: string;
     relationship?: string;
     range?: string;
+    view?: string;
     sort?: string;
     created?: string;
     saved?: string;
@@ -120,7 +122,8 @@ export default async function ContactsPage(props: {
     : "all";
   const now = Date.now();
   const weekEnd = now + 7 * 86_400_000;
-  const weekFilter = query.range === "week";
+  const timelineView = query.view === "timeline";
+  const weekFilter = !timelineView && query.range === "week";
   const contactSorts = ["follow_up", "name", "company", "updated"] as const;
   const sort = contactSorts.includes(
     query.sort as (typeof contactSorts)[number],
@@ -170,6 +173,9 @@ export default async function ContactsPage(props: {
         leftFollowUp - rightFollowUp || left.name.localeCompare(right.name)
       );
     });
+  const timelineContacts = visibleContacts.filter(
+    (contact) => contact.follow_up_at,
+  );
   const editing = contacts.find((contact) => contact.id === query.edit) ?? null;
   const followUpContacts = contacts.filter(
     (contact) =>
@@ -205,7 +211,13 @@ export default async function ContactsPage(props: {
     <div className="workspace-page workspace-index-page contacts-page">
       <WorkspaceHeader
         title="Contacts"
-        count={weekFilter ? followUpContacts.length : contacts.length}
+        count={
+          timelineView
+            ? timelineContacts.length
+            : weekFilter
+              ? followUpContacts.length
+              : contacts.length
+        }
         context={<>People, relationships, and follow-ups for {project.name}.</>}
         actions={
           <Link className="button primary" href="/contacts?create=true">
@@ -225,7 +237,7 @@ export default async function ContactsPage(props: {
               {
                 href: "/contacts",
                 label: "All contacts",
-                active: !weekFilter,
+                active: !timelineView && !weekFilter,
                 count: contacts.length,
               },
               {
@@ -233,6 +245,12 @@ export default async function ContactsPage(props: {
                 label: "Needs follow-up",
                 active: weekFilter,
                 count: followUpContacts.length,
+              },
+              {
+                href: "/contacts?view=timeline",
+                label: "Timeline",
+                active: timelineView,
+                count: contacts.filter((contact) => contact.follow_up_at).length,
               },
             ]}
           />
@@ -311,18 +329,28 @@ export default async function ContactsPage(props: {
           <header className="contacts-directory-header">
             <div>
               <h2>
-                {weekFilter
-                  ? "Follow-ups needing attention"
-                  : "People and follow-ups"}
+                {timelineView
+                  ? "Follow-up timeline"
+                  : weekFilter
+                    ? "Follow-ups needing attention"
+                    : "People and follow-ups"}
               </h2>
               <p>
-                Keep relationship context close to the Opportunity and the next
-                useful touchpoint.
+                {timelineView
+                  ? "Review every scheduled touchpoint in date order."
+                  : "Keep relationship context close to the Opportunity and the next useful touchpoint."}
               </p>
             </div>
             <span>
-              {visibleContacts.length}{" "}
-              {visibleContacts.length === 1 ? "person" : "people"}
+              {timelineView ? timelineContacts.length : visibleContacts.length}{" "}
+              {(timelineView ? timelineContacts.length : visibleContacts.length) ===
+              1
+                ? timelineView
+                  ? "follow-up"
+                  : "person"
+                : timelineView
+                  ? "follow-ups"
+                  : "people"}
             </span>
           </header>
 
@@ -342,6 +370,18 @@ export default async function ContactsPage(props: {
                 <Link className="button primary" href="/contacts?create=true">
                   <Plus aria-hidden="true" />
                   Add your first contact
+                </Link>
+              }
+            />
+          ) : timelineView && timelineContacts.length === 0 ? (
+            <EmptyState
+              className="contacts-empty-state"
+              icon={<CalendarClock />}
+              title="No follow-ups scheduled"
+              description="Add a follow-up date to a contact to place it on this timeline and Home."
+              actions={
+                <Link className="button secondary" href="/contacts">
+                  View all contacts
                 </Link>
               }
             />
@@ -367,6 +407,13 @@ export default async function ContactsPage(props: {
                   Clear filters
                 </Link>
               }
+            />
+          ) : timelineView ? (
+            <ContactTimeline
+              contacts={timelineContacts}
+              now={now}
+              weekEnd={weekEnd}
+              ticketKey={project.ticket_key}
             />
           ) : (
             <section
@@ -605,6 +652,108 @@ export default async function ContactsPage(props: {
         </CreateModal>
       ) : null}
     </div>
+  );
+}
+
+function ContactTimeline({
+  contacts,
+  now,
+  weekEnd,
+  ticketKey,
+}: {
+  contacts: ContactRow[];
+  now: number;
+  weekEnd: number;
+  ticketKey: string;
+}) {
+  const groups = [
+    {
+      key: "overdue",
+      label: "Overdue",
+      contacts: contacts.filter(
+        (contact) => new Date(contact.follow_up_at!).getTime() < now,
+      ),
+    },
+    {
+      key: "next",
+      label: "Next 7 days",
+      contacts: contacts.filter((contact) => {
+        const followUp = new Date(contact.follow_up_at!).getTime();
+        return followUp >= now && followUp <= weekEnd;
+      }),
+    },
+    {
+      key: "later",
+      label: "Later",
+      contacts: contacts.filter(
+        (contact) => new Date(contact.follow_up_at!).getTime() > weekEnd,
+      ),
+    },
+  ].filter((group) => group.contacts.length > 0);
+
+  return (
+    <section className="contact-timeline" aria-label="Scheduled follow-ups">
+      {groups.map((group) => (
+        <section className="contact-timeline-group" key={group.key}>
+          <header>
+            <h3>{group.label}</h3>
+            <CountBadge value={group.contacts.length} />
+          </header>
+          <div>
+            {[...group.contacts]
+              .sort(
+                (left, right) =>
+                  new Date(left.follow_up_at!).getTime() -
+                  new Date(right.follow_up_at!).getTime(),
+              )
+              .map((contact) => {
+                const overdue =
+                  new Date(contact.follow_up_at!).getTime() < now;
+                return (
+                  <Link
+                    className="contact-timeline-item"
+                    href={`/contacts?edit=${contact.id}`}
+                    key={contact.id}
+                  >
+                    <time
+                      dateTime={contact.follow_up_at!}
+                      data-overdue={overdue || undefined}
+                    >
+                      <strong>
+                        {new Intl.DateTimeFormat(undefined, {
+                          month: "short",
+                          day: "numeric",
+                        }).format(new Date(contact.follow_up_at!))}
+                      </strong>
+                      <span>
+                        {new Intl.DateTimeFormat(undefined, {
+                          hour: "numeric",
+                          minute: "2-digit",
+                        }).format(new Date(contact.follow_up_at!))}
+                      </span>
+                    </time>
+                    <span className="contact-timeline-marker" aria-hidden="true" />
+                    <span className="contact-timeline-copy">
+                      <strong>{contact.name}</strong>
+                      <span>
+                        {[contact.role, contact.company]
+                          .filter(Boolean)
+                          .join(" · ") || "Contact details not added"}
+                      </span>
+                      <small>
+                        {contact.opportunities
+                          ? `${formatOpportunityTicket(ticketKey, contact.opportunities.reference_number)} · ${contact.opportunities.jobs?.title ?? "Untitled role"}`
+                          : "Workspace-wide"}
+                      </small>
+                    </span>
+                    <ChevronRight aria-hidden="true" />
+                  </Link>
+                );
+              })}
+          </div>
+        </section>
+      ))}
+    </section>
   );
 }
 
