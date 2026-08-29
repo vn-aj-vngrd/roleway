@@ -17,15 +17,18 @@ export default async function ProfilePage(props: { searchParams: Promise<{ saved
     <div className="settings-layout"><SettingsNav active="Profile" /><main>
       {query.saved ? <div className="form-alert success" role="status">Profile saved.</div> : null}
       {query.error ? <div className="form-alert error" role="alert">{query.error}</div> : null}
-      {error || !profile ? <div className="form-alert error">Your profile could not be loaded.</div> : <form action={updateProfile} className="linear-settings-form">
-        <section className="settings-card profile-settings-card" aria-label="Profile details">
-          <div className="settings-row"><div className="settings-row-copy"><strong>Profile picture</strong></div><span className="avatar avatar-large">{initials}</span></div>
-          <div className="settings-row"><div className="settings-row-copy"><strong>Email</strong></div><span className="settings-static-value">{auth.user.email}</span></div>
-          <label className="settings-row" htmlFor="fullName"><span className="settings-row-copy"><strong>Full name</strong></span><input id="fullName" name="fullName" className="input" required defaultValue={profile.full_name} autoComplete="name" /></label>
-          <label className="settings-row" htmlFor="headline"><span className="settings-row-copy"><strong>Title</strong><small>Your professional title or role</small></span><input id="headline" name="headline" className="input" defaultValue={profile.headline} placeholder="Software engineer" /></label>
-          <label className="settings-row settings-row-textarea" htmlFor="summary"><span className="settings-row-copy"><strong>Career summary</strong><small>Experience, strengths, and the problems you solve</small></span><textarea id="summary" name="summary" className="textarea" defaultValue={profile.summary} rows={4} placeholder="A concise career summary…" /></label>
+      {error || !profile ? <div className="form-alert error">Your profile could not be loaded.</div> : <form action={updateProfile}>
+        <section className="settings-group">
+          <header className="settings-group-header"><h2>Profile details</h2><p>Manage the identity and career context used across Roleway.</p></header>
+          <div className="settings-card profile-settings-card" aria-label="Profile details">
+            <div className="settings-row"><div className="settings-row-copy"><strong>Profile picture</strong></div><span className="avatar avatar-large">{initials}</span></div>
+            <div className="settings-row"><div className="settings-row-copy"><strong>Email</strong></div><span className="settings-static-value">{auth.user.email}</span></div>
+            <label className="settings-row" htmlFor="fullName"><span className="settings-row-copy"><strong>Full name</strong></span><input id="fullName" name="fullName" className="input" required defaultValue={profile.full_name} autoComplete="name" /></label>
+            <label className="settings-row" htmlFor="headline"><span className="settings-row-copy"><strong>Title</strong><small>Your professional title or role</small></span><input id="headline" name="headline" className="input" defaultValue={profile.headline} placeholder="Software engineer" /></label>
+            <label className="settings-row settings-row-textarea" htmlFor="summary"><span className="settings-row-copy"><strong>Career summary</strong><small>Experience, strengths, and the problems you solve</small></span><textarea id="summary" name="summary" className="textarea" defaultValue={profile.summary} rows={4} placeholder="A concise career summary…" /></label>
+          </div>
+          <div className="settings-save-row"><SubmitButton pendingLabel="Saving…">Save profile</SubmitButton></div>
         </section>
-        <div className="settings-save-row"><SubmitButton pendingLabel="Saving…">Save profile</SubmitButton></div>
       </form>}
       <section className="settings-group"><header className="settings-group-header"><h2>Product tour</h2><p>Revisit navigation, capture, and command shortcuts.</p></header><div className="settings-card"><div className="settings-row"><div className="settings-row-copy"><strong>Replay product tour</strong><small>Start the guided walkthrough from the beginning</small></div><form action={restartTour}><SubmitButton className="button secondary" pendingLabel="Starting…">Restart tour</SubmitButton></form></div></div></section>
     </main></div>

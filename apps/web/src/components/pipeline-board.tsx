@@ -65,7 +65,7 @@ const defaultPipelinePreferences: PipelinePreferences = {
   filter: "active",
   priority: "all",
   due: "all",
-  viewMode: "board",
+  viewMode: "list",
   sort: "priority",
   query: "",
 };
@@ -167,11 +167,15 @@ export function PipelineBoard({
   now,
   ticketKey,
   initialFilter,
+  preferencePage = "opportunities",
+  previewHref,
 }: {
   opportunities: PipelineOpportunity[];
   now: string;
   ticketKey: string;
   initialFilter?: PipelineFilter;
+  preferencePage?: string;
+  previewHref?: string;
 }) {
   const ticketNumber = useCallback(
     (item: PipelineOpportunity) =>
@@ -196,7 +200,7 @@ export function PipelineBoard({
     [initialFilter],
   );
   const { preferences, setPreferences } = usePagePreferences({
-    page: "opportunities",
+    page: preferencePage,
     defaults: defaultPipelinePreferences,
     normalize: normalizePreferences,
     migrateFromKey: legacyPipelinePreferenceKey,
@@ -602,6 +606,7 @@ export function PipelineBoard({
           moveByKeyboard={moveByKeyboard}
           referenceTime={referenceTime}
           ticketKey={ticketKey}
+          {...(previewHref ? { previewHref } : {})}
         />
       ) : (
         <div className="board-shell">
@@ -705,7 +710,7 @@ export function PipelineBoard({
                         >
                           <Link
                             className="opportunity-card-link"
-                            href={`/opportunities/${item.id}`}
+                            href={previewHref ?? `/opportunities/${item.id}`}
                             draggable={false}
                             aria-label={`${item.jobs?.title ?? "Opportunity"} at ${item.jobs?.company ?? "unknown company"}. Stage ${stageDetails[item.stage].label}. Drag to another stage, or use Alt and arrow keys to move it.`}
                           >
@@ -940,12 +945,14 @@ function PipelineList({
   moveByKeyboard,
   referenceTime,
   ticketKey,
+  previewHref,
 }: {
   items: PipelineOpportunity[];
   visibleStages: readonly Stage[];
   moveByKeyboard: (item: PipelineOpportunity, direction: -1 | 1) => void;
   referenceTime: Date;
   ticketKey: string;
+  previewHref?: string;
 }) {
   return (
     <div className="pipeline-list-view" aria-label="Opportunity list">
@@ -970,7 +977,7 @@ function PipelineList({
                 return (
                   <Link
                     className="pipeline-list-row"
-                    href={`/opportunities/${item.id}`}
+                    href={previewHref ?? `/opportunities/${item.id}`}
                     key={item.id}
                     onKeyDown={(event) => {
                       if (

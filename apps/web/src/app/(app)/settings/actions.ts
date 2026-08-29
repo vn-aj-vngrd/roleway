@@ -36,16 +36,47 @@ export async function deleteAccount(formData: FormData) {
   redirect("/login?message=Your%20Roleway%20account%20and%20workspace%20were%20deleted.");
 }
 
-export async function updateNotificationPreferences(formData: FormData) {
-  const auth = await requireUser(); if (!auth) redirect("/login");
-  const enabled = (name: string) => formData.get(name) === "on";
+const notificationPreferenceSchema = z.object({
+  preference: z.enum([
+    "taskReminders",
+    "interviewReminders",
+    "pipelineUpdates",
+  ]),
+  enabled: z.boolean(),
+});
+
+export type NotificationPreference = z.infer<
+  typeof notificationPreferenceSchema
+>["preference"];
+
+const notificationPreferenceColumns: Record<
+  NotificationPreference,
+  "task_reminders" | "interview_reminders" | "pipeline_updates"
+> = {
+  taskReminders: "task_reminders",
+  interviewReminders: "interview_reminders",
+  pipelineUpdates: "pipeline_updates",
+};
+
+export async function updateNotificationPreference(input: {
+  preference: NotificationPreference;
+  enabled: boolean;
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  const parsed = notificationPreferenceSchema.safeParse(input);
+  if (!parsed.success)
+    return { ok: false, error: "That notification preference is not valid." };
+  const auth = await requireUser();
+  if (!auth) redirect("/login");
+  const column = notificationPreferenceColumns[parsed.data.preference];
   const { error } = await auth.supabase.from("notification_preferences").upsert({
     user_id: auth.user.id,
-    task_reminders: enabled("taskReminders"),
-    interview_reminders: enabled("interviewReminders"),
-    pipeline_updates: enabled("pipelineUpdates"),
+    [column]: parsed.data.enabled,
   });
-  if (error) redirect("/settings/notifications?error=Notification%20preferences%20could%20not%20be%20saved.");
+  if (error)
+    return {
+      ok: false,
+      error: "Notification preference could not be saved. Try again.",
+    };
   revalidatePath("/settings/notifications");
-  redirect("/settings/notifications?saved=true");
+  return { ok: true };
 }

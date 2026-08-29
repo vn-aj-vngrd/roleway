@@ -7,5 +7,26 @@ export default async function AppearanceSettingsPage() {
   const auth = await requireUser();
   if (!auth) return null;
 
-  return <div className="page settings-page"><PageHeader title="Appearance" /><div className="settings-layout"><SettingsNav active="Appearance" /><main><section className="form-section"><h2>Appearance</h2><p>Choose how Roleway looks on this device. System follows your operating system preference.</p><AppearanceControl /></section></main></div></div>;
+  return (
+    <div className="page settings-page">
+      <PageHeader title="Appearance" />
+      <div className="settings-layout">
+        <SettingsNav active="Appearance" />
+        <main>
+          <section className="settings-group">
+            <header className="settings-group-header">
+              <h2>Theme</h2>
+              <p>
+                Choose how Roleway looks on this device. System follows your
+                operating system preference.
+              </p>
+            </header>
+            <div className="settings-card appearance-settings-card">
+              <AppearanceControl />
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+  );
 }

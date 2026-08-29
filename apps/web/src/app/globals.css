@@ -5419,7 +5419,7 @@ select {
 .danger-action-row {
   min-height: 76px;
   padding: 14px 0;
-  border-block: 1px solid var(--line);
+  border-top: 1px solid var(--line);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -5523,12 +5523,6 @@ select {
 .ai-settings-main .empty-inline {
   margin: 0;
   padding: 10px 0 0;
-}
-.ai-settings-main .ai-add-section {
-  margin-bottom: 0;
-}
-.ai-settings-main .ai-add-section > p {
-  margin-bottom: 20px;
 }
 .ai-settings-main .ai-connection-form {
   max-width: 640px;
@@ -5657,11 +5651,13 @@ select {
   color: var(--ink);
   font-size: 13px;
   font-weight: 590;
+  line-height: 1.25;
 }
 .appearance-option-copy small {
   overflow: hidden;
   color: var(--muted);
   font-size: 13px;
+  line-height: 1.3;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -12576,14 +12572,20 @@ html:has(.app-shell) {
   }
 }
 
-/* Keep sidebar groups content-sized; the account alone owns the bottom edge. */
+/* Keep account controls fixed while navigation owns the scrollable sidebar space. */
 .app-shell .sidebar-navigation {
+  min-height: 0;
+  padding-right: 2px;
   display: flex;
   flex-direction: column;
   align-items: stretch;
   justify-content: flex-start;
   align-content: normal;
   gap: 14px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
 }
 .app-shell .sidebar-search-projects,
 .app-shell .sidebar-search-project-list,
@@ -12707,11 +12709,14 @@ html:has(.app-shell) {
   position: fixed;
   inset: 0;
   z-index: var(--z-sticky);
-  min-height: 100dvh;
+  width: 100%;
+  height: 100dvh;
+  min-height: 0;
   padding: 4px;
   background: var(--sidebar);
   display: grid;
   grid-template-columns: 286px minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   overflow: hidden;
 }
 .settings-shell-sidebar {
@@ -12815,6 +12820,8 @@ html:has(.app-shell) {
 }
 .settings-shell-main {
   min-width: 0;
+  min-height: 0;
+  height: 100%;
   border: 1px solid var(--line);
   border-radius: 12px;
   background: var(--canvas);
@@ -12868,6 +12875,7 @@ html:has(.app-shell) {
 @media (max-width: 760px) {
   .settings-app-shell {
     position: static;
+    height: auto;
     min-height: 100dvh;
     padding: 0;
     display: block;
@@ -12896,6 +12904,7 @@ html:has(.app-shell) {
     flex: 0 0 auto;
   }
   .settings-shell-main {
+    height: auto;
     border: 0;
     border-radius: 0;
     overflow: visible;
@@ -12933,11 +12942,37 @@ html:has(.app-shell) {
   font-size: 13px;
   line-height: 1.5;
 }
+.settings-shell-main .settings-group-header-action {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+.settings-shell-main .settings-group-header-action > div {
+  min-width: 0;
+}
+.settings-shell-main .settings-group-header-action > .button {
+  flex: 0 0 auto;
+}
 .settings-shell-main .settings-card {
   border: 1px solid var(--line);
   border-radius: 10px;
   background: var(--canvas);
   overflow: hidden;
+}
+.settings-shell-main .appearance-settings-card {
+  padding: 16px;
+}
+.settings-shell-main .settings-details-card {
+  margin: 0;
+  padding: 0;
+}
+.settings-shell-main .settings-details-card dd {
+  margin: 0;
+}
+.settings-shell-main .danger-zone .danger-action-row {
+  padding: 14px 16px;
+  border-top: 0;
 }
 .settings-shell-main .settings-row {
   min-height: 64px;
@@ -13055,6 +13090,9 @@ html:has(.app-shell) {
   }
   .settings-shell-main .settings-static-value {
     max-width: 100%;
+  }
+  .settings-shell-main .appearance-settings-card {
+    padding: 12px;
   }
 }
 
@@ -13737,13 +13775,15 @@ body [data-tooltip]::after {
 /* Workspace options open outside the rail, below and to the right of the trigger. */
 @media (min-width: 761px) {
   .app-shell .sidebar-navigation {
-    overflow: visible;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
   .app-shell .sidebar-search-project-menu {
     top: calc(100% + 4px);
-    right: auto;
-    left: calc(100% + 8px);
-    transform-origin: top left;
+    right: 0;
+    left: 0;
+    width: auto;
+    transform-origin: top center;
   }
 }
 
@@ -14981,7 +15021,7 @@ body [data-tooltip]::after {
   }
 }
 
-/* Agent settings use Linear-like grouped rows while keeping provider secrets subordinate. */
+/* Agent settings follow the same external-heading and bordered-card rhythm. */
 .settings-shell-main .ai-settings-page {
   width: min(100%, 880px);
 }
@@ -14989,45 +15029,37 @@ body [data-tooltip]::after {
   width: min(100%, 760px);
   margin-inline: auto;
 }
-.settings-shell-main .settings-row-group {
-  margin-bottom: 34px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--canvas);
-  overflow: hidden;
-}
-.settings-shell-main .settings-row-group > header {
-  min-height: 72px;
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--line);
-  display: flex;
-  align-items: center;
-}
-.settings-shell-main .settings-row-group > header h2 {
-  font-size: 15px;
-  font-weight: 580;
-}
-.settings-shell-main .settings-row-group > header p {
-  margin: 4px 0 0;
-  color: var(--muted);
-  font-size: 13px;
-}
-.settings-shell-main .settings-row-group .ai-safety-note {
+.settings-shell-main .ai-provider-card .ai-safety-note {
   margin: 0;
-  padding: 12px 16px;
+  padding: 13px 16px;
   border: 0;
   border-bottom: 1px solid var(--line);
   border-radius: 0;
   background: var(--surface);
 }
-.settings-shell-main .settings-row-group .empty-inline {
+.settings-shell-main .ai-provider-card .empty-inline {
+  margin: 0;
+  padding: 18px 16px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.settings-shell-main .ai-provider-card .connection-list {
+  padding: 0;
+  gap: 0;
+}
+.settings-shell-main .ai-provider-card .connection-row {
+  min-height: 68px;
+  padding: 12px 16px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+}
+.settings-shell-main .ai-provider-card .connection-row:last-child {
+  border-bottom: 0;
+}
+.agent-guidance-section > form {
   padding: 16px;
-}
-.settings-shell-main .settings-row-group .connection-list {
-  padding-inline: 16px;
-}
-.agent-guidance-section form {
-  padding: 14px 16px;
 }
 .agent-guidance-section textarea {
   width: 100%;
@@ -15042,13 +15074,16 @@ body [data-tooltip]::after {
   font-size: 14px;
   line-height: 1.55;
 }
+.agent-guidance-section textarea:hover {
+  border-color: color-mix(in oklch, var(--line-strong) 68%, var(--ink));
+}
 .agent-guidance-section textarea:focus {
   border-color: var(--primary);
   box-shadow: 0 0 0 2px color-mix(in oklch, var(--primary) 12%, transparent);
 }
 .agent-guidance-section form footer {
-  min-height: 48px;
-  padding-top: 10px;
+  min-height: 44px;
+  padding-top: 12px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -15058,8 +15093,18 @@ body [data-tooltip]::after {
   color: var(--muted);
   font-size: 13px;
 }
-.settings-shell-main .ai-add-section .ai-connection-form {
-  padding: 16px;
+.settings-shell-main .create-modal:has(.ai-connection-form) {
+  width: min(580px, calc(100vw - 40px));
+}
+.settings-shell-main .create-modal .ai-connection-form {
+  max-width: none;
+  padding: 20px;
+}
+.ai-connection-form-actions {
+  padding-top: 2px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 @media (max-width: 760px) {
@@ -15218,11 +15263,24 @@ body [data-tooltip]::after {
     bottom: 64px;
     max-height: calc(100dvh - 84px);
   }
-  .settings-shell-main .settings-row-group > header {
-    min-height: 0;
+  .settings-shell-main .ai-provider-card .connection-row {
+    padding: 12px;
+    flex-wrap: wrap;
   }
-  .settings-shell-main .settings-row-group .connection-list {
-    padding-inline: 12px;
+  .settings-shell-main .ai-provider-card .connection-copy {
+    flex-basis: calc(100% - 44px);
+  }
+  .settings-shell-main .ai-provider-card .status-label {
+    margin-left: 40px;
+  }
+  .agent-guidance-section form footer {
+    align-items: flex-end;
+  }
+  .agent-guidance-section form footer > span {
+    max-width: 20ch;
+  }
+  .settings-shell-main .create-modal .ai-connection-form {
+    padding: 18px;
   }
 }
 

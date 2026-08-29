@@ -92,10 +92,27 @@ test.describe.serial("critical product journey", () => {
     await page.goto("/");
     await expect(
       page.getByRole("heading", {
-        name: "One workspace for every focused job search.",
+        name: "Your job search, with a clear next move.",
       }),
     ).toBeVisible();
-    await expect(page.locator(".rw-app")).toBeVisible();
+    await expect(
+      page.getByLabel("Current Roleway opportunities list preview"),
+    ).toBeVisible();
+    for (const pageName of [
+      "Home",
+      "Inbox",
+      "Opportunities",
+      "Interviews",
+      "Contacts",
+      "Documents",
+      "Agent",
+      "Insights",
+      "Notifications",
+    ]) {
+      await expect(
+        page.getByRole("img", { name: `${pageName} page preview` }),
+      ).toBeVisible();
+    }
     expect(
       await page.evaluate(
         () =>
@@ -243,6 +260,8 @@ test.describe.serial("critical product journey", () => {
     ).toBeVisible();
 
     await page.goto("/opportunities");
+    await page.getByRole("button", { name: "Display options" }).click();
+    await page.getByRole("button", { name: "Board" }).click();
     const opportunityCard = page
       .locator(".opportunity-card")
       .filter({ hasText: "Senior Product Engineer" });
@@ -312,11 +331,101 @@ test.describe.serial("critical product journey", () => {
     await page.getByRole("option", { name: "Last 90 days" }).click();
     await expect(page).toHaveURL(/\/insights\?range=90/);
     await expect(insightsRange).toContainText("Last 90 days");
+    for (const settingsPath of [
+      "/settings/profile",
+      "/settings/notifications",
+      "/settings/privacy",
+      "/settings/ai",
+      "/settings/appearance",
+    ]) {
+      await page.goto(settingsPath);
+      const settingsMainBox = await page
+        .locator(".settings-shell-main")
+        .boundingBox();
+      expect(settingsMainBox).not.toBeNull();
+      expect(Math.abs(settingsMainBox!.y - 4)).toBeLessThanOrEqual(1);
+      expect(
+        Math.abs(
+          settingsMainBox!.y +
+            settingsMainBox!.height -
+            (page.viewportSize()!.height - 4),
+        ),
+      ).toBeLessThanOrEqual(1);
+      const settingsGroups = page.locator(".settings-group");
+      expect(await settingsGroups.count()).toBeGreaterThan(0);
+      for (let index = 0; index < (await settingsGroups.count()); index += 1) {
+        const group = settingsGroups.nth(index);
+        await expect(
+          group.locator(":scope > .settings-group-header"),
+        ).toBeVisible();
+        await expect(group.locator(":scope > .settings-card")).toBeVisible();
+      }
+      if (settingsPath === "/settings/ai") {
+        await page.getByRole("button", { name: "Add connection" }).click();
+        const connectionDialog = page.getByRole("dialog", {
+          name: "Add a connection",
+        });
+        await expect(connectionDialog).toBeVisible();
+        await expect(connectionDialog.getByLabel("API key")).toBeVisible();
+        await connectionDialog
+          .getByRole("button", { name: "Close Add a connection" })
+          .click();
+        await expect(connectionDialog).toBeHidden();
+      }
+    }
+    for (const selector of [
+      ".appearance-option-copy strong",
+      ".appearance-option-copy small",
+    ]) {
+      const typeMetrics = await page
+        .locator(selector)
+        .first()
+        .evaluate((node) => {
+          const style = getComputedStyle(node);
+          return {
+            fontSize: Number.parseFloat(style.fontSize),
+            lineHeight: Number.parseFloat(style.lineHeight),
+          };
+        });
+      expect(
+        typeMetrics.lineHeight / typeMetrics.fontSize,
+      ).toBeGreaterThanOrEqual(1.2);
+    }
+    await page.goto("/settings/notifications");
+    await expect(
+      page.getByRole("button", { name: "Save notification settings" }),
+    ).toHaveCount(0);
+    const taskNotifications = page.getByRole("checkbox", {
+      name: /Task updates/,
+    });
+    const taskNotificationRow = page
+      .getByText("Task updates", { exact: true })
+      .locator("xpath=ancestor::label");
+    await expect(taskNotifications).toBeChecked();
+    await taskNotificationRow.click();
+    await expect(taskNotifications).not.toBeChecked();
+    await expect(taskNotifications).toBeEnabled();
+    await page.reload();
+    await expect(taskNotifications).not.toBeChecked();
+    await taskNotificationRow.click();
+    await expect(taskNotifications).toBeChecked();
+    await expect(taskNotifications).toBeEnabled();
+    await page.reload();
+    await expect(taskNotifications).toBeChecked();
+    await page.goto("/settings/privacy");
+    await expect(page.locator(".danger-action-row")).toHaveCSS(
+      "border-bottom-width",
+      "0px",
+    );
     await page.goto("/agent");
-    const appToolbarBox = await page.locator(".workspace-toolbar").boundingBox();
-    const agentRoutebarBox = await page
-      .locator(".agent-native-routebar")
+    const agentRoutebar = page.locator(
+      ".agent-native-routebar:not(.skeleton-agent-routebar)",
+    );
+    await expect(agentRoutebar).toBeVisible();
+    const appToolbarBox = await page
+      .locator(".workspace-toolbar")
       .boundingBox();
+    const agentRoutebarBox = await agentRoutebar.boundingBox();
     expect(appToolbarBox).not.toBeNull();
     expect(agentRoutebarBox).not.toBeNull();
     expect(
