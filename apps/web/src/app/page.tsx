@@ -49,7 +49,7 @@ export default async function HomePage() {
 
       <main id="main-content">
         <section className="rw-hero">
-          <div className="rw-hero-heading" data-reveal>
+          <div className="rw-hero-heading">
             <h1>Your job search, with a clear next move.</h1>
             <p className="rw-hero-subtitle">
               Give each target its own Workspace. Review promising roles, run
@@ -69,7 +69,7 @@ export default async function HomePage() {
               AI when you want it. You stay in control.
             </p>
           </div>
-          <div className="rw-hero-stage" data-reveal>
+          <div className="rw-hero-stage">
             <LandingWorkspacePreview />
             <div className="rw-next-slip">
               <span>Next action</span>
