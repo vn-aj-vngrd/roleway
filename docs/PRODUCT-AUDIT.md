@@ -80,7 +80,7 @@ Supabase migration history: local and remote aligned
 Next.js production build: pass
 Axe: no serious/critical WCAG-tagged violations on audited release surfaces
 Production browser: no console errors, no failed critical requests, CLS 0, authenticated Home LCP < 1s in local production run
-Live deployment: `https://roleway.vercel.app` aliased to a READY Vercel production deployment and smoke-tested at 390px
+Live deployment at audit time: `https://roleway.vercel.app`; the current canonical hostname is `https://roleway.vanajvanguardia.tech`, with the Vercel hostname retained only as a permanent redirect source.
 ```
 
 ## Deliberate exclusions—not placeholders

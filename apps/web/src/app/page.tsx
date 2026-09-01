@@ -1,4 +1,5 @@
 import { ArrowRight, Check } from "lucide-react";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { LandingProductPages } from "@/components/landing-product-pages";
 import { LandingWorkspacePreview } from "@/components/landing-workspace-preview";
@@ -8,10 +9,32 @@ import { ThemePicker } from "@/components/theme-picker";
 import { requireUser } from "@/lib/supabase/server";
 import "./landing.css";
 
-export const metadata = {
-  title: "Roleway — One workspace for every focused job search",
-  description:
-    "Separate career targets, review jobs, run applications, prepare interviews, and keep every next action in one focused system.",
+export const metadata: Metadata = {
+  title: "Roleway — A focused workspace for your job search",
+  description: "Review promising Jobs, manage Opportunities, prepare applications and interviews, and keep every Next Action clear in one focused workspace.",
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    url: "/",
+    siteName: "Roleway",
+    title: "Roleway — Your job search, with a clear next move",
+    description: "Keep Jobs, Opportunities, applications, interviews, and every Next Action together in one focused workspace.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Roleway — Your job search, with a clear next move",
+    description: "Keep Jobs, Opportunities, applications, interviews, and every Next Action together in one focused workspace.",
+  },
+};
+
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "Roleway",
+  applicationCategory: "BusinessApplication",
+  operatingSystem: "Web",
+  url: "https://roleway.vanajvanguardia.tech",
+  description: "A focused workspace for reviewing Jobs, managing Opportunities, preparing applications and interviews, and keeping every Next Action clear.",
 };
 
 export default async function HomePage() {
@@ -21,6 +44,7 @@ export default async function HomePage() {
 
   return (
     <div className="rw-site">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
       <LandingMotion />
       <header className="rw-nav">
         <Link href="/" className="rw-brand" aria-label="Roleway home">

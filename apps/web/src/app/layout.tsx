@@ -24,9 +24,14 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://roleway.vanajvanguardia.tech"),
   applicationName: "Roleway",
   title: { default: "Roleway", template: "%s · Roleway" },
-  description: "Track jobs, applications, tasks, interviews, and follow-ups in one place.",
+  description: "Run a focused job search with Jobs, Opportunities, applications, interviews, and every Next Action in one place.",
+  creator: "Roleway",
+  publisher: "Roleway",
+  category: "productivity",
+  keywords: ["job search tracker", "application tracker", "interview preparation", "job search workspace", "opportunity tracker"],
   manifest: "/manifest.webmanifest",
   icons: {
     icon: [

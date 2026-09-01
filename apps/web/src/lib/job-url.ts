@@ -132,7 +132,7 @@ async function fetchKnownAtsJob(url: URL): Promise<ExtractedJob | null> {
 }
 
 async function fetchTrustedJson(value: string) {
-  const response = await fetch(value, { cache: "no-store", signal: AbortSignal.timeout(8_000), headers: { "User-Agent": "Roleway Job Capture/1.0 (+https://roleway.vercel.app)" } });
+  const response = await fetch(value, { cache: "no-store", signal: AbortSignal.timeout(8_000), headers: { "User-Agent": "Roleway Job Capture/1.0 (+https://roleway.vanajvanguardia.tech)" } });
   if (!response.ok) throw new Error(response.status === 404 ? "That job is no longer available." : "The job page could not be loaded.");
   const text = await readLimitedText(response, MAX_HTML_BYTES);
   try { return JSON.parse(text) as unknown; } catch { throw new Error("The job provider returned an unreadable response."); }
@@ -160,7 +160,7 @@ export async function fetchJobPage(value: string) {
       cache: "no-store",
       redirect: "manual",
       signal: AbortSignal.timeout(8_000),
-      headers: { "User-Agent": "Roleway Job Capture/1.0 (+https://roleway.vercel.app)" },
+      headers: { "User-Agent": "Roleway Job Capture/1.0 (+https://roleway.vanajvanguardia.tech)" },
     });
     if (response.status >= 300 && response.status < 400) {
       const location = response.headers.get("location");

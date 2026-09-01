@@ -11,6 +11,8 @@ export async function GET(request: NextRequest) {
   if (!context.project) return NextResponse.json({ results: [] }, { headers: { "Cache-Control": "no-store" } });
   const query = querySchema.safeParse(request.nextUrl.searchParams.get("q") ?? "");
   if (!query.success) return NextResponse.json({ results: [] }, { headers: { "Cache-Control": "no-store" } });
+  const { data: withinQuota, error: quotaError } = await context.supabase.rpc("consume_roleway_api_quota", { input_bucket: "search" });
+  if (quotaError || withinQuota !== true) return NextResponse.json({ error: "Search is temporarily rate limited." }, { status: 429, headers: { "Cache-Control": "no-store", "Retry-After": "60" } });
 
   const { data, error } = await context.supabase.rpc("search_roleway", {
     input_query: query.data,

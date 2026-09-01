@@ -10420,6 +10420,60 @@ html:has(.app-shell) {
   }
 }
 
+.admin-admission-strip {
+  min-height: 64px;
+  margin: 18px 0 32px;
+  padding: 10px 14px;
+  border-block: 1px solid var(--line);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(120px, 1fr)) auto;
+  align-items: center;
+  gap: 16px;
+}
+.admin-admission-strip > div { display: grid; gap: 2px; }
+.admin-admission-strip strong { font: 600 14px/1.3 var(--font-mono); }
+.admin-admission-strip span { color: var(--muted); font-size: 13px; }
+.admin-user-row { grid-template-columns: minmax(210px, 1.1fr) minmax(210px, 1fr) 150px minmax(240px, 1.1fr); }
+.admin-user-row > span:nth-child(3) { display: grid; gap: 5px; }
+.admin-user-actions { display: grid; gap: 7px; justify-items: start; }
+.admin-user-actions form:last-child .button { min-height: 30px; }
+.admin-data-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 38px; }
+.admin-data-list { border-top: 1px solid var(--line); }
+.admin-data-list p { min-height: 40px; margin: 0; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: 16px; font-size: 13px; }
+.admin-data-list span { color: var(--muted); }
+.admin-generated { margin: 16px 0 0; color: var(--muted); font-size: 13px; }
+.admin-settings { max-width: 720px; }
+.admin-capacity { min-height: 56px; margin-bottom: 24px; border-block: 1px solid var(--line); display: flex; align-items: center; gap: 32px; color: var(--muted); font-size: 13px; }
+.admin-capacity strong { color: var(--ink); font: 600 14px/1.3 var(--font-mono); }
+.admin-settings-form { display: grid; grid-template-columns: minmax(160px, .7fr) minmax(220px, 1fr); align-items: center; gap: 14px 24px; }
+.admin-settings-form > label { font-size: 13px; font-weight: 560; }
+.admin-settings-form > .button { grid-column: 2; justify-self: start; }
+.admin-security-note { margin-top: 32px; padding-top: 18px; border-top: 1px solid var(--line); display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 10px; }
+.admin-security-note svg { width: 18px; color: var(--primary); }
+.admin-security-note strong { font-size: 13px; }
+.admin-security-note p { margin: 3px 0 0; color: var(--muted); font-size: 13px; }
+.admin-error-list { margin-top: 28px; }
+.admin-error-list h3 { margin: 0 0 8px; font-size: 14px; }
+.admin-error-list p { margin: 0; min-height: 38px; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: 16px; color: var(--muted); font-size: 13px; }
+.turnstile-field { min-height: 66px; display: grid; gap: 6px; }
+.turnstile-field > div { width: 100%; }
+.turnstile-field p { margin: 0; color: var(--danger); font-size: 13px; }
+@media (max-width: 900px) {
+  .admin-data-grid { grid-template-columns: 1fr; }
+  .admin-admission-strip { grid-template-columns: repeat(3, 1fr); }
+  .admin-admission-strip > .status-label { grid-column: 1 / -1; justify-self: start; }
+}
+@media (max-width: 760px) {
+  .admin-user-row { grid-template-columns: minmax(0, 1fr); }
+  .admin-user-actions { width: 100%; }
+  .admin-role-form { width: min(100%, 340px); }
+  .admin-admission-strip { grid-template-columns: 1fr 1fr; }
+  .admin-admission-strip > div:nth-child(3) { grid-column: 1 / -1; }
+  .admin-settings-form { grid-template-columns: 1fr; }
+  .admin-settings-form > .button { grid-column: 1; }
+  .admin-capacity { align-items: flex-start; flex-direction: column; gap: 8px; padding-block: 12px; }
+}
+
 /* Triage, contacts, and mobile wayfinding complete the project-scoped operating system. */
 .inbox-page {
   width: min(100%, 1280px) !important;

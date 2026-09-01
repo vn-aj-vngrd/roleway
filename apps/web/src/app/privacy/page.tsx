@@ -1,5 +1,11 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { LogoMark } from "@/components/logo";
 
-export const metadata = { title: "Privacy" };
+export const metadata: Metadata = {
+  title: "Privacy",
+  description: "How Roleway stores, protects, exports, and deletes account and job-search data.",
+  alternates: { canonical: "/privacy" },
+  openGraph: { type: "website", url: "/privacy", title: "Privacy · Roleway", description: "How Roleway stores, protects, exports, and deletes account and job-search data." },
+};
 export default function PrivacyPage() { return <div className="legal-page"><header><Link href="/" className="marketing-brand"><LogoMark size={22} tile /><span>Roleway</span></Link><Link href="/" className="button ghost">Back to home</Link></header><main id="main-content"><h1>Privacy</h1><p className="legal-updated">Last updated August 17, 2026</p><section><h2>What Roleway stores</h2><p>Roleway stores the account email and the career information you choose to enter: profile and preferences, jobs, opportunities, tasks, notes, interviews, documents, and activity history.</p></section><section><h2>How access is controlled</h2><p>Account access is protected by authenticated sessions and owner-level data controls so signed-in users can access only records belonging to their workspace.</p></section><section><h2>AI and external providers</h2><p>AI is optional. When you connect a provider and send a request to Roleway Agent, Roleway sends the disclosed active-Workspace context to that provider to prepare a grounded answer, draft, or internal proposal. Nothing is sent in the background, and core tracking works without AI.</p></section><section><h2>Telemetry and advertising</h2><p>Roleway does not currently include advertising trackers or third-party product analytics. Infrastructure providers process limited technical request data required to host and secure the service.</p></section><section><h2>Export and deletion</h2><p>Authenticated users can download a JSON export or permanently delete their account and owner-scoped workspace data from Privacy & data settings. Account deletion cannot be undone.</p></section><p className="legal-contact">Privacy questions: <a href="mailto:vanajvanguardia@gmail.com">vanajvanguardia@gmail.com</a></p></main></div>; }

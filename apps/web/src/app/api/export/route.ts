@@ -4,6 +4,8 @@ import { requireUser } from "@/lib/supabase/server";
 export async function GET() {
   const auth = await requireUser();
   if (!auth) return NextResponse.json({ error: "Authentication required." }, { status: 401 });
+  const { data: withinQuota, error: quotaError } = await auth.supabase.rpc("consume_roleway_api_quota", { input_bucket: "export" });
+  if (quotaError || withinQuota !== true) return NextResponse.json({ error: "Data exports are limited to three per hour." }, { status: 429, headers: { "Cache-Control": "no-store", "Retry-After": "3600" } });
 
   const tables = ["profiles", "career_preferences", "search_projects", "jobs", "opportunities", "application_records", "tasks", "opportunity_notes", "opportunity_events", "contacts", "interviews", "documents", "document_versions", "notifications", "ai_runs", "agent_conversations", "agent_messages", "agent_run_steps", "agent_proposals", "agent_preferences"] as const;
   const results = await Promise.all(tables.map(async (table) => {

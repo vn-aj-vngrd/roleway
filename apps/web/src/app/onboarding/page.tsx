@@ -3,7 +3,7 @@ import { LogoMark } from "@/components/logo";
 import { requireUser } from "@/lib/supabase/server";
 import { OnboardingWizard } from "./onboarding-wizard";
 
-export const metadata = { title: "Set up your Roleway workspace" };
+export const metadata = { title: "Set up your Roleway workspace", robots: { index: false, follow: false, nocache: true } };
 
 export default async function OnboardingPage(props: {
   searchParams: Promise<{ error?: string }>;

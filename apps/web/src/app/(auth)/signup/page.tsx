@@ -1,11 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { signUp } from "@/app/auth/actions";
-import { SubmitButton } from "@/components/submit-button";
+import { SignupForm } from "@/components/signup-form";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import { requireUser } from "@/lib/supabase/server";
+import { createClient, requireUser } from "@/lib/supabase/server";
 
 export const metadata = { title: "Create an account" };
 
@@ -14,6 +11,14 @@ export default async function SignupPage(props: { searchParams: Promise<{ error?
   const [auth, query] = await Promise.all([requireUser(), searchParams]);
   if (auth) redirect("/home");
 
+  const supabase = await createClient();
+  const { data: admission, error: admissionError } = await supabase.rpc("signup_admission_status");
+  const productionUnavailable = process.env.NODE_ENV === "production" && (admissionError || !process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
+  const acceptingSignups = !productionUnavailable && (admission?.acceptingSignups ?? process.env.NODE_ENV !== "production");
+  const closedMessage = admission?.registrationEnabled === false
+    ? "New registrations are temporarily paused."
+    : "Roleway has reached its current account limit.";
+
   return (
     <div className="auth-minimal-form-wrap">
       <div className="auth-minimal-copy">
@@ -21,20 +26,9 @@ export default async function SignupPage(props: { searchParams: Promise<{ error?
         <p>Start one focused workspace for your job search.</p>
       </div>
       {query.error ? <Alert variant="destructive"><AlertDescription>{query.error}</AlertDescription></Alert> : null}
-      <form className="auth-minimal-form" action={signUp}>
-        <FieldGroup>
-          <Field>
-            <FieldLabel htmlFor="email">Email</FieldLabel>
-            <Input id="email" name="email" type="email" autoComplete="email" inputMode="email" required placeholder="you@example.com" />
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="password">Password</FieldLabel>
-            <Input id="password" name="password" type="password" autoComplete="new-password" minLength={8} required aria-describedby="password-hint" />
-            <FieldDescription id="password-hint">Use at least 8 characters.</FieldDescription>
-          </Field>
-        </FieldGroup>
-        <SubmitButton className="w-full" pendingLabel="Creating account…">Create account</SubmitButton>
-      </form>
+      {productionUnavailable ? <Alert variant="destructive"><AlertDescription>Registration is unavailable while security verification is being configured.</AlertDescription></Alert> : null}
+      {!productionUnavailable && !acceptingSignups ? <Alert><AlertDescription>{closedMessage}</AlertDescription></Alert> : null}
+      {acceptingSignups ? <SignupForm siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY} /> : null}
       <p className="auth-minimal-switch">Already have an account? <Link href="/login">Log in</Link></p>
       <p className="auth-minimal-terms">By continuing, you agree to keep your account secure. Read our <Link href="/privacy">privacy policy</Link>.</p>
     </div>

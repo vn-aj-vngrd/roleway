@@ -83,7 +83,7 @@ async function openAiCompatible(connection: AiConnection, apiKey: string, prompt
   const base = connection.provider === "openai" ? "https://api.openai.com/v1" : connection.provider === "openrouter" ? "https://openrouter.ai/api/v1" : safeCompatibleBaseUrl(connection.base_url);
   const payload = await requestJson(`${base}/chat/completions`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}`, ...(connection.provider === "openrouter" ? { "HTTP-Referer": "https://roleway.vercel.app", "X-Title": "Roleway" } : {}) },
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}`, ...(connection.provider === "openrouter" ? { "HTTP-Referer": "https://roleway.vanajvanguardia.tech", "X-Title": "Roleway" } : {}) },
     body: JSON.stringify({ model: connection.model, messages: [{ role: "system", content: "You are Roleway Assist. Use only the supplied career and Opportunity context. Never invent experience, dates, employers, or outcomes. Return a concise reviewable draft, not an external action." }, { role: "user", content: prompt }], temperature: 0.2, response_format: { type: "json_schema", json_schema: { name: "roleway_assist", strict: true, schema: outputJsonSchema } } }),
   });
   const choices = payload?.choices as Array<{ message?: { content?: string } }> | undefined;
@@ -133,7 +133,7 @@ async function openAiAgent(connection: AiConnection, apiKey: string, prompt: str
   const base = connection.provider === "openai" ? "https://api.openai.com/v1" : connection.provider === "openrouter" ? "https://openrouter.ai/api/v1" : safeCompatibleBaseUrl(connection.base_url);
   const payload = await requestJson(`${base}/chat/completions`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}`, ...(connection.provider === "openrouter" ? { "HTTP-Referer": "https://roleway.vercel.app", "X-Title": "Roleway" } : {}) },
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}`, ...(connection.provider === "openrouter" ? { "HTTP-Referer": "https://roleway.vanajvanguardia.tech", "X-Title": "Roleway" } : {}) },
     body: JSON.stringify({ model: connection.model, messages: [{ role: "system", content: agentSystemPolicy }, { role: "user", content: prompt }], temperature: 0.2, response_format: { type: "json_schema", json_schema: { name: "roleway_agent", strict: true, schema: agentJsonSchema } } }),
   });
   const choices = payload?.choices as Array<{ message?: { content?: string } }> | undefined;

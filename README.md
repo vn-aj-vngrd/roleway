@@ -44,8 +44,10 @@ supabase db push
 | `NEXT_PUBLIC_SUPABASE_URL` | yes | Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | yes | Browser/server user-scoped client |
 | `SUPABASE_SERVICE_ROLE_KEY` | yes | Account deletion, encrypted AI connections, redacted system events, E2E cleanup |
-| `NEXT_PUBLIC_SITE_URL` | yes | Auth recovery callback origin |
+| `NEXT_PUBLIC_SITE_URL` | yes | Canonical Auth recovery callback origin |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | production | Public Cloudflare Turnstile widget key; leave blank only for the local bypass |
 | `AI_CREDENTIAL_ENCRYPTION_KEY` | for Agent | Base64-encoded 32-byte AES key |
+| `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY` | multi-instance self-hosting | Stable, independent base64-encoded 32-byte Server Actions key |
 | `DATABASE_URL` | tooling | Direct PostgreSQL migration/lint access |
 
 Never expose the service-role or encryption key to browser code. Core tracking works when Agent is unconfigured.
@@ -108,7 +110,7 @@ The Playwright suite creates and removes a disposable Supabase account. It cover
 4. Build with `pnpm build` and serve `apps/web` over HTTPS.
 5. Sign in as an `admin_members` owner and verify Admin → System after deployment.
 
-The included Dockerfile and `vercel.json` target the web application. The live project configured in this repository is <https://roleway.vercel.app>.
+The included Dockerfile and `vercel.json` target the web application. The canonical live project is <https://roleway.vanajvanguardia.tech>; requests to the legacy `roleway.vercel.app` hostname permanently redirect to the canonical domain.
 
 ## License
 

@@ -73,7 +73,7 @@ Users work primarily at a desktop during focused planning and preparation, while
 - `docs/AI-PROVIDER-INTEGRATION.md` documents supported provider behavior and security decisions.
 - `docs/LINEAR-DESIGN-SYSTEM-AUDIT.md` and `docs/LINEAR-COMPONENT-CATALOG.md` record primary-source and authenticated-product design research used for the current interface direction.
 - `docs/ROLEWAY-AGENT.md` specifies the native conversational Agent, BYO-provider boundary, tools, approvals, and rollout.
-- The live deployment is `https://roleway.vercel.app`.
+- The canonical live deployment is `https://roleway.vanajvanguardia.tech`; the legacy `roleway.vercel.app` hostname permanently redirects to it.
 - There are no approved testimonials, customer logos, usage metrics, outcome claims, pricing claims, or press assets. Future work must not fabricate them.
 - The repository includes an Apache-2.0 `LICENSE` file.
 
