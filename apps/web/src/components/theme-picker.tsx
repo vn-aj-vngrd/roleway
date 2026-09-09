@@ -1,7 +1,7 @@
 "use client";
 
 import { Monitor, Moon, Sun } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useLayoutEffect, useState } from "react";
 
 type ThemePreference = "light" | "system" | "dark";
 
@@ -18,12 +18,15 @@ function resolveTheme(preference: ThemePreference, systemDark: boolean) {
 export function ThemePicker() {
   const [preference, setPreference] = useState<ThemePreference>("system");
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const saved = localStorage.getItem("roleway-theme");
     const initial = saved === "light" || saved === "dark" ? saved : "system";
     setPreference(initial);
 
     const media = window.matchMedia("(prefers-color-scheme: dark)");
+    // Hydration/remounts can clear the attribute applied by the head script.
+    // Restore the saved preference before paint, not just the selected button.
+    document.documentElement.dataset.theme = resolveTheme(initial, media.matches);
     const applySystem = () => {
       const current = localStorage.getItem("roleway-theme");
       if (!current || current === "system") document.documentElement.dataset.theme = media.matches ? "dark" : "light";
