@@ -12,6 +12,12 @@ Roleway sends Supabase Auth email as `Roleway <roleway@vanajvanguardia.tech>` th
 
 The script is the hosted settings source; `supabase/config.toml` configures local Supabase with localhost callbacks and mail capture. Template HTML lives in `supabase/templates`. Applying hosted settings also installs the templates, requires signup confirmation, enables secure email/password changes and security notices, and corrects the canonical URL. Secrets are never printed by the script.
 
+## Template design
+
+All eight templates share the app's neutral surfaces, 28px headings, 14px body, 13px supporting copy, and Waypoint Blue pill actions. Email-safe sRGB colors mirror the app tokens: action `#315fcf`, foreground `#121416`, muted `#585b5f`, canvas `#fdfdfd`, and surface `#f5f6f7`. Keep these aligned with `apps/web/src/app/globals.css` when changing the palette.
+
+Use inline styles and presentation tables as the fallback. Dark-mode media styles enhance clients that support them; conditional VML preserves rounded actions in Word-based Outlook. Keep the HTML and Outlook action URLs identical, preserve Supabase variables and fallback links, and use dummy values for previews. Browser previews do not prove rendering or delivery in real inbox clients.
+
 ## Verify behavior
 
 The account cap counts verified, non-deleted accounts. Confirmation claims capacity under the same admission lock as signup. Pending accounts receive no new Profile or Workspace until confirmation. Existing unverified records remain preserved and excluded from the cap, so abandoned signups cannot exhaust it.
