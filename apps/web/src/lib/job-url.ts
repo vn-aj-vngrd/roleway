@@ -33,6 +33,11 @@ export function isPrivateAddress(address: string): boolean {
   if (address.includes(":")) {
     const normalized = address.toLowerCase();
     if (normalized === "::" || normalized === "::1" || normalized.startsWith("fe8") || normalized.startsWith("fe9") || normalized.startsWith("fea") || normalized.startsWith("feb") || normalized.startsWith("fc") || normalized.startsWith("fd")) return true;
+    const hexMapped = normalized.match(/^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/);
+    if (hexMapped) {
+      const high = parseInt(hexMapped[1]!, 16), low = parseInt(hexMapped[2]!, 16);
+      return isPrivateAddress(`${high >> 8}.${high & 255}.${low >> 8}.${low & 255}`);
+    }
     const mapped = normalized.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/)?.[1];
     return mapped ? isPrivateAddress(mapped) : false;
   }

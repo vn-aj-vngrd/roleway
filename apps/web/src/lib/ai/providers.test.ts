@@ -44,3 +44,12 @@ describe("AI provider adapters", () => {
     await expect(generateAssistantOutput({ provider: "openai-compatible", model: "model", base_url: "https://127.0.0.1/v1" }, "secret", "Prompt")).rejects.toThrow("public HTTPS");
   });
 });
+
+describe("compatible provider endpoint boundaries", () => {
+  it.each(["https://[::1]/v1", "https://[::ffff:7f00:1]/v1", "https://user:password@example.com/v1", "https://example.com:8443/v1"])('rejects unsafe endpoint %s before sending credentials', async (base_url) => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(generateAgentResponse({provider: "openai-compatible", model: "model", base_url}, "secret", "Prompt")).rejects.toThrow();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+});

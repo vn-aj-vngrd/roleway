@@ -13,7 +13,7 @@ type Conversation = { id: string; project_id: string; title: string; opportunity
 type Message = { id: string; role: "user" | "agent"; content: string; run_id: string | null; created_at: string };
 type Run = { id: string; provider: string; model: string; status: string; input_tokens: number | null; output_tokens: number | null; created_at: string };
 type Step = { id: string; run_id: string; label: string; status: "pending" | "active" | "completed" | "failed"; position: number };
-type Proposal = { id: string; run_id: string; tool_name: string; target_id: string | null; summary: string; arguments: Record<string, unknown>; status: string; created_at: string };
+type Proposal = { id: string; run_id: string; tool_name: string; target_id: string | null; destination_project_id: string | null; summary: string; arguments: Record<string, unknown>; status: string; created_at: string };
 
 type AgentQuery = { conversation?: string; opportunity?: string; error?: string; decision?: string };
 
@@ -44,7 +44,7 @@ export default async function AgentPage(props: { searchParams: Promise<AgentQuer
       context.supabase.from("agent_messages").select("id, role, content, run_id, created_at").eq("conversation_id", activeConversation.id).order("created_at", { ascending: true }).limit(200),
       context.supabase.from("ai_runs").select("id, provider, model, status, input_tokens, output_tokens, created_at").eq("conversation_id", activeConversation.id).order("created_at", { ascending: true }).limit(100),
       context.supabase.from("agent_run_steps").select("id, run_id, label, status, position").eq("conversation_id", activeConversation.id).order("position", { ascending: true }).limit(300),
-      context.supabase.from("agent_proposals").select("id, run_id, tool_name, target_id, summary, arguments, status, created_at").eq("conversation_id", activeConversation.id).order("created_at", { ascending: true }).limit(100),
+      context.supabase.from("agent_proposals").select("id, run_id, tool_name, target_id, destination_project_id, summary, arguments, status, created_at").eq("conversation_id", activeConversation.id).order("created_at", { ascending: true }).limit(100),
     ]);
     messages = (messagesResult.data ?? []) as Message[];
     runs = (runsResult.data ?? []) as Run[];
@@ -96,7 +96,7 @@ export default async function AgentPage(props: { searchParams: Promise<AgentQuer
                 <header><span className="agent-message-author">{message.role === "agent" ? <><Navigation aria-hidden="true" />Roleway Agent</> : "You"}</span><time dateTime={message.created_at}>{messageTime(message.created_at)}</time></header>
                 <div className="agent-message-content">{message.content.split(/\n{2,}/).map((paragraph, index) => <p key={index}>{paragraph}</p>)}</div>
                 {message.role === "agent" && run ? <AgentRunDetails run={run} steps={runSteps} /> : null}
-                {runProposals.map((proposal) => <ApprovalCard proposal={proposal} opportunity={proposal.target_id ? opportunityMap.get(proposal.target_id) : undefined} key={proposal.id} />)}
+                {runProposals.map((proposal) => <ApprovalCard workspace={proposal.destination_project_id ? projectMap.get(proposal.destination_project_id)?.name ?? "Unavailable Workspace" : undefined} proposal={proposal} opportunity={proposal.target_id ? opportunityMap.get(proposal.target_id) : undefined} key={proposal.id} />)}
               </article>
             );
           })}
@@ -142,8 +142,9 @@ function AgentRunDetails({ run, steps }: { run: Run; steps: Step[] }) {
   </details>;
 }
 
-function ApprovalCard({ proposal, opportunity }: { proposal: Proposal; opportunity: Opportunity | undefined }) {
+function ApprovalCard({ proposal, opportunity, workspace }: { proposal: Proposal; opportunity: Opportunity | undefined; workspace: string | undefined }) {
   const details = proposalDetails(proposal, opportunity);
+  if (workspace) details.unshift(["Workspace", workspace]);
   return <section className={`agent-approval-card ${proposal.status}`} aria-label="Agent proposed change">
     <header><span><Navigation aria-hidden="true" />Approval required</span><strong>{toolLabel(proposal.tool_name)}</strong></header>
     <p>{proposal.summary}</p>
@@ -157,7 +158,7 @@ function ApprovalCard({ proposal, opportunity }: { proposal: Proposal; opportuni
 
 function proposalDetails(proposal: Proposal, opportunity?: Opportunity): Array<[string, string]> {
   const args = proposal.arguments;
-  const target = opportunity?.jobs ? `${opportunity.jobs.company} · ${opportunity.jobs.title}` : "Current account";
+  const target = opportunity?.jobs ? `${opportunity.jobs.company} · ${opportunity.jobs.title}` : "Unavailable Opportunity";
   if (proposal.tool_name === "create_workspace") return [["Workspace", String(args.name ?? "Untitled")], ["Objective", String(args.objective ?? "Focused job search")]];
   if (proposal.tool_name === "create_task") return [["Opportunity", target], ["Task", String(args.title ?? "Untitled")], ["Due", args.dueAt ? new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(String(args.dueAt))) : "No due date"]];
   if (proposal.tool_name === "set_next_action") return [["Opportunity", target], ["Next Action", String(args.title ?? "Untitled")], ["Due", args.dueAt ? new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(String(args.dueAt))) : "No due date"]];

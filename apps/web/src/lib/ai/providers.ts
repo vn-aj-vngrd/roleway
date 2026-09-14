@@ -1,3 +1,6 @@
+import { lookup } from "node:dns/promises";
+import { isIP } from "node:net";
+import { isPrivateAddress } from "../job-url";
 import { agentResponseSchema } from "@roleway/schemas";
 import { z } from "zod";
 
@@ -51,17 +54,22 @@ const agentJsonSchema = {
   additionalProperties: false,
 } as const;
 
-function safeCompatibleBaseUrl(value: string | null) {
+async function safeCompatibleBaseUrl(value: string | null) {
   if (!value) throw new Error("A base URL is required for this provider.");
   const url = new URL(value);
-  const host = url.hostname.toLowerCase();
-  const blocked = host === "localhost" || host === "0.0.0.0" || host === "::1" || host.endsWith(".local") || /^127\./.test(host) || /^10\./.test(host) || /^192\.168\./.test(host) || /^169\.254\./.test(host) || /^172\.(1[6-9]|2\d|3[01])\./.test(host);
-  if (url.protocol !== "https:" || blocked) throw new Error("Use a public HTTPS provider URL.");
+  const host = url.hostname.toLowerCase().replace(/^\[|\]$/g, "");
+  if (url.protocol !== "https:" || url.username || url.password || url.port || url.search || url.hash || host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local")) {
+    throw new Error("Use a public HTTPS provider URL without credentials, query parameters, or a custom port.");
+  }
+  const addresses = isIP(host) ? [{ address: host }] : await lookup(host, { all: true, verbatim: true });
+  if (!addresses.length || addresses.some(({ address }) => isPrivateAddress(address))) {
+    throw new Error("Use a public HTTPS provider URL.");
+  }
   return url.toString().replace(/\/$/, "");
 }
 
 async function requestJson(url: string, init: RequestInit) {
-  const response = await fetch(url, { ...init, cache: "no-store", signal: AbortSignal.timeout(45_000) });
+  const response = await fetch(url, { ...init, redirect: "error", cache: "no-store", signal: AbortSignal.timeout(45_000) });
   const payload = await response.json().catch(() => null) as Record<string, unknown> | null;
   if (!response.ok) {
     const nested = payload?.error as { message?: string } | string | undefined;
@@ -80,7 +88,7 @@ function parseOutput(value: unknown) {
 }
 
 async function openAiCompatible(connection: AiConnection, apiKey: string, prompt: string) {
-  const base = connection.provider === "openai" ? "https://api.openai.com/v1" : connection.provider === "openrouter" ? "https://openrouter.ai/api/v1" : safeCompatibleBaseUrl(connection.base_url);
+  const base = connection.provider === "openai" ? "https://api.openai.com/v1" : connection.provider === "openrouter" ? "https://openrouter.ai/api/v1" : await safeCompatibleBaseUrl(connection.base_url);
   const payload = await requestJson(`${base}/chat/completions`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}`, ...(connection.provider === "openrouter" ? { "HTTP-Referer": "https://roleway.vanajvanguardia.tech", "X-Title": "Roleway" } : {}) },
@@ -130,7 +138,7 @@ function parseAgentResponse(value: unknown) {
 }
 
 async function openAiAgent(connection: AiConnection, apiKey: string, prompt: string) {
-  const base = connection.provider === "openai" ? "https://api.openai.com/v1" : connection.provider === "openrouter" ? "https://openrouter.ai/api/v1" : safeCompatibleBaseUrl(connection.base_url);
+  const base = connection.provider === "openai" ? "https://api.openai.com/v1" : connection.provider === "openrouter" ? "https://openrouter.ai/api/v1" : await safeCompatibleBaseUrl(connection.base_url);
   const payload = await requestJson(`${base}/chat/completions`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}`, ...(connection.provider === "openrouter" ? { "HTTP-Referer": "https://roleway.vanajvanguardia.tech", "X-Title": "Roleway" } : {}) },
