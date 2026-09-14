@@ -44,7 +44,7 @@ When adding a Workspace-owned relation, account for all four: migration/backfill
 
 ## Interface
 
-Read `DESIGN.md` before UI work. Preserve the Focused Dossier and Waypoint Rail:
+Read `docs/UI_CONSISTENCY.md` before changing screens, controls, themes, feedback, or email templates; it routes to `DESIGN.md` and the relevant implementation patterns. Preserve the Focused Dossier and Waypoint Rail:
 
 - one flush work plane, quiet sidebar, subtle rules, compact controls;
 - Waypoint Blue for forward action, focus, selection, and progress;

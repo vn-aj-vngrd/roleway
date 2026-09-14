@@ -6,9 +6,9 @@ colors:
   accent-blue-hover: "oklch(0.54 0.18 264)"
   accent-blue-soft: "oklch(0.95 0.035 264)"
   canvas-light: "oklch(0.995 0 0)"
-  canvas-dark: "oklch(0.158 0.008 255)"
+  canvas-dark: "oklch(0.205 0.006 255)"
   surface-light: "oklch(0.972 0.002 255)"
-  surface-dark: "oklch(0.188 0.008 255)"
+  surface-dark: "oklch(0.24 0.007 255)"
   graphite: "oklch(0.19 0.006 255)"
   graphite-muted: "oklch(0.47 0.008 255)"
   hairline: "oklch(0.905 0.004 255)"
@@ -180,14 +180,14 @@ The system is flat by default. Tonal shifts and hairlines establish hierarchy. T
 
 ## Shapes
 
-Navigation rows, ordinary controls, action buttons, and content tabs use 8px corners. Editors may use 6px corners. Pills are reserved for categorical status, counts, filters, and true segmented choices—not ordinary actions. Square icon actions may be circular. Movable records use 8px corners. Settings groups and command dialogs use 10px corners; the single desktop work surface uses 12px corners. The breadcrumb toolbar keeps the primary structural separator; internal content relies on spacing unless a boundary is operationally necessary. Status remains categorical even though actions and tabs may share a capsule silhouette.
+Navigation rows and fields use 8px corners. Action buttons use fully rounded ends through the shared action radius. Editors may use 6px corners. Pills are used consistently for actions, categorical status, counts, filters, and segmented choices. Square icon actions may be circular. Movable records use 8px corners. Settings groups and command dialogs use 10px corners; the single desktop work surface uses 12px corners. The breadcrumb toolbar keeps the primary structural separator; internal content relies on spacing unless a boundary is operationally necessary. Status remains categorical even though actions and tabs may share a capsule silhouette.
 
 The Roleway mark follows the favicon everywhere: a Waypoint Blue rounded tile with a white route-shaped R and terminal waypoint. Interface icons use Lucide’s consistent outline vocabulary at 15–16px with restrained stroke weight.
 
 ## Components
 
 ### Buttons
-- **Shape:** Compact 36px-high rounded rectangle with an 8px radius and horizontal padding; 28px icon-only operational controls may be circular on desktop and must expand to a 44px touch target on mobile.
+- **Shape:** Compact 32px-high pill with the shared action radius and horizontal padding; 28px icon-only operational controls may be circular on desktop and must expand to a 44px touch target on mobile.
 - **Primary:** Solid Waypoint Blue with high-contrast text in both themes. No gradient or decorative shadow.
 - **Secondary:** Canvas background, muted gray hairline, and current foreground text; borders never approach the darkness of labels.
 - **Hover / Focus:** Blue fill shift plus a visible blue focus ring; no floating transform on routine controls.
@@ -237,7 +237,7 @@ Provider connections remain visually subordinate setup. Empty Agent explains how
 **The Native Agent Rule.** Agent can answer Workspace questions and prepare or propose Roleway work, but it must feel embedded in Jobs, Opportunities, interviews, contacts, documents, and Home. Every contextual Agent entry opens the same conversation system with explicit scope—not a route-specific AI widget.
 
 ### Public Product Pages
-Marketing uses the application itself as evidence. Large, tightly set graphite headlines lead into real HTML product views composed as a working pin-up rather than a generic split hero. A pale or charcoal measurement board may carry the main product view; one blue-tinted action slip overlaps it to make the next-action mechanism tangible. One inverse monochrome statement field and closing field pace the page. Product views are responsive compositions, never raster screenshots or decorative dashboard mockups.
+Marketing uses the application itself as evidence. Measured graphite headlines lead into real HTML product views composed as a working pin-up rather than a generic split hero. A pale or charcoal measurement board may carry the main product view; one blue-tinted next-action record overlaps it to make the next-action mechanism tangible. Neutral tonal sections pace the page, with blue reserved for actions and selection. Product views are responsive compositions, never raster screenshots or decorative dashboard mockups.
 
 **The Product Pin-up Rule.** The public page gets one dominant interface composition, one annotation system, and one tactile next-action object. Do not repeat miniature dashboard cards to fill sections.
 
@@ -258,3 +258,7 @@ Marketing uses the application itself as evidence. Large, tightly set graphite h
 - **Don't** use AI imagery, sparkles, robots, gradient magic, or speech-bubble styling to represent Agent.
 - **Don't** copy Notion’s brand assets, collaboration terminology, or AI-first positioning; only its workspace discipline is relevant.
 - **Don't** market Roleway with generic dashboard art, fake metrics, or product screenshots that still show a discarded shell.
+
+### Public entry and feedback consistency
+
+Authentication uses one centered 384px form, 28px heading, visible labels, 44px fields and pill actions, and the shared appearance picker. Login, signup, recovery, and verification compose the same Field, Input, Button, and Alert primitives. Alerts pair one 16px outline icon with wrapping copy; error color remains readable in both themes. Toasts use an opaque canvas and the shared floating shadow. Interface icons share a 1.75 stroke; large illustrative watermark marks retain their own weight. Public display typography may scale from 32px section titles to a 72px hero; operational text retains the 13px floor.

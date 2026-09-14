@@ -141,7 +141,7 @@ export default async function HomePage() {
               into one record you can trust when the opportunity gets serious.
             </p>
             <div className="rw-close-actions">
-              <Link href={primaryHref} className="rw-button rw-button-light">
+              <Link href={primaryHref} className="rw-button">
                 {primaryLabel}
                 <ArrowRight aria-hidden="true" />
               </Link>

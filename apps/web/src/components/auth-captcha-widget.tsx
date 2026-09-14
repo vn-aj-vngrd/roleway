@@ -8,32 +8,78 @@ type TurnstileApi = {
   remove: (widgetId: string) => void;
 };
 
-declare global { interface Window { turnstile?: TurnstileApi } }
+declare global {
+  interface Window {
+    turnstile?: TurnstileApi;
+  }
+}
 
-export function AuthCaptchaWidget({ siteKey, onTokenChange }: { siteKey: string; onTokenChange: (token: string) => void }) {
+export function AuthCaptchaWidget({
+  siteKey,
+  onTokenChange,
+}: {
+  siteKey: string;
+  onTokenChange: (token: string) => void;
+}) {
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetIdRef = useRef<string | null>(null);
   const [hasError, setHasError] = useState(false);
 
   const renderWidget = useCallback(() => {
-    if (!containerRef.current || !window.turnstile || widgetIdRef.current) return;
+    if (!containerRef.current || !window.turnstile || widgetIdRef.current)
+      return;
     widgetIdRef.current = window.turnstile.render(containerRef.current, {
       sitekey: siteKey,
-      theme: "auto",
+      theme:
+        document.documentElement.dataset.theme === "dark" ? "dark" : "light",
       size: "flexible",
-      callback: (token: string) => { onTokenChange(token); setHasError(false); },
+      callback: (token: string) => {
+        onTokenChange(token);
+        setHasError(false);
+      },
       "expired-callback": () => onTokenChange(""),
-      "error-callback": () => { onTokenChange(""); setHasError(true); },
+      "error-callback": () => {
+        onTokenChange("");
+        setHasError(true);
+      },
     });
   }, [onTokenChange, siteKey]);
 
   useEffect(() => {
     renderWidget();
+    const observer = new MutationObserver(() => {
+      if (widgetIdRef.current && window.turnstile)
+        window.turnstile.remove(widgetIdRef.current);
+      widgetIdRef.current = null;
+      onTokenChange("");
+      renderWidget();
+    });
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
+    });
     return () => {
-      if (widgetIdRef.current && window.turnstile) window.turnstile.remove(widgetIdRef.current);
+      observer.disconnect();
+      if (widgetIdRef.current && window.turnstile)
+        window.turnstile.remove(widgetIdRef.current);
       widgetIdRef.current = null;
     };
-  }, [renderWidget]);
+  }, [renderWidget, onTokenChange]);
 
-  return <div className="turnstile-field"><Script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" strategy="afterInteractive" onReady={renderWidget} /><div ref={containerRef} aria-label="Security verification" />{hasError ? <p role="alert">Security verification could not load. Check your connection and try again.</p> : null}</div>;
+  return (
+    <div className="turnstile-field">
+      <Script
+        src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
+        strategy="afterInteractive"
+        onReady={renderWidget}
+      />
+      <div ref={containerRef} role="group" aria-label="Security verification" />
+      {hasError ? (
+        <p role="alert">
+          Security verification could not load. Check your connection and try
+          again.
+        </p>
+      ) : null}
+    </div>
+  );
 }

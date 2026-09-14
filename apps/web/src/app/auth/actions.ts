@@ -12,7 +12,12 @@ const credentialsSchema = z.object({
 
 const captchaTokenSchema = z.string().min(10, "Complete the security verification.").max(4096);
 const protectedCredentialsSchema = credentialsSchema.extend({ captchaToken: captchaTokenSchema });
-const signupSchema = protectedCredentialsSchema;
+const signupSchema = protectedCredentialsSchema.extend({
+  confirmPassword: z.string({ required_error: "Confirm your password." }).min(1, "Confirm your password.").max(128, "Password must be 128 characters or fewer."),
+}).refine(({ password, confirmPassword }) => password === confirmPassword, {
+  path: ["confirmPassword"],
+  message: "Passwords do not match. Enter the same password in both fields.",
+});
 const protectedEmailSchema = z.object({ email: z.string().trim().email("Enter a valid email address.").max(320), captchaToken: captchaTokenSchema });
 
 function authUrl(route: "/login" | "/signup", type: "error" | "message", value: string, requestedNext?: FormDataEntryValue | null) {

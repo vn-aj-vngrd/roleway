@@ -8,9 +8,11 @@ import {
   Navigation,
   Target,
 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { SelectField } from "@/components/form-controls";
 import { SubmitButton } from "@/components/submit-button";
+import { Field, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { completeOnboarding } from "./actions";
 
@@ -52,6 +54,16 @@ const featureGroups = [
 export function OnboardingWizard({ email }: { email: string }) {
   const [step, setStep] = useState(0);
   const formRef = useRef<HTMLFormElement>(null);
+  const previousStep = useRef(step);
+
+  useEffect(() => {
+    if (previousStep.current !== step) {
+      formRef.current
+        ?.querySelector<HTMLElement>(`[data-step="${step}"] h1`)
+        ?.focus();
+      previousStep.current = step;
+    }
+  }, [step]);
 
   const continueForward = () => {
     const panel = formRef.current?.querySelector<HTMLElement>(
@@ -65,7 +77,12 @@ export function OnboardingWizard({ email }: { email: string }) {
       if (!field.reportValidity()) return;
     }
     setStep((current) => Math.min(current + 1, steps.length - 1));
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({
+      top: 0,
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "instant"
+        : "smooth",
+    });
   };
 
   return (
@@ -84,7 +101,9 @@ export function OnboardingWizard({ email }: { email: string }) {
             aria-current={index === step ? "step" : undefined}
             key={label}
           >
-            <span>{index < step ? <Check /> : index + 1}</span>
+            <span>
+              {index < step ? <Check aria-hidden="true" /> : index + 1}
+            </span>
             <b>{label}</b>
           </div>
         ))}
@@ -92,8 +111,7 @@ export function OnboardingWizard({ email }: { email: string }) {
 
       <section className="wizard-panel" data-step="0" hidden={step !== 0}>
         <div className="onboarding-copy">
-          <div className="wizard-time">About 2 minutes</div>
-          <h1>Start with the direction you are taking.</h1>
+          <h1 tabIndex={-1}>Start with the direction you are taking.</h1>
           <p>
             Roleway keeps your account context separate from the focused
             Workspaces where you run each job search.
@@ -108,26 +126,24 @@ export function OnboardingWizard({ email }: { email: string }) {
             </p>
           </div>
           <div className="field-grid">
-            <div className="field">
-              <label htmlFor="fullName">Full name</label>
-              <input
-                className="input"
+            <Field>
+              <FieldLabel htmlFor="fullName">Full name</FieldLabel>
+              <Input
                 id="fullName"
                 name="fullName"
                 required
                 autoComplete="name"
               />
-            </div>
-            <div className="field">
-              <label htmlFor="headline">Professional headline</label>
-              <input
-                className="input"
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="headline">Professional headline</FieldLabel>
+              <Input
                 id="headline"
                 name="headline"
                 required
                 placeholder="Product-minded full-stack engineer"
               />
-            </div>
+            </Field>
           </div>
           <p className="field-note">Signed in as {email}</p>
         </div>
@@ -135,8 +151,7 @@ export function OnboardingWizard({ email }: { email: string }) {
 
       <section className="wizard-panel" data-step="1" hidden={step !== 1}>
         <div className="onboarding-copy">
-          <div className="wizard-time">One focused search</div>
-          <h1>Create your first Workspace.</h1>
+          <h1 tabIndex={-1}>Create your first Workspace.</h1>
           <p>
             A Workspace gives one role direction its own Jobs, Opportunities,
             people, documents, interviews, and strategy.
@@ -148,10 +163,9 @@ export function OnboardingWizard({ email }: { email: string }) {
             <p>Start broad enough to be useful. Refine the details later.</p>
           </div>
           <div className="field-grid">
-            <div className="field">
-              <label htmlFor="projectName">Workspace name</label>
-              <input
-                className="input"
+            <Field>
+              <FieldLabel htmlFor="projectName">Workspace name</FieldLabel>
+              <Input
                 id="projectName"
                 name="projectName"
                 required
@@ -161,11 +175,10 @@ export function OnboardingWizard({ email }: { email: string }) {
               <span className="field-hint">
                 A name that distinguishes this direction from another search.
               </span>
-            </div>
-            <div className="field">
-              <label htmlFor="targetTitles">Target role</label>
-              <input
-                className="input"
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="targetTitles">Target role</FieldLabel>
+              <Input
                 id="targetTitles"
                 name="targetTitles"
                 required
@@ -174,18 +187,19 @@ export function OnboardingWizard({ email }: { email: string }) {
               <span className="field-hint">
                 Separate multiple related roles with commas.
               </span>
-            </div>
-            <div className="field">
-              <label htmlFor="locations">Preferred locations</label>
-              <input
-                className="input"
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="locations">Preferred locations</FieldLabel>
+              <Input
                 id="locations"
                 name="locations"
                 placeholder="Remote, New York, London"
               />
-            </div>
-            <div className="field">
-              <label htmlFor="remotePreference">Work arrangement</label>
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="remotePreference">
+                Work arrangement
+              </FieldLabel>
               <SelectField
                 id="remotePreference"
                 name="remotePreference"
@@ -197,17 +211,14 @@ export function OnboardingWizard({ email }: { email: string }) {
                   { value: "required", label: "Remote required" },
                 ]}
               />
-            </div>
+            </Field>
           </div>
         </div>
       </section>
 
       <section className="wizard-panel" data-step="2" hidden={step !== 2}>
         <div className="onboarding-copy onboarding-ready-copy">
-          <div className="wizard-time">
-            Your Workspace is ready to take shape
-          </div>
-          <h1>One system from discovery to outcome.</h1>
+          <h1 tabIndex={-1}>One system from discovery to outcome.</h1>
           <p>
             You will get a short guided tour inside the app. Here is the model
             it will walk you through.
@@ -244,7 +255,6 @@ export function OnboardingWizard({ email }: { email: string }) {
       <div className="onboarding-actions wizard-actions">
         {step > 0 ? (
           <Button
-            className="button ghost"
             variant="ghost"
             type="button"
             onClick={() => setStep((current) => Math.max(0, current - 1))}
@@ -257,11 +267,7 @@ export function OnboardingWizard({ email }: { email: string }) {
           </span>
         )}
         {step < steps.length - 1 ? (
-          <Button
-            className="button primary"
-            type="button"
-            onClick={continueForward}
-          >
+          <Button type="button" onClick={continueForward}>
             Continue
           </Button>
         ) : (
