@@ -31,6 +31,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
   useTransition,
   type RefObject,
 } from "react";
@@ -152,13 +153,15 @@ export type PipelineOpportunity = {
   } | null;
 };
 
-function dueLabel(value: string | null, now: Date) {
+const subscribeToHydration = () => () => {};
+
+function dueLabel(value: string | null, now: Date, formatter: Intl.DateTimeFormat) {
   if (!value) return null;
   const date = new Date(value);
   const overdue = date.getTime() < now.getTime();
   return {
     overdue,
-    text: `${overdue ? "Overdue" : "Due"} ${new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" }).format(date)}`,
+    text: `${overdue ? "Overdue" : "Due"} ${formatter.format(date)}`,
   };
 }
 
@@ -185,6 +188,11 @@ export function PipelineBoard({
   const router = useRouter();
   const [items, setItems] = useState(opportunities);
   const referenceTime = useMemo(() => new Date(now), [now]);
+  const hydrated = useSyncExternalStore(subscribeToHydration, () => true, () => false);
+  // Match SSR on the first render, then preserve the browser-local date display.
+  const dueFormatter = useMemo(() => new Intl.DateTimeFormat(hydrated ? undefined : "en-US", {
+    month: "short", day: "numeric", ...(hydrated ? {} : { timeZone: "UTC" }),
+  }), [hydrated]);
   const normalizePreferences = useCallback(
     (stored: unknown, defaults: PipelinePreferences) => {
       const normalized = normalizePipelinePreferences(stored, defaults);
@@ -605,6 +613,7 @@ export function PipelineBoard({
           visibleStages={visibleStages}
           moveByKeyboard={moveByKeyboard}
           referenceTime={referenceTime}
+          dueFormatter={dueFormatter}
           ticketKey={ticketKey}
           {...(previewHref ? { previewHref } : {})}
         />
@@ -668,6 +677,7 @@ export function PipelineBoard({
                       const due = dueLabel(
                         item.next_action_due_at,
                         referenceTime,
+                        dueFormatter,
                       );
                       const attention = opportunityAttentionReasons(
                         item,
@@ -944,6 +954,7 @@ function PipelineList({
   visibleStages,
   moveByKeyboard,
   referenceTime,
+  dueFormatter,
   ticketKey,
   previewHref,
 }: {
@@ -951,6 +962,7 @@ function PipelineList({
   visibleStages: readonly Stage[];
   moveByKeyboard: (item: PipelineOpportunity, direction: -1 | 1) => void;
   referenceTime: Date;
+  dueFormatter: Intl.DateTimeFormat;
   ticketKey: string;
   previewHref?: string;
 }) {
@@ -969,7 +981,7 @@ function PipelineList({
             </header>
             <div>
               {stageItems.map((item) => {
-                const due = dueLabel(item.next_action_due_at, referenceTime);
+                const due = dueLabel(item.next_action_due_at, referenceTime, dueFormatter);
                 const attention = opportunityAttentionReasons(
                   item,
                   referenceTime,
