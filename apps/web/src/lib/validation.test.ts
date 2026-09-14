@@ -3,7 +3,7 @@ import { commaSeparatedList, jobFormSchema, safeNextPath } from "./validation";
 
 describe("safeNextPath", () => {
   it("preserves an internal deep link", () => expect(safeNextPath("/opportunities/123?tab=notes")).toBe("/opportunities/123?tab=notes"));
-  it.each(["https://evil.test", "//evil.test", "javascript:alert(1)", null])("rejects unsafe destinations", (value) => expect(safeNextPath(value)).toBe("/home"));
+  it.each(["https://evil.test", "//evil.test", "javascript:alert(1)", "/\\evil.test", "/\nevil.test", null])("rejects unsafe destinations", (value) => expect(safeNextPath(value)).toBe("/home"));
 });
 
 describe("commaSeparatedList", () => {

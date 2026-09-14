@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { requestPasswordReset, signIn } from "@/app/auth/actions";
+import { requestPasswordReset, resendConfirmation, signIn } from "@/app/auth/actions";
 import { AuthCaptchaWidget } from "@/components/auth-captcha-widget";
 import { SubmitButton } from "@/components/submit-button";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
@@ -29,5 +29,15 @@ export function PasswordResetRequestForm({ siteKey }: { siteKey: string | undefi
     <input type="hidden" name="captchaToken" value={captchaToken} />
     {siteKey ? <AuthCaptchaWidget siteKey={siteKey} onTokenChange={setCaptchaToken} /> : null}
     <SubmitButton className="auth-minimal-submit" pendingLabel="Sending recovery link…" disabled={!captchaToken}>Send recovery link</SubmitButton>
+  </form>;
+}
+
+export function EmailConfirmationForm({ siteKey }: { siteKey: string | undefined }) {
+  const [captchaToken, setCaptchaToken] = useState(siteKey ? "" : "development-bypass");
+  return <form className="auth-minimal-form" action={resendConfirmation}>
+    <FieldGroup><Field><FieldLabel htmlFor="email">Email</FieldLabel><Input id="email" name="email" type="email" autoComplete="email" inputMode="email" maxLength={320} required placeholder="you@example.com" /></Field></FieldGroup>
+    <input type="hidden" name="captchaToken" value={captchaToken} />
+    {siteKey ? <AuthCaptchaWidget siteKey={siteKey} onTokenChange={setCaptchaToken} /> : null}
+    <SubmitButton className="w-full" pendingLabel="Sending confirmation…" disabled={!captchaToken}>Resend confirmation email</SubmitButton>
   </form>;
 }

@@ -24,7 +24,7 @@ Core product and design decisions live in [`PRODUCT.md`](PRODUCT.md), [`CONTEXT.
 ```bash
 corepack enable
 COREPACK_ENABLE_PROJECT_SPEC=0 pnpm install
-cp .env.example apps/web/.env.local
+cp apps/web/.env.example apps/web/.env.local
 COREPACK_ENABLE_PROJECT_SPEC=0 pnpm dev
 ```
 
@@ -38,6 +38,8 @@ supabase db push
 ```
 
 ## Environment
+
+Use `apps/web/.env.example` for the web app and browser tests; Next.js loads `apps/web/.env.local`. The root `.env.example` contains only project setup variables for Supabase management, Resend provisioning, and optional Studio AI; copy it to root `.env.local` when using those tools. Each variable belongs to one template. See [Auth email setup](docs/AUTH_EMAIL.md) for provisioning.
 
 | Variable | Required | Purpose |
 | --- | --- | --- |

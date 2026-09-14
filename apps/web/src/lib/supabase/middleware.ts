@@ -6,6 +6,7 @@ export async function updateSession(request: NextRequest) {
   const isPublic = pathname === "/"
     || pathname === "/login"
     || pathname === "/signup"
+    || pathname === "/verify-email"
     || pathname === "/forgot-password"
     || pathname === "/reset-password"
     || pathname === "/auth/callback"
