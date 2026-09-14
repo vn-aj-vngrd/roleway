@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export function safeNextPath(value: unknown, fallback = "/home") {
-  return typeof value === "string" && value.startsWith("/") && !value.startsWith("//") ? value : fallback;
+  return typeof value === "string" && value.startsWith("/") && !value.startsWith("//") && !/[\\\u0000-\u0020]/.test(value) ? value : fallback;
 }
 
 export function commaSeparatedList(value: string) {

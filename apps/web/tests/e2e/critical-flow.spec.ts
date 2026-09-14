@@ -1,4 +1,4 @@
-import { authenticateFixture, createFixtureAccount, usesAdminFixture } from "./auth-fixture";
+import { authenticateFixture, completeSignupVerification, createFixtureAccount, usesAdminFixture } from "./auth-fixture";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
@@ -6,6 +6,7 @@ import { randomBytes } from "node:crypto";
 
 const email = `e2e-${Date.now()}-${randomBytes(3).toString("hex")}@roleway.test`;
 const password = `Rw!${randomBytes(12).toString("hex")}`;
+test.use({ trace: "off", screenshot: "off" });
 let opportunityPath = "";
 let userId = "";
 
@@ -142,7 +143,7 @@ test.describe.serial("critical product journey", () => {
     await page.getByLabel("Email").fill(email);
     await page.getByLabel("Password").fill(password);
     await page.getByRole("button", { name: "Create account" }).click();
-    await page.waitForURL("**/onboarding", { timeout: 20_000 });
+    await completeSignupVerification(email, password, page);
     }
 
     await page.getByLabel("Full name").fill("E2E User");

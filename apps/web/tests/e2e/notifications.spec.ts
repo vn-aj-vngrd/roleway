@@ -1,4 +1,4 @@
-import { createFixtureAccount, usesAdminFixture } from "./auth-fixture";
+import { completeSignupVerification, createFixtureAccount, usesAdminFixture } from "./auth-fixture";
 import { expect, test } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
 import { randomBytes } from "node:crypto";
@@ -6,6 +6,7 @@ import { randomBytes } from "node:crypto";
 const email = `e2e-notifications-${Date.now()}-${randomBytes(3).toString("hex")}@roleway.test`;
 const password = `Rw!${randomBytes(12).toString("hex")}`;
 let userId = "";
+test.use({ trace: "off", screenshot: "off" });
 
 const adminClient = () => {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -27,7 +28,7 @@ test("mark all read clears every unread notification", async ({ page }) => {
     await page.getByLabel("Email").fill(email);
     await page.getByLabel("Password").fill(password);
     await page.getByRole("button", { name: "Create account" }).click();
-    await page.waitForURL("**/onboarding");
+    await completeSignupVerification(email, password, page);
     }
     await page.getByLabel("Full name").fill("Notification Test");
     await page.getByLabel("Professional headline").fill("Product Engineer");

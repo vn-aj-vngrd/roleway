@@ -15,7 +15,22 @@ it("verifies invitation links before opening password setup", async () => {
   expect(response.headers.get("location")).toBe("https://roleway.example/reset-password");
 });
 it("does not exchange an unsupported token type", async () => {
-  const response = await GET(new NextRequest("https://roleway.example/auth/callback?type=signup&token_hash=fixture"));
+  const response = await GET(new NextRequest("https://roleway.example/auth/callback?type=unsupported&token_hash=fixture"));
   expect(auth.verifyOtp).not.toHaveBeenCalled();
-  expect(response.headers.get("location")).toContain("/forgot-password?error=");
+  expect(response.headers.get("location")).toContain("/verify-email?error=");
+});
+
+it("confirms signup tokens across browsers and starts onboarding", async () => {
+  const response = await GET(new NextRequest("https://roleway.example/auth/callback?type=signup&token_hash=fixture"));
+  expect(auth.verifyOtp).toHaveBeenCalledWith({ type: "signup", token_hash: "fixture" });
+  expect(response.headers.get("location")).toBe("https://roleway.example/onboarding");
+});
+it("offers verification recovery for an expired signup link", async () => {
+  auth.verifyOtp.mockResolvedValue({ error: { code: "otp_expired" } });
+  const response = await GET(new NextRequest("https://roleway.example/auth/callback?type=signup&token_hash=fixture"));
+  expect(response.headers.get("location")).toContain("/verify-email?error=");
+});
+it("keeps verified email links on a safe local destination", async () => {
+  const response = await GET(new NextRequest("https://roleway.example/auth/callback?type=email&token_hash=fixture&next=%2F%5C%5Cevil.example"));
+  expect(response.headers.get("location")).toBe("https://roleway.example/home");
 });

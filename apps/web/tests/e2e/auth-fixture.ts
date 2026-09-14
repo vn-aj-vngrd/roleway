@@ -4,6 +4,20 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 export const usesAdminFixture = process.env.E2E_AUTH_MODE === "admin";
 
+// Email delivery is checked separately; use an Admin-generated confirmation for the public signup fixture.
+export async function completeSignupVerification(email: string, password: string, page: Page) {
+  if (!email.startsWith("e2e-") || !email.endsWith("@roleway.test")) throw new Error("Only disposable E2E accounts are allowed.");
+  await page.waitForURL(/\/(verify-email|onboarding)(\?|$)/);
+  if (new URL(page.url()).pathname === "/onboarding") return;
+  const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } });
+  const { data, error } = await admin.auth.admin.generateLink({ type: "signup", email, password });
+  if (error) throw error;
+  const callback = `/auth/callback?type=signup&token_hash=${data.properties.hashed_token}`;
+  await page.goto(callback);
+  await page.waitForURL("**/onboarding");
+  return callback;
+}
+
 // This fixture authenticates only disposable test accounts. It does not exercise CAPTCHA/password login.
 export async function authenticateFixture(email: string, page?: Page): Promise<SupabaseClient> {
   if (!email.startsWith("e2e-") || !email.endsWith("@roleway.test")) throw new Error("Only disposable E2E accounts are allowed.");
