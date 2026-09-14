@@ -28,7 +28,7 @@ export default async function AgentPage(props: { searchParams: Promise<AgentQuer
   const admin = createAdminClient();
   const [connectionsResult, opportunitiesResult, conversationsResult] = await Promise.all([
     admin.from("ai_connections").select("id, label, provider, model, status").eq("user_id", context.user.id).order("updated_at", { ascending: false }),
-    context.supabase.from("opportunities").select("id, project_id, reference_number, next_action, jobs(company, title)").eq("user_id", context.user.id).neq("stage", "closed").order("updated_at", { ascending: false }),
+    context.supabase.from("opportunities").select("id, project_id, reference_number, next_action, jobs(company, title)").eq("user_id", context.user.id).in("project_id", context.projects.map((workspace) => workspace.id)).neq("stage", "closed").order("updated_at", { ascending: false }),
     context.supabase.from("agent_conversations").select("id, project_id, title, opportunity_id, updated_at").eq("user_id", context.user.id).eq("status", "active").order("updated_at", { ascending: false }).limit(40),
   ]);
   const connections = (connectionsResult.data ?? []) as Connection[];
@@ -86,6 +86,7 @@ export default async function AgentPage(props: { searchParams: Promise<AgentQuer
 
       {query.error ? <div className="agent-inline-state error" role="alert"><X aria-hidden="true" /><span>{query.error}</span></div> : null}
       {query.decision === "applied" ? <div className="agent-inline-state success" role="status"><Check aria-hidden="true" /><span>Approved change applied. The originating record is up to date.</span></div> : null}
+      {query.decision === "unchanged" ? <div className="agent-inline-state" role="status"><Circle aria-hidden="true" /><span>No change applied. If the proposal expired, ask Agent for a fresh proposal using your current records.</span></div> : null}
       {query.decision === "rejected" ? <div className="agent-inline-state" role="status"><Circle aria-hidden="true" /><span>Proposal rejected. No Roleway record changed.</span></div> : null}
 
       <main className="agent-native-workplane">

@@ -767,6 +767,12 @@ test.describe.serial("critical product journey", () => {
       });
       if (signInError) throw signInError;
       }
+      const { data: sessionUser, error: sessionError } = await client.auth.getUser();
+      expect(sessionError).toBeNull();
+      expect(sessionUser.user?.id).toBe(intruder.user.id);
+      const { data: ownProfile, error: ownReadError } = await client.from("profiles").select("user_id").eq("user_id", intruder.user.id).single();
+      expect(ownReadError).toBeNull();
+      expect(ownProfile?.user_id).toBe(intruder.user.id);
       const opportunityId = opportunityPath.split("/").at(-1)!;
       const { data: privateRows, error: readError } = await client
         .from("opportunities")

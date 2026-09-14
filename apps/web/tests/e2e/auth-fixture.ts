@@ -12,9 +12,11 @@ export async function authenticateFixture(email: string, page?: Page): Promise<S
   const admin = createClient(url, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } });
   const { data, error } = await admin.auth.admin.generateLink({ type: "magiclink", email });
   if (error) throw error;
+  const cookieJar = new Map<string, string>();
   const client = createServerClient(url, key, { cookies: {
-    getAll: () => [],
+    getAll: () => Array.from(cookieJar, ([name, value]) => ({ name, value })),
     setAll: async (cookies) => {
+      for (const { name, value } of cookies) cookieJar.set(name, value);
       if (page) await page.context().addCookies(cookies.map(({name,value})=>({name,value,url:"http://localhost:3003",sameSite:"Lax" as const})));
     },
   } });

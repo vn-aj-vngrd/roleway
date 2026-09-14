@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const fixtures = vi.hoisted(() => ({
   generate: vi.fn(), rpc: vi.fn(), updates: [] as Array<{ table: string; values: Record<string, unknown> }>,
+  opportunities: [] as Array<{ id: string; next_action: string | null; next_action_due_at: string | null }>,
   contextError: false, recordEvent: vi.fn(),
 }));
 const owner = "11111111-1111-4111-8111-111111111111";
@@ -22,13 +23,14 @@ const client = {
     let operation = "read";
     const result = () => {
       if (table === "ai_connections") return { data: {id: record,provider:"openai",model:"fixture",status:"connected"},error:null };
+      if (table === "opportunities") return {data:fixtures.opportunities,error:null};
       if (operation === "insert") return {data:{id:record},error:null};
       if (table === "profiles" && fixtures.contextError) return {data:null,error:{message:"database unavailable"}};
       if (["agent_messages","opportunities","tasks","jobs","interviews","contacts","documents"].includes(table)) return {data:[],error:null};
       return {data:null,error:null,count:0};
     };
     const query = {
-      select: () => query, eq: () => query, neq: () => query, gte: () => query, order: () => query, limit: () => query,
+      select: () => query, in: () => query, eq: () => query, neq: () => query, gte: () => query, order: () => query, limit: () => query,
       insert: () => { operation="insert"; return query; },
       update: (values: Record<string, unknown>) => { fixtures.updates.push({table,values}); return query; },
       single: async () => result(), maybeSingle: async () => result(),
@@ -46,6 +48,7 @@ function request() {
 }
 beforeEach(() => {
   fixtures.recordEvent.mockClear();
+  fixtures.opportunities=[];
   fixtures.contextError=false;fixtures.updates.length=0;
   fixtures.generate.mockReset().mockResolvedValue({output:{message:"A grounded answer",proposals:[]},inputTokens:10,outputTokens:20});
   fixtures.rpc.mockReset().mockResolvedValue({error:null});
@@ -77,6 +80,12 @@ describe("Agent result persistence", () => {
     expect(fixtures.updates).toContainEqual(expect.objectContaining({table:"ai_runs",values:expect.objectContaining({status:"failed"})}));
     expect(fixtures.updates).toContainEqual({table:"agent_messages",values:{run_id:record}});
     expect(fixtures.recordEvent).toHaveBeenCalledWith(expect.objectContaining({ code: "run_save_failed" }));
+  });
+  it("persists the Next Action state read before generation", async () => {
+    fixtures.opportunities=[{id:record,next_action:"Current action",next_action_due_at:null}];
+    fixtures.generate.mockResolvedValue({output:{message:"Review",proposals:[{tool:"set_next_action",targetId:record,summary:"Update action",title:"New action",body:null,dueAt:null,name:null,objective:null}]}});
+    await expect(request()).rejects.toThrow(`redirect:/agent?conversation=${record}`);
+    expect(fixtures.rpc).toHaveBeenCalledWith("complete_agent_run",expect.objectContaining({input_output:expect.objectContaining({proposals:[expect.objectContaining({expectedNextAction:{title:"Current action",dueAt:null}})]})}));
   });
   it("rejects unknown target proposals rather than silently dropping them", async () => {
     fixtures.generate.mockResolvedValue({output:{message:"Review this task",proposals:[{tool:"create_task",targetId:record,summary:"Add task",title:"Prepare",body:null,dueAt:null,name:null,objective:null}]}});

@@ -22,7 +22,7 @@ begin
     insert into public.ai_runs(user_id,project_id,conversation_id,task_type,provider,model,status)
     values(owner_id,origin_id,conversation_id,'conversation','openai','fixture','generating') returning id into run_id;
     proposal := jsonb_build_object('tool',tool,'summary','Review fixture change','targetId',case when tool='create_workspace' then null else opportunity_id end,
-      'title','Prepare examples','body','Approved note','dueAt',null,'name','Agent workspace','objective','Focused search');
+      'title','Prepare examples','body','Approved note','dueAt',null,'name','Agent workspace','objective','Focused search','expectedNextAction',jsonb_build_object('title',null,'dueAt',null));
     reply := jsonb_build_object('message','Please review this change.','proposals',jsonb_build_array(proposal));
     perform public.complete_agent_run(run_id,reply,10,20);
     select id into proposal_id from public.agent_proposals where agent_proposals.run_id=agent_transactions.run_id;
@@ -64,6 +64,24 @@ begin
   perform pg_temp.assert(rejected,'Invalid target must reject the whole result');
   perform pg_temp.assert(not exists(select 1 from public.agent_messages where agent_messages.run_id=agent_transactions.run_id),'Failed result must not leave a misleading answer');
   perform pg_temp.assert(not exists(select 1 from public.agent_proposals where agent_proposals.run_id=agent_transactions.run_id),'Failed result must not leave partial proposals');
+  -- Archived destinations fail atomically, while paused destinations remain usable.
+  update public.search_projects set status='archived' where id=destination_id;
+  reply := jsonb_build_object('message','Archived target.','proposals',jsonb_build_array(proposal));
+  rejected := false;
+  begin perform public.complete_agent_run(run_id,reply,null,null); exception when others then rejected := true; end;
+  perform pg_temp.assert(rejected,'Archived destination must reject generation');
+  perform pg_temp.assert(not exists(select 1 from public.agent_messages where agent_messages.run_id=agent_transactions.run_id),'Archived result must not leave an answer');
+  update public.search_projects set status='paused' where id=destination_id;
+  proposal := jsonb_set(proposal,'{tool}','"set_next_action"');
+  proposal := jsonb_set(proposal,'{expectedNextAction}',jsonb_build_object('title','Prepare examples','dueAt',null));
+  reply := jsonb_build_object('message','A stale Next Action.','proposals',jsonb_build_array(proposal));
+  perform public.complete_agent_run(run_id,reply,null,null);
+  select id into proposal_id from public.agent_proposals where agent_proposals.run_id=agent_transactions.run_id;
+  update public.opportunities set next_action='New manual action' where id=opportunity_id;
+  perform pg_temp.assert(public.decide_agent_proposal(proposal_id,'approve') is null,'Stale Next Action must not apply');
+  perform pg_temp.assert((select next_action='New manual action' from public.opportunities where id=opportunity_id),'New manual action must survive');
+  perform pg_temp.assert((select status='expired' from public.agent_proposals where id=proposal_id),'Stale proposal must expire');
+  perform pg_temp.assert((select status='completed' from public.ai_runs where id=run_id),'Expired proposal must finish run');
   delete from auth.users where id=owner_id;
   perform pg_temp.assert(not exists(select 1 from public.agent_proposals where user_id=owner_id),'Account deletion must remove Agent proposals');
 end;

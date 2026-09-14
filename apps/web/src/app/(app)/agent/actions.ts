@@ -60,7 +60,7 @@ export async function sendAgentMessage(formData: FormData) {
     conversationProjectId = conversation.project_id;
   } else {
     if (focusOpportunityId) {
-      const { data: opportunity } = await auth.supabase.from("opportunities").select("id, project_id").eq("id", focusOpportunityId).eq("user_id", auth.user.id).maybeSingle();
+      const { data: opportunity } = await auth.supabase.from("opportunities").select("id, project_id").eq("id", focusOpportunityId).eq("user_id", auth.user.id).in("project_id", auth.projects.map((workspace) => workspace.id)).maybeSingle();
       if (!opportunity) redirect("/agent?error=The%20focused%20Opportunity%20is%20not%20available.");
       conversationProjectId = opportunity.project_id;
     }
@@ -101,7 +101,7 @@ export async function sendAgentMessage(formData: FormData) {
     const [profileResult, preferencesResult, opportunitiesResult, tasksResult, jobsResult, interviewsResult, contactsResult, documentsResult, historyResult, guidanceResult] = await Promise.all([
       auth.supabase.from("profiles").select("full_name, headline, summary").eq("user_id", auth.user.id).maybeSingle(),
       auth.supabase.from("career_preferences").select("target_titles, preferred_technologies, allowed_locations, remote_preference, minimum_compensation, currency, excluded_criteria").eq("user_id", auth.user.id).maybeSingle(),
-      auth.supabase.from("opportunities").select("id, project_id, reference_number, stage, priority, next_action, next_action_due_at, updated_at, jobs(company, title, description, location, compensation, remote_policy)").eq("user_id", auth.user.id).neq("stage", "closed").order("updated_at", { ascending: false }).limit(100),
+      auth.supabase.from("opportunities").select("id, project_id, reference_number, stage, priority, next_action, next_action_due_at, updated_at, jobs(company, title, description, location, compensation, remote_policy)").eq("user_id", auth.user.id).in("project_id", auth.projects.map((workspace) => workspace.id)).neq("stage", "closed").order("updated_at", { ascending: false }).limit(100),
       auth.supabase.from("tasks").select("id, project_id, opportunity_id, title, status, priority, due_at").eq("user_id", auth.user.id).neq("status", "cancelled").order("due_at", { ascending: true, nullsFirst: false }).limit(100),
       auth.supabase.from("jobs").select("id, project_id, company, title, location, inbox_state, inbox_review_at, imported_at").eq("user_id", auth.user.id).neq("inbox_state", "tracked").order("imported_at", { ascending: false }).limit(60),
       auth.supabase.from("interviews").select("id, project_id, opportunity_id, interview_type, starts_at, status, interviewers").eq("user_id", auth.user.id).order("starts_at", { ascending: true }).limit(60),
@@ -165,7 +165,9 @@ export async function sendAgentMessage(formData: FormData) {
       const checked = agentProposalSchema.safeParse({ ...proposal, body: proposal.body ? sanitizeRichText(proposal.body) : null });
       if (!checked.success) throw new Error("invalid_proposal");
       if (checked.data.targetId && !opportunities.some((opportunity) => opportunity.id === checked.data.targetId)) throw new Error("invalid_proposal_target");
-      return [checked.data];
+      const target = opportunities.find((opportunity) => opportunity.id === checked.data.targetId);
+      return [{ ...checked.data, expectedNextAction: checked.data.tool === "set_next_action" && target
+        ? { title: target.next_action, dueAt: target.next_action_due_at } : null }];
     });
     failureCode = "run_save_failed";
     const { error: completionError } = await admin.rpc("complete_agent_run", {
