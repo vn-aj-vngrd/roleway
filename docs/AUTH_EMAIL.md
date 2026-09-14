@@ -4,7 +4,7 @@ Roleway sends Supabase Auth email as `Roleway <roleway@vanajvanguardia.tech>` th
 
 ## Apply hosted settings
 
-1. Deploy the auth callback and `/verify-email` route before enabling confirmations or applying templates. Confirm the canonical production deployment is Ready.
+1. Apply the confirmed-account admission migration, then deploy the auth callback and `/verify-email` route before enabling confirmations or applying templates. Confirm the canonical production deployment is Ready.
 2. Create a Resend key with Sending access restricted to `vanajvanguardia.tech`. Save `RESEND_API_KEY` and `SMTP_FROM_EMAIL` in ignored `.env.local`. Supply `SUPABASE_ACCESS_TOKEN` and `SUPABASE_PROJECT_REF` only in the setup shell; the script checks the Roleway project and approved sender.
 3. Run `node --env-file=.env.local scripts/configure-auth-email.mjs` to inspect changed field names. Review the target and current CAPTCHA status.
 4. Run the same command with `--apply`. Completion requires the script's read-back verification to pass. It patches email settings, leaving CAPTCHA, hooks, and OAuth configuration intact. Avoid a bulk `supabase config push` against production.
@@ -13,6 +13,8 @@ Roleway sends Supabase Auth email as `Roleway <roleway@vanajvanguardia.tech>` th
 The script is the hosted settings source; `supabase/config.toml` configures local Supabase with localhost callbacks and mail capture. Template HTML lives in `supabase/templates`. Applying hosted settings also installs the templates, requires signup confirmation, enables secure email/password changes and security notices, and corrects the canonical URL. Secrets are never printed by the script.
 
 ## Verify behavior
+
+The account cap counts verified, non-deleted accounts. Confirmation claims capacity under the same admission lock as signup. Pending accounts receive no new Profile or Workspace until confirmation. Existing unverified records remain preserved and excluded from the cap, so abandoned signups cannot exhaust it.
 
 - Signup without a session shows `/verify-email`. Unconfirmed password login goes there too. Resend requires a fresh Turnstile challenge and returns a neutral success message.
 - Confirmation links establish a session and open onboarding. Recovery and invite links open password setup. Expired or reused links offer recovery instead of a dead page.

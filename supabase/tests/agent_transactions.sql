@@ -11,7 +11,7 @@ declare
   conversation_id uuid; run_id uuid; proposal_id uuid; result_id uuid;
   reply jsonb; proposal jsonb; rejected boolean := false; tool text;
 begin
-  insert into auth.users(id,email) values(owner_id,'agent-test-'||owner_id||'@roleway.test'),(other_id,'agent-test-'||other_id||'@roleway.test');
+  insert into auth.users(id,email,email_confirmed_at) values(owner_id,'agent-test-'||owner_id||'@roleway.test',now()),(other_id,'agent-test-'||other_id||'@roleway.test',now());
   perform set_config('request.jwt.claim.sub',owner_id::text,true);
   select active_project_id into origin_id from public.profiles where user_id=owner_id;
   insert into public.search_projects(user_id,name) values(owner_id,'Destination') returning id into destination_id;

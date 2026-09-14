@@ -268,14 +268,15 @@ subject = "Your Roleway verification code"
 content_path = "./supabase/templates/reauthentication.html"
 
 [auth.email.notification.password_changed]
+# Notification paths resolve from supabase/; action-template paths resolve from the repo root.
 enabled = true
 subject = "Your Roleway password changed"
-content_path = "./supabase/templates/password-changed.html"
+content_path = "./templates/password-changed.html"
 
 [auth.email.notification.email_changed]
 enabled = true
 subject = "Your Roleway email changed"
-content_path = "./supabase/templates/email-changed.html"
+content_path = "./templates/email-changed.html"
 
 [auth.sms]
 # Allow/disallow new user signups via SMS to your project.

@@ -16,7 +16,8 @@ describe("Roleway auth-email contract", () => {
     }
     if (name === "reauthentication") expect(html).toContain("{{ .Token }}");
     const config = readFileSync(resolve(root, "supabase/config.toml"), "utf8");
-    expect(config).toContain(`content_path = "./supabase/templates/${name}.html"`);
+    const directory = ["password-changed", "email-changed"].includes(name) ? "./templates" : "./supabase/templates";
+    expect(config).toContain(`content_path = "${directory}/${name}.html"`);
     expect(existsSync(resolve(root, `supabase/templates/${name}.html`))).toBe(true);
   });
 });
