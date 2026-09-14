@@ -6,6 +6,9 @@ for (const timezoneId of ["UTC", "Asia/Manila"]) {
     test("hydrates without errors and shows browser-local due dates", async ({ page }) => {
       const errors: string[] = [];
       page.on("pageerror", error => errors.push(error.message));
+      page.on("console", message => {
+        if (message.type() === "error") errors.push(message.text());
+      });
       await page.goto("/");
       const appearance = page.getByRole("group", { name: "Appearance", exact: true });
       await appearance.getByRole("button", { name: "Dark", exact: true }).click();
