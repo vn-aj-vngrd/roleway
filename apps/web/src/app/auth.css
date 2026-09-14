@@ -133,3 +133,29 @@
     margin-block: -8px;
   }
 }
+
+.auth-password-guidance {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--muted);
+  font-size: 13px;
+}
+.auth-password-guidance li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.auth-password-guidance svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+.auth-password-guidance [data-met="true"] {
+  color: var(--ink);
+}
+.auth-password-guidance [data-met="true"] svg {
+  color: var(--accent);
+}

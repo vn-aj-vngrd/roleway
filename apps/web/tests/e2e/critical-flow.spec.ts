@@ -142,6 +142,7 @@ test.describe.serial("critical product journey", () => {
     await page.goto("/signup");
     await page.getByLabel("Email").fill(email);
     await page.getByLabel("Password").fill(password);
+    await page.getByLabel("Confirm password", { exact: true }).fill(password);
     await page.getByRole("button", { name: "Create account" }).click();
     await completeSignupVerification(email, password, page);
     }
