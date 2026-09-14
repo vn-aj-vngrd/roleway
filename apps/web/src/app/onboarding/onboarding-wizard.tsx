@@ -54,12 +54,14 @@ const featureGroups = [
 export function OnboardingWizard({ email }: { email: string }) {
   const [step, setStep] = useState(0);
   const formRef = useRef<HTMLFormElement>(null);
+  const previousStep = useRef(step);
 
   useEffect(() => {
-    if (step > 0) {
+    if (previousStep.current !== step) {
       formRef.current
         ?.querySelector<HTMLElement>(`[data-step="${step}"] h1`)
         ?.focus();
+      previousStep.current = step;
     }
   }, [step]);
 

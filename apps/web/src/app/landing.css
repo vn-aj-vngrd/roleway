@@ -8,7 +8,7 @@
   --rw-line: var(--line);
   --rw-line-strong: var(--line-strong);
   --rw-accent: var(--accent);
-  --rw-accent-text: var(--accent);
+  --rw-accent-text: var(--button-bg);
   --rw-accent-hover: var(--accent-hover);
   --rw-accent-soft: var(--accent-soft);
   min-height: 100dvh;
@@ -16,6 +16,7 @@
   color: var(--rw-ink);
   background: var(--rw-canvas);
 }
+html[data-theme="dark"] .rw-site { --rw-accent-text: var(--accent); }
 .rw-site ::selection { color: var(--rw-ink); background: var(--rw-accent-soft); }
 .rw-site a:focus-visible, .rw-site button:focus-visible { outline: 2px solid var(--rw-accent); outline-offset: 3px; }
 .rw-site .logo-mark { color: var(--rw-accent); }

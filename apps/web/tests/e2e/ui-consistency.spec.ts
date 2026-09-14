@@ -134,6 +134,17 @@ test("onboarding keeps fields, progress, and recovery consistent across themes",
     await expect(
       page.getByRole("heading", { name: "Create your first Workspace." }),
     ).toBeFocused();
+    await page.getByRole("button", { name: "Back", exact: true }).focus();
+    await page.keyboard.press("Enter");
+    await expect(
+      page.getByRole("heading", {
+        name: "Start with the direction you are taking.",
+      }),
+    ).toBeFocused();
+    await expect(page.getByLabel("Full name", { exact: true })).toHaveValue(
+      "UI Review",
+    );
+    await page.getByRole("button", { name: "Continue", exact: true }).click();
     await page
       .getByLabel("Target role", { exact: true })
       .fill("Product Engineer");
@@ -156,3 +167,33 @@ test("onboarding keeps fields, progress, and recovery consistent across themes",
     if (error) throw error;
   }
 });
+
+for (const theme of ["light", "dark"] as const) {
+  test(`landing accent text has accessible contrast in ${theme}`, async ({
+    page,
+  }) => {
+    await page.addInitScript(
+      (value) => localStorage.setItem("roleway-theme", value),
+      theme,
+    );
+    await page.goto("/");
+    await expect(page.locator(".rw-site")).toBeVisible();
+    const result = await new AxeBuilder({ page })
+      .include(".rw-next-slip")
+      .include(".rw-highlight-copy")
+      .include(".art-job-tag")
+      .include(".art-workspace aside")
+      .include(".rw-assist-preview")
+      .withRules(["color-contrast"])
+      .analyze();
+    expect(
+      result.violations.map(({ id, nodes }) => ({
+        id,
+        nodes: nodes.map(({ target, failureSummary }) => ({
+          target,
+          failureSummary,
+        })),
+      })),
+    ).toEqual([]);
+  });
+}
