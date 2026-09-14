@@ -1,5 +1,5 @@
-// Provider calls have a bounded 120-second timeout; leave time for persistence.
-export const maxDuration = 180;
+// OpenRouter free models may queue for minutes; leave time for bounded calls and persistence.
+export const maxDuration = 300;
 
 import {
   CheckCircle2,

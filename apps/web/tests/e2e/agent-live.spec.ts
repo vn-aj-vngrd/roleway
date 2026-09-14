@@ -7,7 +7,7 @@ import { createFixtureAccount } from "./auth-fixture";
 test.use({ trace: "off", screenshot: "off" });
 test("live OpenRouter answer → approval → persisted task", async ({page}) => {
   test.skip(!process.env.ROLEWAY_TEST_OPENROUTER_KEY, "A live provider key is required.");
-  test.setTimeout(360_000);
+  test.setTimeout(600_000);
   page.setDefaultTimeout(30_000);
   const browserErrors: string[] = [];
   page.on("pageerror", (error) => browserErrors.push(error.message));
@@ -36,13 +36,13 @@ test("live OpenRouter answer → approval → persisted task", async ({page}) =>
     await expect(page.getByText("Live audit provider", {exact:true})).toBeVisible();
     console.info("Live Agent: connection saved");
     await page.getByRole("button",{name:"Test",exact:true}).click();
-    await expect(page.locator(".connection-row .status-label")).toHaveText("connected", {timeout:140_000});
+    await expect(page.locator(".connection-row .status-label")).toHaveText("connected", {timeout:260_000});
     console.info("Live Agent: provider verified");
     await page.goto(`/agent?opportunity=${opportunity.id}`);
     await page.getByLabel("Message Roleway Agent",{exact:true}).fill("Propose exactly one create_task for the focused Audit Fixture Product Engineer Opportunity, titled 'Prepare TypeScript examples', with no due date. Do not apply it. Ask for my approval.");
     await page.getByRole("button",{name:"Send to Agent",exact:true}).click();
     const card=page.getByRole("region",{name:"Agent proposed change"});
-    await expect(card).toBeVisible({timeout:140_000});
+    await expect(card).toBeVisible({timeout:260_000});
     console.info("Live Agent: proposal received");
     await expect(card).toContainText("Workspace");
     const before=await admin.from("tasks").select("id",{count:"exact",head:true}).eq("user_id",userId).eq("created_by","agent");

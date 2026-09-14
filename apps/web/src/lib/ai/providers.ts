@@ -68,8 +68,8 @@ async function safeCompatibleBaseUrl(value: string | null) {
   return url.toString().replace(/\/$/, "");
 }
 
-async function requestJson(url: string, init: RequestInit) {
-  const signal = AbortSignal.timeout(120_000);
+async function requestJson(url: string, init: RequestInit, timeoutMs = 45_000) {
+  const signal = AbortSignal.timeout(timeoutMs);
   const response = await fetch(url, { ...init, redirect: "error", cache: "no-store", signal });
   const payload = await response.json().catch(() => { if (signal.aborted) throw signal.reason; return null; }) as Record<string, unknown> | null;
   if (!response.ok) {
@@ -117,7 +117,7 @@ async function openAiCompatible(connection: AiConnection, apiKey: string, prompt
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}`, ...(connection.provider === "openrouter" ? { "HTTP-Referer": "https://roleway.vanajvanguardia.tech", "X-Title": "Roleway" } : {}) },
     body: JSON.stringify({ model: connection.model, messages: [{ role: "system", content: "You are Roleway Assist. Use only the supplied career and Opportunity context. Never invent experience, dates, employers, or outcomes. Return a concise reviewable draft, not an external action." }, { role: "user", content: prompt }], temperature: 0.2, ...openAiOutputOptions(connection, "roleway_assist", outputJsonSchema, 1800) }),
-  });
+  }, connection.provider === "openrouter" ? 240_000 : 45_000);
   const usage = payload?.usage as { prompt_tokens?: number; completion_tokens?: number } | undefined;
   return { output: parseOutput(openAiResponseValue(payload, connection, "roleway_assist")), inputTokens: usage?.prompt_tokens, outputTokens: usage?.completion_tokens };
 }
@@ -166,7 +166,7 @@ async function openAiAgent(connection: AiConnection, apiKey: string, prompt: str
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}`, ...(connection.provider === "openrouter" ? { "HTTP-Referer": "https://roleway.vanajvanguardia.tech", "X-Title": "Roleway" } : {}) },
     body: JSON.stringify({ model: connection.model, messages: [{ role: "system", content: agentSystemPolicy }, { role: "user", content: prompt }], temperature: 0.2, ...openAiOutputOptions(connection, "roleway_agent", agentJsonSchema, 3000) }),
-  });
+  }, connection.provider === "openrouter" ? 240_000 : 45_000);
   const usage = payload?.usage as { prompt_tokens?: number; completion_tokens?: number } | undefined;
   return { output: parseAgentResponse(openAiResponseValue(payload, connection, "roleway_agent")), inputTokens: usage?.prompt_tokens, outputTokens: usage?.completion_tokens };
 }
