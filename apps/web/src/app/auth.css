@@ -159,3 +159,7 @@
 .auth-password-guidance [data-met="true"] svg {
   color: var(--accent);
 }
+
+.auth-google { display: grid; gap: 20px; }
+.auth-google-divider { display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 13px; }
+.auth-google-divider span { height: 1px; flex: 1; background: var(--line); }

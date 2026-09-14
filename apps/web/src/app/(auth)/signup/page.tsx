@@ -1,3 +1,4 @@
+import { GoogleSignIn } from "@/components/google-sign-in";
 import { CircleAlert, Info } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -59,6 +60,7 @@ export default async function SignupPage(props: {
       {acceptingSignups ? (
         <SignupForm siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY} />
       ) : null}
+      {acceptingSignups ? <GoogleSignIn /> : null}
       <p className="auth-minimal-switch">
         Already have an account? <Link href="/login">Log in</Link>
       </p>

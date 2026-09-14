@@ -1,3 +1,4 @@
+import { GoogleSignIn } from "@/components/google-sign-in";
 import { CircleAlert, Info } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -45,6 +46,10 @@ export default async function LoginPage(props: {
       ) : (
         <LoginForm siteKey={siteKey} nextPath={query.next ?? ""} />
       )}
+      <GoogleSignIn
+        nextPath={query.next ?? "/home"}
+        showDivider={!captchaUnavailable}
+      />
       <p className="auth-minimal-switch">
         New to Roleway? <Link href="/signup">Create an account</Link>
       </p>
