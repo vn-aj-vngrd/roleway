@@ -26,11 +26,15 @@ type ConfirmationDialogProps = {
   confirmationFields?: ConfirmationField[];
   destructive?: boolean;
   successMessage?: string;
+  children?: ReactNode;
+  disabled?: boolean;
+  onOpenChange?: (open: boolean) => void;
 };
 
-export function ConfirmationDialog({ title, description, action, confirmLabel, pendingLabel = "Working…", trigger, triggerClassName = "button secondary", triggerAriaLabel, triggerTooltip, hiddenFields = {}, confirmationFields = [], destructive = false, successMessage }: ConfirmationDialogProps) {
+export function ConfirmationDialog({ title, description, action, confirmLabel, pendingLabel = "Working…", trigger, triggerClassName = "button secondary", triggerAriaLabel, triggerTooltip, hiddenFields = {}, confirmationFields = [], destructive = false, successMessage, children, disabled = false, onOpenChange }: ConfirmationDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const id = useId();
+  const [open, setOpen] = useState(false);
   const [values, setValues] = useState<Record<string, string>>({});
   const confirmed = confirmationFields.every((field) => field.expected === undefined ? (values[field.name] ?? "").length >= 8 : (values[field.name] ?? "").trim() === field.expected.trim());
   const close = () => { dialogRef.current?.close(); setValues({}); };
@@ -41,13 +45,14 @@ export function ConfirmationDialog({ title, description, action, confirmLabel, p
   };
 
   return <>
-    <button className={triggerClassName} type="button" aria-label={triggerAriaLabel} data-tooltip={triggerTooltip} onClick={() => dialogRef.current?.showModal()}>{trigger}</button>
-    <dialog className="confirmation-dialog" ref={dialogRef} aria-labelledby={`${id}-title`} onClose={() => setValues({})} onClick={(event) => { if (event.target === event.currentTarget) close(); }}>
+    <button className={triggerClassName} type="button" aria-label={triggerAriaLabel} data-tooltip={triggerTooltip} onClick={() => { setOpen(true); onOpenChange?.(true); dialogRef.current?.showModal(); }}>{trigger}</button>
+    <dialog className="confirmation-dialog" ref={dialogRef} aria-labelledby={`${id}-title`} onClose={() => { setValues({}); setOpen(false); onOpenChange?.(false); }} onClick={(event) => { if (event.target === event.currentTarget) close(); }}>
       <form action={submit}>
         {Object.entries(hiddenFields).map(([name, value]) => <input type="hidden" name={name} value={value} key={name} />)}
         <header><h2 id={`${id}-title`}>{title}</h2><p>{description}</p></header>
         {confirmationFields.length ? <div className="confirmation-fields">{confirmationFields.map((field, index) => <div className="field" key={field.name}><label htmlFor={`${id}-${field.name}`}>{field.label}</label>{field.expected !== undefined ? <span>Enter <strong>{field.expected}</strong></span> : <span>Enter your current password.</span>}<input className="input" id={`${id}-${field.name}`} name={field.name} type={field.type ?? "text"} value={values[field.name] ?? ""} autoComplete={field.type === "password" ? "current-password" : "off"} spellCheck={false} autoFocus={index === 0} required onChange={(event) => setValues((current) => ({ ...current, [field.name]: event.target.value }))} /></div>)}</div> : null}
-        <footer><Button className="button secondary" variant="outline" type="button" onClick={close}>Cancel</Button><SubmitButton className={destructive ? "button danger confirmation-submit" : "button primary"} pendingLabel={pendingLabel} disabled={!confirmed}>{confirmLabel}</SubmitButton></footer>
+        {open ? children : null}
+        <footer><Button className="button secondary" variant="outline" type="button" onClick={close}>Cancel</Button><SubmitButton className={destructive ? "button danger confirmation-submit" : "button primary"} pendingLabel={pendingLabel} disabled={!confirmed || disabled}>{confirmLabel}</SubmitButton></footer>
       </form>
     </dialog>
   </>;

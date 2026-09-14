@@ -1,3 +1,6 @@
+// Provider calls have a bounded 120-second timeout; leave time for persistence.
+export const maxDuration = 180;
+
 import { formatOpportunityTicket } from "@roleway/core";
 import { ArrowRight, CalendarClock, ChevronDown, CircleDot, FileText, Mail, Navigation, Pencil, Plus, Trash2, UserRound } from "lucide-react";
 import Link from "next/link";

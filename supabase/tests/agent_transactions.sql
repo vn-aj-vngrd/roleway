@@ -64,6 +64,8 @@ begin
   perform pg_temp.assert(rejected,'Invalid target must reject the whole result');
   perform pg_temp.assert(not exists(select 1 from public.agent_messages where agent_messages.run_id=agent_transactions.run_id),'Failed result must not leave a misleading answer');
   perform pg_temp.assert(not exists(select 1 from public.agent_proposals where agent_proposals.run_id=agent_transactions.run_id),'Failed result must not leave partial proposals');
+  delete from auth.users where id=owner_id;
+  perform pg_temp.assert(not exists(select 1 from public.agent_proposals where user_id=owner_id),'Account deletion must remove Agent proposals');
 end;
 $$;
 select pg_temp.assert(not has_function_privilege('authenticated','public.complete_agent_run(uuid,jsonb,integer,integer)','execute'),'Clients cannot forge provider results');

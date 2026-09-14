@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const fixtures = vi.hoisted(() => ({
   generate: vi.fn(), rpc: vi.fn(), updates: [] as Array<{ table: string; values: Record<string, unknown> }>,
-  contextError: false,
+  contextError: false, recordEvent: vi.fn(),
 }));
 const owner = "11111111-1111-4111-8111-111111111111";
 const workspace = "22222222-2222-4222-8222-222222222222";
@@ -12,7 +12,7 @@ vi.mock("next/navigation", () => ({ redirect: (url: string) => { throw new Error
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("@/lib/ai/providers", () => ({ generateAgentResponse: fixtures.generate }));
 vi.mock("@/lib/ai/secrets", () => ({ decryptSecret: () => "fixture-key" }));
-vi.mock("@/lib/observability", () => ({ recordSystemEvent: vi.fn() }));
+vi.mock("@/lib/observability", () => ({ recordSystemEvent: fixtures.recordEvent }));
 vi.mock("@/features/projects/context", () => ({ requireSearchContext: async () => ({ user: { id: owner }, project: { id: workspace }, projects: [{ id: workspace,name: "Search" }],supabase: client }) }));
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => client }));
 
@@ -45,11 +45,20 @@ function request() {
   return sendAgentMessage(data);
 }
 beforeEach(() => {
+  fixtures.recordEvent.mockClear();
   fixtures.contextError=false;fixtures.updates.length=0;
   fixtures.generate.mockReset().mockResolvedValue({output:{message:"A grounded answer",proposals:[]},inputTokens:10,outputTokens:20});
   fixtures.rpc.mockReset().mockResolvedValue({error:null});
 });
 describe("Agent result persistence", () => {
+  it("reports a provider timeout without exposing provider content", async () => {
+    const error = new Error("sensitive provider detail"); error.name = "TimeoutError";
+    fixtures.generate.mockRejectedValue(error);
+    await expect(request()).rejects.toThrow("The%20model%20took%20too%20long");
+    expect(fixtures.recordEvent).toHaveBeenCalledWith(expect.objectContaining({ code: "provider_timeout" }));
+    expect(JSON.stringify(fixtures.recordEvent.mock.calls)).not.toContain("sensitive provider detail");
+    expect(fixtures.rpc).not.toHaveBeenCalled();
+  });
   it("commits the validated answer through the atomic persistence seam", async () => {
     await expect(request()).rejects.toThrow(`redirect:/agent?conversation=${record}`);
     expect(fixtures.rpc).toHaveBeenCalledWith("complete_agent_run",expect.objectContaining({input_run_id:record,input_output:{message:"A grounded answer",proposals:[]}}));
@@ -58,6 +67,7 @@ describe("Agent result persistence", () => {
   it("does not call a provider when context cannot be read", async () => {
     fixtures.contextError=true;
     await expect(request()).rejects.toThrow("error=Agent");
+    expect(fixtures.recordEvent).toHaveBeenCalledWith(expect.objectContaining({ code: "context_read_failed" }));
     expect(fixtures.generate).not.toHaveBeenCalled();
     expect(fixtures.rpc).not.toHaveBeenCalled();
   });
@@ -66,6 +76,7 @@ describe("Agent result persistence", () => {
     await expect(request()).rejects.toThrow("error=Agent");
     expect(fixtures.updates).toContainEqual(expect.objectContaining({table:"ai_runs",values:expect.objectContaining({status:"failed"})}));
     expect(fixtures.updates).toContainEqual({table:"agent_messages",values:{run_id:record}});
+    expect(fixtures.recordEvent).toHaveBeenCalledWith(expect.objectContaining({ code: "run_save_failed" }));
   });
   it("rejects unknown target proposals rather than silently dropping them", async () => {
     fixtures.generate.mockResolvedValue({output:{message:"Review this task",proposals:[{tool:"create_task",targetId:record,summary:"Add task",title:"Prepare",body:null,dueAt:null,name:null,objective:null}]}});

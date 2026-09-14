@@ -1,3 +1,6 @@
+// Provider calls have a bounded 120-second timeout; leave time for persistence.
+export const maxDuration = 180;
+
 import { formatOpportunityTicket } from "@roleway/core";
 import { Archive, Check, ChevronDown, Circle, History, KeyRound, Navigation, Plus, Route, Send, X } from "lucide-react";
 import Link from "next/link";
@@ -95,7 +98,7 @@ export default async function AgentPage(props: { searchParams: Promise<AgentQuer
               <article className={`agent-message ${message.role}`} key={message.id}>
                 <header><span className="agent-message-author">{message.role === "agent" ? <><Navigation aria-hidden="true" />Roleway Agent</> : "You"}</span><time dateTime={message.created_at}>{messageTime(message.created_at)}</time></header>
                 <div className="agent-message-content">{message.content.split(/\n{2,}/).map((paragraph, index) => <p key={index}>{paragraph}</p>)}</div>
-                {message.role === "agent" && run ? <AgentRunDetails run={run} steps={runSteps} /> : null}
+                {run && (message.role === "agent" || run.status === "failed") ? <AgentRunDetails run={run} steps={runSteps} /> : null}
                 {runProposals.map((proposal) => <ApprovalCard workspace={proposal.destination_project_id ? projectMap.get(proposal.destination_project_id)?.name ?? "Unavailable Workspace" : undefined} proposal={proposal} opportunity={proposal.target_id ? opportunityMap.get(proposal.target_id) : undefined} key={proposal.id} />)}
               </article>
             );

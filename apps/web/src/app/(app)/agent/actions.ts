@@ -96,6 +96,7 @@ export async function sendAgentMessage(formData: FormData) {
   }).select("id").single();
   if (runError || !run) redirect(`/agent?conversation=${conversationId}&error=Agent%20could%20not%20start%20this%20run.`);
 
+  let failureCode = "context_read_failed";
   try {
     const [profileResult, preferencesResult, opportunitiesResult, tasksResult, jobsResult, interviewsResult, contactsResult, documentsResult, historyResult, guidanceResult] = await Promise.all([
       auth.supabase.from("profiles").select("full_name, headline, summary").eq("user_id", auth.user.id).maybeSingle(),
@@ -126,7 +127,10 @@ export async function sendAgentMessage(formData: FormData) {
       };
     });
 
-    await admin.from("ai_runs").update({ status: "generating" }).eq("id", run.id).eq("user_id", auth.user.id);
+    failureCode = "run_save_failed";
+    const { error: generatingError } = await admin.from("ai_runs").update({ status: "generating" }).eq("id", run.id).eq("user_id", auth.user.id);
+    if (generatingError) throw new Error("run_save_failed");
+    failureCode = "provider_request_failed";
     const history = (historyResult.data ?? []).reverse().map((message) => ({ role: message.role, content: message.content.slice(0, 6000) }));
     const contextPayload = {
       workspaces: auth.projects.map((workspace) => ({
@@ -156,12 +160,14 @@ export async function sendAgentMessage(formData: FormData) {
     const apiKey = decryptSecret(connection.encrypted_secret, connection.secret_iv);
     const result = await generateAgentResponse({ provider: connection.provider as AiProviderKind, model: connection.model, base_url: connection.base_url }, apiKey, prompt);
 
+    failureCode = "invalid_provider_output";
     const validProposals = result.output.proposals.flatMap((proposal) => {
       const checked = agentProposalSchema.safeParse({ ...proposal, body: proposal.body ? sanitizeRichText(proposal.body) : null });
       if (!checked.success) throw new Error("invalid_proposal");
       if (checked.data.targetId && !opportunities.some((opportunity) => opportunity.id === checked.data.targetId)) throw new Error("invalid_proposal_target");
       return [checked.data];
     });
+    failureCode = "run_save_failed";
     const { error: completionError } = await admin.rpc("complete_agent_run", {
       input_run_id: run.id,
       input_output: { ...result.output, proposals: validProposals },
@@ -171,12 +177,13 @@ export async function sendAgentMessage(formData: FormData) {
     if (completionError) throw new Error("run_save_failed");
   } catch (error) {
     if (userMessage) await admin.from("agent_messages").update({ run_id: run.id }).eq("id", userMessage.id).eq("user_id", auth.user.id);
-    const code = error instanceof z.ZodError ? "invalid_provider_output" : "provider_request_failed";
+    const code = error instanceof Error && error.name === "TimeoutError" ? "provider_timeout" : error instanceof z.ZodError || error instanceof SyntaxError ? "invalid_provider_output" : failureCode;
     await admin.from("ai_runs").update({ status: "failed", error_message: "Agent could not complete this run." }).eq("id", run.id).eq("user_id", auth.user.id);
     await admin.from("agent_run_steps").insert({ user_id: auth.user.id, project_id: conversationProjectId, conversation_id: conversationId, run_id: run.id, label: "Agent run failed safely", status: "failed", position: 1 });
     await recordSystemEvent({ category: "ai", code, userId: auth.user.id, metadata: { provider: connection.provider, model: connection.model } });
     revalidatePath("/agent");
-    redirect(`/agent?conversation=${conversationId}&error=Agent%20could%20not%20complete%20that%20request.%20Your%20message%20is%20saved;%20try%20again.`);
+    const message = code === "provider_timeout" ? "The model took too long to respond. Your message is saved; retry or choose a faster model in Settings." : "Agent could not complete that request. Your message is saved; try again.";
+    redirect(`/agent?conversation=${conversationId}&error=${encodeURIComponent(message)}`);
   }
 
   revalidatePath("/agent");

@@ -1,3 +1,6 @@
+// Provider calls have a bounded 120-second timeout; leave time for persistence.
+export const maxDuration = 180;
+
 import {
   CheckCircle2,
   PlugZap,
@@ -97,7 +100,7 @@ export default async function AiSettingsPage(props: {
               <ShieldCheck aria-hidden="true" />
               <p>
                 <strong>You approve every internal change.</strong> Agent reads
-                the active Workspace only after you send a request. It cannot
+                context from your Workspaces only after you send a request. It cannot
                 submit applications or contact employers.
               </p>
             </div>

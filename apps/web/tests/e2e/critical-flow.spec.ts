@@ -1,3 +1,4 @@
+import { authenticateFixture, createFixtureAccount, usesAdminFixture } from "./auth-fixture";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
@@ -26,6 +27,7 @@ async function findUserId() {
 }
 
 async function signIn(page: Page) {
+  if (usesAdminFixture) { await authenticateFixture(email, page); await page.goto("/home"); return; }
   await page.goto("/login");
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password").fill(password);
@@ -128,14 +130,20 @@ test.describe.serial("critical product journey", () => {
     ).toBeVisible();
   });
 
-  test("sign up → Search Project → Opportunity → application → interview → sign out", async ({
+  test(`${usesAdminFixture ? "fixture account" : "sign up"} → Workspace → Opportunity → application → interview → sign out`, async ({
     page,
   }) => {
+    test.setTimeout(600_000);
+    if (usesAdminFixture) {
+      userId = await createFixtureAccount(email, password, page);
+      await page.goto("/onboarding");
+    } else {
     await page.goto("/signup");
     await page.getByLabel("Email").fill(email);
     await page.getByLabel("Password").fill(password);
     await page.getByRole("button", { name: "Create account" }).click();
     await page.waitForURL("**/onboarding", { timeout: 20_000 });
+    }
 
     await page.getByLabel("Full name").fill("E2E User");
     await page.getByLabel("Professional headline").fill("Product Engineer");
@@ -728,7 +736,7 @@ test.describe.serial("critical product journey", () => {
 
     await page.goto("/settings/privacy");
     const downloadPromise = page.waitForEvent("download");
-    await page.getByRole("link", { name: "Download data export" }).click();
+    await page.getByRole("link", { name: "Download export" }).click();
     const download = await downloadPromise;
     expect(download.suggestedFilename()).toMatch(
       /^roleway-export-\d{4}-\d{2}-\d{2}\.json$/,
@@ -749,14 +757,16 @@ test.describe.serial("critical product journey", () => {
     try {
       const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
       const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-      const client = createClient(url, anonKey, {
+      const client = usesAdminFixture ? await authenticateFixture(intruderEmail) : createClient(url, anonKey, {
         auth: { persistSession: false },
       });
+      if (!usesAdminFixture) {
       const { error: signInError } = await client.auth.signInWithPassword({
         email: intruderEmail,
         password: intruderPassword,
       });
       if (signInError) throw signInError;
+      }
       const opportunityId = opportunityPath.split("/").at(-1)!;
       const { data: privateRows, error: readError } = await client
         .from("opportunities")
@@ -794,6 +804,13 @@ test.describe.serial("critical product journey", () => {
     await dialog
       .getByRole("button", { name: "Delete account permanently" })
       .click();
+    if (usesAdminFixture) {
+      await expect(page).toHaveURL(/\/settings\/privacy\?error=/);
+      await expect(page.getByText("Security verification expired or failed. Please try again.", { exact: true })).toBeVisible();
+      const { data: retained } = await adminClient().auth.admin.getUserById(userId);
+      expect(retained.user?.id).toBe(userId);
+      return;
+    }
     await expect(page).toHaveURL(/\/login\?message=/);
     await expect(
       page.getByText("Your Roleway account and workspace were deleted."),

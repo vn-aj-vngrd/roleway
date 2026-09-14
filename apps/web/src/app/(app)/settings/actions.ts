@@ -17,7 +17,7 @@ export async function updateProfile(formData: FormData) {
 }
 
 export async function deleteAccount(formData: FormData) {
-  const confirmation = z.object({ confirmationName: z.string().trim().min(1), confirmationEmail: z.string().trim().email(), currentPassword: z.string().min(8) }).safeParse(Object.fromEntries(formData));
+  const confirmation = z.object({ confirmationName: z.string().trim().min(1), confirmationEmail: z.string().trim().email(), currentPassword: z.string().min(8), captchaToken: z.string().min(10).max(4096) }).safeParse(Object.fromEntries(formData));
   const auth = await requireUser(); if (!auth) redirect("/login");
   const { data: profile } = await auth.supabase.from("profiles").select("full_name").eq("user_id", auth.user.id).maybeSingle();
   const expectedName = profile?.full_name || String(auth.user.user_metadata?.full_name || auth.user.email?.split("@")[0] || "Roleway user");
@@ -25,14 +25,19 @@ export async function deleteAccount(formData: FormData) {
   const nameMatches = confirmation.data.confirmationName === expectedName;
   const emailMatches = confirmation.data.confirmationEmail.toLowerCase() === auth.user.email?.toLowerCase();
   if (!nameMatches || !emailMatches) redirect("/settings/privacy?error=Your%20name%20and%20email%20must%20match%20the%20account.");
-  const { error: verificationError } = await auth.supabase.auth.signInWithPassword({ email: confirmation.data.confirmationEmail, password: confirmation.data.currentPassword });
-  if (verificationError) redirect("/settings/privacy?error=Your%20current%20password%20is%20incorrect.");
+  if (process.env.NODE_ENV === "production" && !process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY) redirect("/settings/privacy?error=Account%20deletion%20is%20unavailable%20while%20security%20verification%20is%20being%20configured.");
+  const { error: verificationError } = await auth.supabase.auth.signInWithPassword({ email: confirmation.data.confirmationEmail, password: confirmation.data.currentPassword, options: { captchaToken: confirmation.data.captchaToken } });
+  if (verificationError) {
+    const message = verificationError.code === "captcha_failed" ? "Security verification expired or failed. Please try again." : "Your current password is incorrect.";
+    redirect(`/settings/privacy?error=${encodeURIComponent(message)}`);
+  }
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !serviceKey) redirect("/settings/privacy?error=Account%20deletion%20is%20not%20configured.");
   const admin = createClient(url, serviceKey, { auth: { persistSession: false } });
   const { error } = await admin.auth.admin.deleteUser(auth.user.id);
   if (error) redirect("/settings/privacy?error=Your%20account%20could%20not%20be%20deleted.%20Try%20again.");
+  await auth.supabase.auth.signOut();
   redirect("/login?message=Your%20Roleway%20account%20and%20workspace%20were%20deleted.");
 }
 

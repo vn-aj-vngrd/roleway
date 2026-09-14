@@ -69,8 +69,9 @@ async function safeCompatibleBaseUrl(value: string | null) {
 }
 
 async function requestJson(url: string, init: RequestInit) {
-  const response = await fetch(url, { ...init, redirect: "error", cache: "no-store", signal: AbortSignal.timeout(45_000) });
-  const payload = await response.json().catch(() => null) as Record<string, unknown> | null;
+  const signal = AbortSignal.timeout(120_000);
+  const response = await fetch(url, { ...init, redirect: "error", cache: "no-store", signal });
+  const payload = await response.json().catch(() => { if (signal.aborted) throw signal.reason; return null; }) as Record<string, unknown> | null;
   if (!response.ok) {
     const nested = payload?.error as { message?: string } | string | undefined;
     const message = typeof nested === "string" ? nested : nested?.message;
@@ -87,16 +88,38 @@ function parseOutput(value: unknown) {
   return assistantOutputSchema.parse(value);
 }
 
+function openAiOutputOptions(connection: AiConnection, name: string, schema: object, maxTokens: number) {
+  if (connection.provider === "openrouter") {
+    return {
+      max_tokens: maxTokens,
+      reasoning: { enabled: false },
+      tools: [{ type: "function", function: { name, description: "Return the structured Roleway response", parameters: schema } }],
+      tool_choice: { type: "function", function: { name } },
+    };
+  }
+  return { response_format: { type: "json_schema", json_schema: { name, strict: true, schema } } };
+}
+
+function openAiResponseValue(payload: Record<string, unknown> | null, connection: AiConnection, name: string) {
+  const choices = payload?.choices as Array<{ message?: { content?: string; tool_calls?: Array<{ function?: { name?: string; arguments?: string } }> } }> | undefined;
+  const message = choices?.[0]?.message;
+  if (connection.provider === "openrouter") {
+    const call = message?.tool_calls?.find((tool) => tool.function?.name === name);
+    if (!call?.function?.arguments) throw new Error("The model did not return a structured response. Choose a model that supports tool calls and test the connection again.");
+    return call.function.arguments;
+  }
+  return message?.content;
+}
+
 async function openAiCompatible(connection: AiConnection, apiKey: string, prompt: string) {
   const base = connection.provider === "openai" ? "https://api.openai.com/v1" : connection.provider === "openrouter" ? "https://openrouter.ai/api/v1" : await safeCompatibleBaseUrl(connection.base_url);
   const payload = await requestJson(`${base}/chat/completions`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}`, ...(connection.provider === "openrouter" ? { "HTTP-Referer": "https://roleway.vanajvanguardia.tech", "X-Title": "Roleway" } : {}) },
-    body: JSON.stringify({ model: connection.model, messages: [{ role: "system", content: "You are Roleway Assist. Use only the supplied career and Opportunity context. Never invent experience, dates, employers, or outcomes. Return a concise reviewable draft, not an external action." }, { role: "user", content: prompt }], temperature: 0.2, response_format: { type: "json_schema", json_schema: { name: "roleway_assist", strict: true, schema: outputJsonSchema } } }),
+    body: JSON.stringify({ model: connection.model, messages: [{ role: "system", content: "You are Roleway Assist. Use only the supplied career and Opportunity context. Never invent experience, dates, employers, or outcomes. Return a concise reviewable draft, not an external action." }, { role: "user", content: prompt }], temperature: 0.2, ...openAiOutputOptions(connection, "roleway_assist", outputJsonSchema, 1800) }),
   });
-  const choices = payload?.choices as Array<{ message?: { content?: string } }> | undefined;
   const usage = payload?.usage as { prompt_tokens?: number; completion_tokens?: number } | undefined;
-  return { output: parseOutput(choices?.[0]?.message?.content), inputTokens: usage?.prompt_tokens, outputTokens: usage?.completion_tokens };
+  return { output: parseOutput(openAiResponseValue(payload, connection, "roleway_assist")), inputTokens: usage?.prompt_tokens, outputTokens: usage?.completion_tokens };
 }
 
 async function anthropic(connection: AiConnection, apiKey: string, prompt: string) {
@@ -142,11 +165,10 @@ async function openAiAgent(connection: AiConnection, apiKey: string, prompt: str
   const payload = await requestJson(`${base}/chat/completions`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}`, ...(connection.provider === "openrouter" ? { "HTTP-Referer": "https://roleway.vanajvanguardia.tech", "X-Title": "Roleway" } : {}) },
-    body: JSON.stringify({ model: connection.model, messages: [{ role: "system", content: agentSystemPolicy }, { role: "user", content: prompt }], temperature: 0.2, response_format: { type: "json_schema", json_schema: { name: "roleway_agent", strict: true, schema: agentJsonSchema } } }),
+    body: JSON.stringify({ model: connection.model, messages: [{ role: "system", content: agentSystemPolicy }, { role: "user", content: prompt }], temperature: 0.2, ...openAiOutputOptions(connection, "roleway_agent", agentJsonSchema, 3000) }),
   });
-  const choices = payload?.choices as Array<{ message?: { content?: string } }> | undefined;
   const usage = payload?.usage as { prompt_tokens?: number; completion_tokens?: number } | undefined;
-  return { output: parseAgentResponse(choices?.[0]?.message?.content), inputTokens: usage?.prompt_tokens, outputTokens: usage?.completion_tokens };
+  return { output: parseAgentResponse(openAiResponseValue(payload, connection, "roleway_agent")), inputTokens: usage?.prompt_tokens, outputTokens: usage?.completion_tokens };
 }
 
 async function anthropicAgent(connection: AiConnection, apiKey: string, prompt: string) {
