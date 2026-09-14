@@ -1,9 +1,15 @@
+import { CircleAlert } from "lucide-react";
 import { redirect } from "next/navigation";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ThemePicker } from "@/components/theme-picker";
 import { LogoMark } from "@/components/logo";
 import { requireUser } from "@/lib/supabase/server";
 import { OnboardingWizard } from "./onboarding-wizard";
 
-export const metadata = { title: "Set up your Roleway workspace", robots: { index: false, follow: false, nocache: true } };
+export const metadata = {
+  title: "Set up your Roleway workspace",
+  robots: { index: false, follow: false, nocache: true },
+};
 
 export default async function OnboardingPage(props: {
   searchParams: Promise<{ error?: string }>;
@@ -25,12 +31,14 @@ export default async function OnboardingPage(props: {
         <LogoMark tile />
         <span>Roleway</span>
         <span className="onboarding-step">Account setup</span>
+        <ThemePicker />
       </header>
       <section className="onboarding-content">
         {query.error ? (
-          <div className="form-alert error" role="alert">
-            {query.error}
-          </div>
+          <Alert variant="destructive">
+            <CircleAlert aria-hidden="true" />
+            <AlertDescription>{query.error}</AlertDescription>
+          </Alert>
         ) : null}
         <OnboardingWizard email={auth.user.email ?? "your account"} />
       </section>

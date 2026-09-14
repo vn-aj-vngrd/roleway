@@ -15,7 +15,7 @@
 .workspace-mark > svg {
   width: 15px;
   height: 15px;
-  stroke-width: 1.9;
+  stroke-width: var(--icon-stroke);
 }
 .workspace-mark > span {
   font-size: 16px;
@@ -735,7 +735,7 @@
 .workspace-route-create svg {
   width: 14px;
   height: 14px;
-  stroke-width: 1.8;
+  stroke-width: var(--icon-stroke);
 }
 
 .workspace-page {
@@ -2816,7 +2816,7 @@
 .app-shell .document-status-badge > svg {
   width: 14px !important;
   height: 14px !important;
-  stroke-width: 1.8;
+  stroke-width: var(--icon-stroke);
 }
 .app-shell .document-status-badge[data-status="draft"] > svg {
   color: var(--ochre);
@@ -4077,14 +4077,11 @@
   position: relative;
   min-height: 64px;
   padding: 12px 42px 12px 12px;
-  border: 1px solid color-mix(in oklch, var(--line) 84%, transparent);
+  border: 1px solid var(--line);
   border-radius: 12px;
   color: var(--ink);
-  background: color-mix(in oklch, var(--canvas) 96%, transparent);
-  box-shadow:
-    0 14px 38px oklch(0.18 0.025 255 / 0.15),
-    0 2px 8px oklch(0.18 0.02 255 / 0.07);
-  backdrop-filter: blur(16px);
+  background: var(--canvas);
+  box-shadow: var(--floating-shadow);
   display: grid;
   grid-template-columns: 30px minmax(0, 1fr);
   align-items: center;
@@ -4113,7 +4110,7 @@
 .app-toast-icon svg {
   width: 14px;
   height: 14px;
-  stroke-width: 2.2;
+  stroke-width: var(--icon-stroke);
 }
 .app-toast-copy {
   min-width: 0;
@@ -4124,12 +4121,11 @@
   overflow: hidden;
   font-size: 13px;
   font-weight: 620;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 .app-toast-copy small {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.4;
 }
 .app-toast > button {
@@ -4140,7 +4136,7 @@
   height: 28px;
   padding: 0;
   border: 0;
-  border-radius: 7px;
+  border-radius: var(--radius-action);
   color: var(--faint);
   background: transparent;
   display: grid;
@@ -6562,7 +6558,7 @@
   width: 22px;
   height: 22px;
   color: var(--primary);
-  stroke-width: 1.7;
+  stroke-width: var(--icon-stroke);
   flex: 0 0 auto;
 }
 .app-shell .signal-statement strong {
@@ -6717,7 +6713,7 @@
   height: 20px;
   margin-top: 1px;
   color: var(--muted);
-  stroke-width: 1.7;
+  stroke-width: var(--icon-stroke);
   flex: 0 0 auto;
 }
 .app-shell .insight-inline-empty strong {
@@ -6853,7 +6849,7 @@
   height: 16px;
   margin-top: 1px;
   color: var(--muted);
-  stroke-width: 1.7;
+  stroke-width: var(--icon-stroke);
   flex: 0 0 auto;
 }
 .app-shell .insights-method-note p {
@@ -7129,7 +7125,7 @@
 .app-shell .notifications-page .notification-icon svg {
   width: 15px;
   height: 15px;
-  stroke-width: 1.7;
+  stroke-width: var(--icon-stroke);
 }
 .app-shell .notifications-page .notification-copy {
   gap: 4px;
@@ -7239,7 +7235,7 @@
   width: 15px;
   height: 15px;
   color: var(--muted);
-  stroke-width: 1.7;
+  stroke-width: var(--icon-stroke);
   flex: 0 0 auto;
 }
 .app-shell .notification-rail-empty {
@@ -7260,7 +7256,7 @@
   width: 16px;
   height: 16px;
   color: var(--muted);
-  stroke-width: 1.7;
+  stroke-width: var(--icon-stroke);
 }
 .app-shell .notification-settings-link > svg:last-child {
   width: 14px;

@@ -49,6 +49,7 @@
   --radius-object: 8px;
   --radius-dialog: 10px;
   --radius-action: 999px;
+  --icon-stroke: 1.75;
   --floating-shadow:
     0 1px 2px oklch(0.1 0.01 255 / 0.08), 0 8px 22px oklch(0.1 0.01 255 / 0.14);
   --dialog-shadow:
@@ -94,15 +95,15 @@
 }
 
 html[data-theme="dark"] {
-  --canvas: oklch(0.158 0.008 255);
-  --sidebar: oklch(0.125 0.007 255);
-  --surface: oklch(0.188 0.008 255);
-  --surface-2: oklch(0.225 0.01 255);
+  --canvas: oklch(0.205 0.006 255);
+  --sidebar: oklch(0.18 0.006 255);
+  --surface: oklch(0.24 0.007 255);
+  --surface-2: oklch(0.285 0.008 255);
   --ink: oklch(0.955 0.004 255);
   --muted: oklch(0.72 0.009 255);
   --faint: oklch(0.72 0.009 255);
-  --line: oklch(0.255 0.009 255);
-  --line-strong: oklch(0.35 0.01 255);
+  --line: oklch(0.315 0.009 255);
+  --line-strong: oklch(0.405 0.01 255);
   --accent: oklch(0.73 0.12 264);
   --accent-hover: oklch(0.79 0.1 264);
   --accent-soft: oklch(0.245 0.035 264);
@@ -114,7 +115,8 @@ html[data-theme="dark"] {
   --button-fg: oklch(0.99 0 0);
   --success: oklch(0.72 0.1 152);
   --success-soft: oklch(0.235 0.028 152);
-  --danger-soft: oklch(0.25 0.05 28);
+  --danger: oklch(0.76 0.13 28);
+  --danger-soft: oklch(0.28 0.04 28);
   --floating-shadow:
     0 1px 2px oklch(0 0 0 / 0.34), 0 12px 34px oklch(0 0 0 / 0.48);
   --dialog-shadow:
@@ -264,7 +266,7 @@ a {
 .nav-link svg {
   width: 16px;
   height: 16px;
-  stroke-width: 1.7;
+  stroke-width: var(--icon-stroke);
 }
 .sidebar-user {
   padding: 12px 8px 4px;
@@ -351,7 +353,7 @@ a {
 .icon-button svg {
   width: 17px;
   height: 17px;
-  stroke-width: 1.7;
+  stroke-width: var(--icon-stroke);
 }
 .search-trigger {
   height: 30px;
@@ -464,7 +466,7 @@ h3 {
 .button svg {
   width: 15px;
   height: 15px;
-  stroke-width: 1.8;
+  stroke-width: var(--icon-stroke);
 }
 .button.primary {
   background: var(--primary);
@@ -1458,9 +1460,9 @@ h3 {
   border-color: color-mix(in oklch, var(--danger) 25%, var(--line));
 }
 .form-alert.success {
-  color: var(--primary);
-  background: var(--primary-soft);
-  border-color: color-mix(in oklch, var(--primary) 25%, var(--line));
+  color: var(--ink);
+  background: var(--surface);
+  border-color: var(--line);
 }
 .onboarding-page {
   min-height: 100dvh;
@@ -1550,7 +1552,7 @@ h3 {
   position: absolute;
   left: 0;
   right: 0;
-  top: -9px;
+  top: -12px;
   height: 2px;
   background: var(--line);
 }
@@ -1561,8 +1563,8 @@ h3 {
   background: var(--primary);
 }
 .wizard-progress-item span {
-  width: 20px;
-  height: 20px;
+  width: 28px;
+  height: 28px;
   display: grid;
   place-items: center;
   border: 1px solid var(--line);
@@ -1576,7 +1578,8 @@ h3 {
   color: var(--primary);
 }
 .wizard-progress-item svg {
-  width: 11px;
+  width: 16px;
+  height: 16px;
 }
 .wizard-panel[hidden] {
   display: none;
@@ -1643,7 +1646,7 @@ h3 {
   margin-top: 5px;
   color: var(--faint);
   display: block;
-  font-size: 12px;
+  font-size: 13px;
 }
 .tour-preview-note {
   padding: 14px 16px;
@@ -2979,7 +2982,7 @@ h3 {
 .sidebar-search svg {
   width: 15px;
   height: 15px;
-  stroke-width: 1.8;
+  stroke-width: var(--icon-stroke);
 }
 .sidebar-search span {
   flex: 1;
@@ -5028,7 +5031,7 @@ select {
   width: 16px;
   height: 16px;
   display: block;
-  stroke-width: 1.8;
+  stroke-width: var(--icon-stroke);
 }
 .sidebar-navigation {
   gap: 18px;
@@ -5064,7 +5067,7 @@ select {
   display: block;
   align-self: center;
   color: var(--muted);
-  stroke-width: 1.8;
+  stroke-width: var(--icon-stroke);
 }
 .sidebar .nav-link > span:not(.nav-badge) {
   min-width: 0;
@@ -6356,7 +6359,7 @@ select {
 .sidebar-create svg {
   width: 16px;
   height: 16px;
-  stroke-width: 1.8;
+  stroke-width: var(--icon-stroke);
 }
 .sidebar-create {
   color: var(--ink);
@@ -6490,7 +6493,7 @@ select {
 }
 .create-modal-window-actions .icon-button > svg {
   display: block;
-  stroke-width: 1.8;
+  stroke-width: var(--icon-stroke);
 }
 .create-modal-window-actions .icon-button:first-child > svg {
   width: 15px;
@@ -7704,7 +7707,7 @@ select {
 .app-shell .nav-link svg {
   width: 15px;
   height: 15px;
-  stroke-width: 1.75;
+  stroke-width: var(--icon-stroke);
 }
 .app-shell .nav-link.active {
   background: var(--surface-2);
@@ -7951,7 +7954,7 @@ select {
 .rich-text-toolbar svg {
   width: 14px;
   height: 14px;
-  stroke-width: 1.8;
+  stroke-width: var(--icon-stroke);
 }
 .rich-text-content {
   min-height: 112px;
@@ -8247,7 +8250,7 @@ select {
 .pipeline-list-group > header svg {
   width: 14px;
   height: 14px;
-  stroke-width: 1.75;
+  stroke-width: var(--icon-stroke);
 }
 .pipeline-list-group > header h2 {
   margin: 0;
@@ -8398,7 +8401,7 @@ select {
 .board-page .column-head svg {
   width: 14px;
   height: 14px;
-  stroke-width: 1.75;
+  stroke-width: var(--icon-stroke);
 }
 .board-page .column-count {
   color: var(--faint);
@@ -9132,7 +9135,7 @@ html:has(.app-shell) {
   width: 14px;
   height: 14px;
   color: var(--primary);
-  stroke-width: 1.8;
+  stroke-width: var(--icon-stroke);
 }
 .search-project-copy {
   min-width: 0;
@@ -12471,7 +12474,7 @@ html:has(.app-shell) {
 .sidebar-search-project-mark svg {
   width: 13px;
   height: 13px;
-  stroke-width: 1.9;
+  stroke-width: var(--icon-stroke);
 }
 .sidebar-search-project-name {
   min-width: 0;
@@ -16065,4 +16068,33 @@ body [data-tooltip]::after {
   html {
     @apply font-sans;
   }
+}
+
+/* Shared controls also cover the remaining legacy workflow surfaces. */
+:where(.lucide) { stroke-width: var(--icon-stroke); }
+:where(button, input, textarea, select) { caret-color: var(--accent); }
+.rw-theme-picker { padding: 4px; border: 1px solid var(--line); border-radius: var(--radius-action); background: var(--surface); display: inline-flex; align-items: center; gap: 4px; }
+.rw-theme-picker button { min-height: 32px; padding: 0 10px; border: 0; border-radius: var(--radius-action); color: var(--muted); background: transparent; display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; font-size: 13px; transition: background var(--motion-fast), color var(--motion-fast); }
+.rw-theme-picker button:hover { color: var(--ink); background: var(--surface-2); }
+.rw-theme-picker button[aria-pressed="true"] { color: var(--ink); background: var(--canvas); }
+.rw-theme-picker button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.rw-theme-picker svg { width: 16px; height: 16px; }
+.onboarding-feature-preview > div > span { border: 0; background: transparent; color: var(--muted); }
+.onboarding-feature-preview svg { width: 20px; height: 20px; }
+.onboarding-content > [data-slot="alert"] { margin-bottom: 32px; }
+@media (max-width: 760px) {
+  [data-slot="button"], .button, .icon-button, .rw-theme-picker button { min-height: 44px; }
+  [data-slot="button"]:has(> svg:only-child), .icon-button { min-width: 44px; }
+}
+
+.onboarding-form [data-slot="input"], .onboarding-form [data-slot="select-trigger"] { min-height: 40px; }
+.onboarding-head .rw-theme-picker { margin-left: 16px; }
+.wizard-panel h1:focus { outline: none; }
+@media (max-width: 760px) {
+  .onboarding-head { height: auto; min-height: 64px; padding-block: 12px; flex-wrap: wrap; }
+  .onboarding-head .rw-theme-picker { margin-left: auto; }
+  .onboarding-step { display: none; }
+  .onboarding-form [data-slot="input"], .onboarding-form [data-slot="select-trigger"] { min-height: 44px; }
+  .wizard-actions { align-items: stretch; }
+  .wizard-actions > [data-slot="button"] { white-space: normal; height: auto; padding-block: 10px; }
 }
