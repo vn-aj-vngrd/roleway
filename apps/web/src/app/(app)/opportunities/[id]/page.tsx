@@ -1,3 +1,6 @@
+// OpenRouter free models may queue for minutes; leave time for bounded calls and persistence.
+export const maxDuration = 300;
+
 import { formatOpportunityTicket } from "@roleway/core";
 import { ArrowRight, CalendarClock, ChevronDown, CircleDot, FileText, Mail, Navigation, Pencil, Plus, Trash2, UserRound } from "lucide-react";
 import Link from "next/link";

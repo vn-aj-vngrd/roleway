@@ -44,3 +44,34 @@ describe("AI provider adapters", () => {
     await expect(generateAssistantOutput({ provider: "openai-compatible", model: "model", base_url: "https://127.0.0.1/v1" }, "secret", "Prompt")).rejects.toThrow("public HTTPS");
   });
 });
+
+describe("compatible provider endpoint boundaries", () => {
+  it.each(["https://[::1]/v1", "https://[::ffff:7f00:1]/v1", "https://user:password@example.com/v1", "https://example.com:8443/v1"])('rejects unsafe endpoint %s before sending credentials', async (base_url) => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(generateAgentResponse({provider: "openai-compatible", model: "model", base_url}, "secret", "Prompt")).rejects.toThrow();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("OpenRouter tool responses", () => {
+  it("uses bounded forced-tool output for models without JSON-schema support", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ choices: [{ message: { tool_calls: [{ function: { name: "roleway_agent", arguments: JSON.stringify(agentReply) } }] } }] })));
+    vi.stubGlobal("fetch", fetchMock);
+    const result = await generateAgentResponse({ provider: "openrouter", model: "nvidia/nemotron-3-ultra-550b-a55b:free", base_url: null }, "secret", "Prompt");
+    expect(result.output).toEqual(agentReply);
+    const body = JSON.parse(fetchMock.mock.calls[0]?.[1].body as string);
+    expect(body.response_format).toBeUndefined();
+    expect(body.tool_choice.function.name).toBe("roleway_agent");
+    expect(body.max_tokens).toBe(3000);
+  });
+  it("validates connection-test tool output using the assistance schema", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ choices: [{ message: { tool_calls: [{ function: { name: "roleway_assist", arguments: JSON.stringify(draft) } }] } }] }))));
+    const result = await generateAssistantOutput({ provider: "openrouter", model: "model", base_url: null }, "secret", "Prompt");
+    expect(result.output).toEqual(draft);
+  });
+  it("rejects an answer without the requested structured tool", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ choices: [{ message: { content: "I created the task." } }] }))));
+    await expect(generateAgentResponse({ provider: "openrouter", model: "model", base_url: null }, "secret", "Prompt")).rejects.toThrow("did not return a structured response");
+  });
+});

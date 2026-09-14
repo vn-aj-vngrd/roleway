@@ -1,5 +1,9 @@
 # Roleway Agent Guide
 
+## Development workflow
+
+Read `docs/DEVELOPMENT_WORKFLOW.md` before starting implementation, naming a branch or commit, opening or iterating a PR, or merging. Use the existing PR for review fixes; open independent work against `main`. Read `docs/DEPLOYMENT_AND_RELEASES.md` when changing CI, releases, deployment, or migration rollout.
+
 ## Start
 
 1. Read `CONTEXT.md` before changing domain language.

@@ -4,8 +4,14 @@ import { safeNextPath } from "@/lib/validation";
 
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get("code");
+  const tokenHash = request.nextUrl.searchParams.get("token_hash");
+  const type = request.nextUrl.searchParams.get("type");
   const next = safeNextPath(request.nextUrl.searchParams.get("next"), "/home");
-  if (code) {
+  if (tokenHash && (type === "recovery" || type === "invite")) {
+    const supabase = await createClient();
+    const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type });
+    if (!error) return NextResponse.redirect(new URL("/reset-password", request.url));
+  } else if (code) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) return NextResponse.redirect(new URL(next, request.url));

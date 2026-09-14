@@ -1,3 +1,4 @@
+import { createFixtureAccount, usesAdminFixture } from "./auth-fixture";
 import { expect, test } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
 import { randomBytes } from "node:crypto";
@@ -18,11 +19,16 @@ test("mark all read clears every unread notification", async ({ page }) => {
   test.setTimeout(45_000);
 
   try {
+    if (usesAdminFixture) {
+      userId = await createFixtureAccount(email, password, page);
+      await page.goto("/onboarding");
+    } else {
     await page.goto("/signup");
     await page.getByLabel("Email").fill(email);
     await page.getByLabel("Password").fill(password);
     await page.getByRole("button", { name: "Create account" }).click();
     await page.waitForURL("**/onboarding");
+    }
     await page.getByLabel("Full name").fill("Notification Test");
     await page.getByLabel("Professional headline").fill("Product Engineer");
     await page.getByRole("button", { name: "Continue" }).click();

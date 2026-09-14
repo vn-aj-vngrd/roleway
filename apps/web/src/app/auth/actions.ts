@@ -76,7 +76,13 @@ export async function requestPasswordReset(formData: FormData) {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
   if (!siteUrl) redirect("/forgot-password?error=Password%20recovery%20is%20not%20configured.");
   const supabase = await createClient();
-  await supabase.auth.resetPasswordForEmail(parsed.data.email, { redirectTo: `${siteUrl.replace(/\/$/, "")}/auth/callback?next=/reset-password`, captchaToken: parsed.data.captchaToken });
+  const { error } = await supabase.auth.resetPasswordForEmail(parsed.data.email, { redirectTo: `${siteUrl.replace(/\/$/, "")}/auth/callback?next=/reset-password`, captchaToken: parsed.data.captchaToken });
+  if (error) {
+    const message = error.code === "captcha_failed"
+      ? "Security verification expired or failed. Please try again."
+      : "The recovery request could not be sent. Wait a moment and try again.";
+    redirect(`/forgot-password?error=${encodeURIComponent(message)}`);
+  }
   redirect("/forgot-password?sent=true");
 }
 

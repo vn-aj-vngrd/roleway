@@ -110,7 +110,7 @@ export default async function PrivacyPage(props: {
               <p>These actions are permanent and cannot be undone.</p>
             </header>
             <div className="settings-card danger-zone">
-              <DeleteAccountControl name={accountName} email={accountEmail} />
+              <DeleteAccountControl name={accountName} email={accountEmail} siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY} />
             </div>
           </section>
         </main>

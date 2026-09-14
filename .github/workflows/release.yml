@@ -1,0 +1,65 @@
+name: Release
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-main
+  cancel-in-progress: false
+
+jobs:
+  release:
+    # Never run privileged code from a PR workflow or another repository.
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+
+      - name: Check that this is still the current main commit
+        id: current
+        shell: bash
+        run: |
+          head="$(git rev-parse HEAD)"
+          remote="$(git ls-remote origin refs/heads/main | cut -f1)"
+          if [[ "$head" == "$remote" ]]; then
+            echo "release=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "release=false" >> "$GITHUB_OUTPUT"
+            echo "A newer push exists; its release will include these commits." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - uses: pnpm/action-setup@v4
+        if: steps.current.outputs.release == 'true'
+        with:
+          version: 10.12.1
+
+      - uses: actions/setup-node@v7
+        if: steps.current.outputs.release == 'true'
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install pinned release tooling
+        if: steps.current.outputs.release == 'true'
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate version, tag and GitHub release notes
+        if: steps.current.outputs.release == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: pnpm exec semantic-release
