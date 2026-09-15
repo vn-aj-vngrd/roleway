@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { PlanSummary } from "@/features/billing/types";
 export function CapacityNotice({ summary }: { summary: PlanSummary }) {
+  if (summary.plan.slug === "unlimited") return null;
   const full = summary.usage.content_bytes >= summary.plan.storage_limit_bytes;
   if (
     summary.usage.content_bytes < summary.plan.storage_limit_bytes * 0.8 &&

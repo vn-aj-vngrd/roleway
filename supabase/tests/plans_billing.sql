@@ -34,11 +34,24 @@ begin
  perform public.admin_save_plan('plus','Plus','Several searches',19900,'PHP','available',5,104857600);
  perform pg_temp.check_plan((select amount_minor=14900 from public.payment_requests where id=request_id),'Request price changed with catalog');
  perform public.admin_review_payment(request_id,true,'Verified full transfer in bank');
+ perform pg_temp.check_plan((select expires_at=now()+interval '1 month' from public.account_plans where user_id=member_id),'Payment term is not one calendar month');
  select expires_at into expiry from public.account_plans where user_id=member_id;
  perform pg_temp.check_plan((public.effective_plan(member_id)).slug='plus','Approval did not grant plan');
  begin perform public.admin_review_payment(request_id,true,'Duplicate');exception when others then blocked:=true;end;
  perform pg_temp.check_plan(blocked,'Duplicate approval accepted');blocked:=false;
  perform pg_temp.check_plan((select expires_at=expiry from public.account_plans where user_id=member_id),'Duplicate review extended plan');
+ perform set_config('request.jwt.claim.sub',member_id::text,true);
+ request_id:=public.request_plan_payment('plus');
+ perform public.submit_plan_payment(request_id,'RENEWAL-REF');
+ perform set_config('request.jwt.claim.sub',owner_id::text,true);
+ perform public.admin_review_payment(request_id,true,'Verified monthly renewal');
+ perform pg_temp.check_plan((select expires_at=expiry+interval '1 month' from public.account_plans where user_id=member_id),'Renewal did not extend one month');
+ perform set_config('request.jwt.claim.sub',member_id::text,true);
+ request_id:=public.request_plan_payment('plus');
+ perform public.cancel_plan_payment(request_id);
+ begin perform public.request_plan_payment('plus');exception when others then blocked:=sqlerrm='PAYMENT_REQUEST_LIMIT';end;
+ perform pg_temp.check_plan(blocked,'Daily request limit not enforced');blocked:=false;
+ perform set_config('request.jwt.claim.sub',owner_id::text,true);
  insert into public.search_projects(user_id,name) values(member_id,'Second search') returning id into extra_id;
  perform public.admin_assign_plan(member_id,'free',null,'Test downgrade preserving content');
  perform pg_temp.check_plan((select count(*)=2 from public.search_projects where user_id=member_id),'Downgrade deleted records');
@@ -57,10 +70,13 @@ begin
  begin update public.search_projects set status='archived',target_titles=array[repeat('x',10485760)] where id=project_id;exception when others then blocked:=sqlerrm='PLAN_STORAGE_LIMIT';end;
  perform pg_temp.check_plan(blocked,'Archiving allowed arbitrary storage growth');blocked:=false;
  insert into public.jobs(user_id,project_id,company,title,description) values(member_id,project_id,'Fixture','Existing large content',repeat('x',1048576)) returning id into job_id;
+ update public.search_projects set is_favorite=true where id=project_id;
  perform public.admin_save_plan('free','Free','',0,'PHP','available',1,1048576);
- update public.search_projects set status='archived' where id=project_id;
+ update public.search_projects set status='archived',is_favorite=false where id=project_id;
  perform pg_temp.check_plan((select active_workspaces=0 from public.account_usage where user_id=member_id),'Over-storage account could not archive');
  delete from public.jobs where id=job_id;
+ perform public.admin_assign_plan(member_id,'plus',null,'Default monthly assignment');
+ perform pg_temp.check_plan((select expires_at=now()+interval '1 month' from public.account_plans where user_id=member_id),'Default assignment is not monthly');
  perform public.admin_assign_plan(member_id,'pro',now()+interval '1 day','Test expiry');
  update public.account_plans set expires_at=now()-interval '1 second' where user_id=member_id;
  perform pg_temp.check_plan((public.effective_plan(member_id)).slug='free','Expired plan remained active');
@@ -71,7 +87,7 @@ rollback;
 
 begin;
 insert into auth.users(id,email,email_confirmed_at) values('adad0000-0000-4000-8000-000000000001','e2e-rls-one@roleway.test',now()),('adad0000-0000-4000-8000-000000000002','e2e-rls-two@roleway.test',now());
-insert into public.account_plans(user_id,plan_slug) values('adad0000-0000-4000-8000-000000000001','free'),('adad0000-0000-4000-8000-000000000002','free');
+insert into public.account_plans(user_id,plan_slug) values('adad0000-0000-4000-8000-000000000001','free'),('adad0000-0000-4000-8000-000000000002','free') on conflict(user_id) do nothing;
 set local role authenticated;
 select set_config('request.jwt.claim.sub','adad0000-0000-4000-8000-000000000001',true);
 do $$ declare denied boolean:=false; begin
@@ -81,4 +97,36 @@ do $$ declare denied boolean:=false; begin
  if not denied then raise exception 'Member can rewrite quota ledger';end if;
 end $$;
 reset role;
+rollback;
+
+-- Unlimited is private, manually assigned, genuinely uncapped, and never an admin role.
+begin;
+insert into auth.users(id,email,email_confirmed_at) values('adad0000-0000-4000-8000-000000000003','e2e-unlimited@roleway.test',now());
+do $$ begin
+ if not exists(select 1 from public.account_plans where user_id='adad0000-0000-4000-8000-000000000003' and plan_slug='free') then raise exception 'New account did not start Free';end if;
+end $$;
+set local role anon;
+do $$ begin if exists(select 1 from public.plan_catalog where slug='unlimited') then raise exception 'Private plan visible to public';end if;end $$;
+reset role;
+select set_config('request.jwt.claim.sub','adad0000-0000-4000-8000-000000000003',true);
+set local role authenticated;
+do $$ declare denied boolean:=false;begin
+ if exists(select 1 from public.plan_catalog where slug='unlimited') then raise exception 'Private plan visible to member catalog';end if;
+ begin perform public.admin_assign_plan(auth.uid(),'unlimited',null,'Self upgrade');exception when others then denied:=true;end;
+ if not denied then raise exception 'Member granted Unlimited';end if;
+ denied:=false;
+ begin perform public.request_plan_payment('unlimited');exception when others then denied:=true;end;
+ if not denied then raise exception 'Private plan accepted public purchase';end if;
+end $$;
+reset role;
+insert into public.admin_members(user_id,role) values('adad0000-0000-4000-8000-000000000003','admin');
+select public.admin_assign_plan('adad0000-0000-4000-8000-000000000003','unlimited',null,'Explicit fixture assignment');
+delete from public.admin_members where user_id='adad0000-0000-4000-8000-000000000003';
+update public.plan_catalog set workspace_limit=1,storage_limit_bytes=1048576 where slug='unlimited';
+insert into public.search_projects(user_id,name,target_titles) values('adad0000-0000-4000-8000-000000000003','Beyond numerical catalog fields',array[repeat('x',2097152)]);
+do $$ begin
+ if (public.account_plan_summary()->'plan'->>'slug')<>'unlimited' then raise exception 'Private assignment not effective';end if;
+ if public.is_roleway_admin() then raise exception 'Plan granted admin role';end if;
+ if (select expires_at is not null from public.account_plans where user_id=auth.uid()) then raise exception 'Unlimited expires';end if;
+end $$;
 rollback;

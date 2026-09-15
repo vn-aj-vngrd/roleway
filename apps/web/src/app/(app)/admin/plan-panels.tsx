@@ -20,7 +20,7 @@ import {
   saveArticle,
 } from "./billing-actions";
 export async function AdminPlans({ canManage }: { canManage: boolean }) {
-  const plans = await getPlans();
+  const plans = await getPlans(true);
   return (
     <section className="management-section">
       <h2>Capacity and availability</h2>
@@ -39,7 +39,17 @@ export async function AdminPlans({ canManage }: { canManage: boolean }) {
             key={p.slug}
           >
             <fieldset disabled={!canManage}>
-              <legend>{p.name}</legend>
+              <legend>
+                {p.name}
+                {p.slug === "unlimited" ? " · Private" : ""}
+              </legend>
+              {p.slug === "unlimited" ? (
+                <p>
+                  No Workspace or saved-content cap. Hidden from public pricing;
+                  assign it from a user’s detail page. It does not grant admin
+                  permissions.
+                </p>
+              ) : null}
               <input type="hidden" name="slug" value={p.slug} />
               <div className="form-grid">
                 <label>
@@ -60,39 +70,47 @@ export async function AdminPlans({ canManage }: { canManage: boolean }) {
                   />
                 </label>
                 <label>
-                  Active Workspaces
+                  {p.slug === "unlimited"
+                    ? "Workspaces: Unlimited"
+                    : "Active Workspaces"}
                   <Input
-                    type="number"
+                    type={p.slug === "unlimited" ? "hidden" : "number"}
                     name="workspaces"
                     min={1}
                     max={1000}
                     required
                     defaultValue={p.workspace_limit}
+                    readOnly={p.slug === "unlimited"}
                   />
                 </label>
                 <label>
-                  Saved content (MiB)
+                  {p.slug === "unlimited"
+                    ? "Saved content: Unlimited"
+                    : "Saved content (MiB)"}
                   <Input
-                    type="number"
+                    type={p.slug === "unlimited" ? "hidden" : "number"}
                     name="storage"
                     min={1}
                     max={102400}
                     required
                     defaultValue={p.storage_limit_bytes / 1048576}
+                    readOnly={p.slug === "unlimited"}
                   />
                 </label>
                 <label>
-                  Price per 30 days
+                  {p.slug === "unlimited"
+                    ? "No payment required"
+                    : "Monthly price"}
                   <Input
                     name="price"
-                    type="number"
+                    type={p.slug === "unlimited" ? "hidden" : "number"}
                     min={0}
                     max={1000000}
                     step="0.01"
                     defaultValue={
                       p.price_minor === null ? "" : p.price_minor / 100
                     }
-                    readOnly={p.slug === "free"}
+                    readOnly={p.slug === "free" || p.slug === "unlimited"}
                   />
                 </label>
                 <div className="labeled-select">
@@ -102,13 +120,14 @@ export async function AdminPlans({ canManage }: { canManage: boolean }) {
                     name="currency"
                     ariaLabel="Currency"
                     defaultValue={p.currency}
+                    disabled={p.slug === "unlimited"}
                     options={[
                       { value: "PHP", label: "PHP" },
                       { value: "USD", label: "USD" },
                     ]}
                   />
                 </div>
-                {p.slug === "free" ? (
+                {p.slug === "free" || p.slug === "unlimited" ? (
                   <input type="hidden" name="availability" value="available" />
                 ) : (
                   <div className="labeled-select">
@@ -161,8 +180,8 @@ export async function AdminBilling({ canManage }: { canManage: boolean }) {
         <h2>Payment requests</h2>
         <p>
           Verify the amount, currency, beneficiary, and transfer in your bank or
-          wallet before approving. Each approval grants 30 days; duplicate
-          approval is blocked.
+          wallet before approving. Each approval grants one calendar month;
+          duplicate approval is blocked.
         </p>
         {!payments.length ? (
           <p>No payment requests yet.</p>

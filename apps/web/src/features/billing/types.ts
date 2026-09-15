@@ -1,5 +1,5 @@
 export type Plan = {
-  slug: "free" | "plus" | "pro";
+  slug: "free" | "plus" | "pro" | "unlimited";
   name: string;
   description: string;
   price_minor: number | null;

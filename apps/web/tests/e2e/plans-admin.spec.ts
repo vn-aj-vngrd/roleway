@@ -16,6 +16,8 @@ test("plans, manual review, focused admin and public help", async ({
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   try {
+    await page.goto("/");
+    await expect(page.locator("#pricing")).not.toContainText("Unlimited");
     await page.goto("/help");
     await expect(
       page.getByRole("heading", { name: "How can we help?" }),
@@ -125,6 +127,25 @@ test("plans, manual review, focused admin and public help", async ({
     await expect(
       page.getByText("Exact fixture content for inspection", { exact: true }),
     ).toBeVisible();
+    await page.getByRole("combobox", { name: "Plan", exact: true }).click();
+    await page
+      .getByRole("option", { name: "Unlimited (private)", exact: true })
+      .click();
+    await page
+      .getByRole("textbox", { name: "Reason", exact: true })
+      .fill("Explicit private plan fixture");
+    await page
+      .getByRole("button", { name: "Assign plan", exact: true })
+      .click();
+    await expect(page).toHaveURL(/saved=/);
+    await page.goto("/settings/billing");
+    await expect(
+      page.getByRole("heading", { name: "Unlimited plan", exact: true }),
+    ).toBeVisible();
+    await expect(page.locator("progress")).toHaveCount(0);
+    await expect(page.locator(".plan-comparison")).not.toContainText(
+      "Unlimited",
+    );
     for (const width of [1440, 390]) {
       await page.setViewportSize({ width, height: 1000 });
       for (const theme of ["light", "dark"]) {
@@ -152,7 +173,10 @@ test("plans, manual review, focused admin and public help", async ({
             ).toBeVisible();
           if (label === "billing")
             await expect(
-              page.getByRole("heading", { name: "Plus plan", exact: true }),
+              page.getByRole("heading", {
+                name: "Unlimited plan",
+                exact: true,
+              }),
             ).toBeVisible();
           if (label === "help")
             await expect(

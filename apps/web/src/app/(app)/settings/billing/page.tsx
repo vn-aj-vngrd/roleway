@@ -82,27 +82,32 @@ export default async function BillingPage({
             <section className="billing-section">
               <h2>{state.plan.name} plan</h2>
               <p>
-                {state.plan.slug === "free"
-                  ? "No payment required."
-                  : `Access until ${new Date(state.expires_at!).toLocaleDateString()}. No automatic renewal or debit.`}
+                {state.plan.slug === "unlimited"
+                  ? "Assigned by an administrator. No expiry or Workspace/storage cap."
+                  : state.plan.slug === "free"
+                    ? "No payment required."
+                    : `Access until ${new Date(state.expires_at!).toLocaleDateString()}. No automatic renewal or debit.`}
               </p>
               <div className="usage-grid">
                 <Usage
                   label="Active Workspaces"
                   used={state.usage.active_workspaces}
                   limit={state.plan.workspace_limit}
+                  unlimited={state.plan.slug === "unlimited"}
                 />
                 <Usage
                   label="Saved content"
                   used={state.usage.content_bytes}
                   limit={state.plan.storage_limit_bytes}
+                  unlimited={state.plan.slug === "unlimited"}
                   bytes
                 />
               </div>
               <p className="muted">
-                Includes document versions and archived content. Existing data
-                is preserved if you exceed a limit. Archive a Workspace to free
-                an active slot; delete unused content to free storage.
+                Includes document versions and archived content.
+                {state.plan.slug !== "unlimited"
+                  ? " Existing data is preserved if you exceed a limit. Archive a Workspace to free an active slot; delete unused content to free storage."
+                  : null}
               </p>
               <Button
                 variant="outline"
@@ -121,7 +126,7 @@ export default async function BillingPage({
               </h2>
               <p>
                 <strong>{formatPrice(open.amount_minor, open.currency)}</strong>{" "}
-                · {open.plan_slug} · 30 days
+                · {open.plan_slug} · one month
               </p>
               <p className="payment-reference">
                 Request ID: <code>{open.id}</code>
@@ -236,11 +241,13 @@ function Usage({
   used,
   limit,
   bytes = false,
+  unlimited = false,
 }: {
   label: string;
   used: number;
   limit: number;
   bytes?: boolean;
+  unlimited?: boolean;
 }) {
   return (
     <div className="usage-item">
@@ -248,11 +255,17 @@ function Usage({
         <strong>{label}</strong>
         <span>
           {bytes ? formatBytes(used) : used} /{" "}
-          {bytes ? formatBytes(limit) : limit}
+          {unlimited ? "Unlimited" : bytes ? formatBytes(limit) : limit}
         </span>
       </div>
-      <progress aria-label={label} value={Math.min(used, limit)} max={limit} />
-      {used >= limit ? (
+      {!unlimited ? (
+        <progress
+          aria-label={label}
+          value={Math.min(used, limit)}
+          max={limit}
+        />
+      ) : null}
+      {!unlimited && used >= limit ? (
         <p role="status">
           Limit reached. Free capacity or choose another plan to add more.
         </p>

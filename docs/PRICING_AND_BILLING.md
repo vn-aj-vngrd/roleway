@@ -12,7 +12,7 @@ Roleway's current documents are database content, not uploaded files. Supabase d
 | Plus | 5 | 100 MiB |
 | Pro | 20 | 500 MiB |
 
-Currency starts as PHP. Paid prices are unset and Plus/Pro start coming soon. Admin must set prices and payment instructions before enabling manual requests. No automatic charge or recurring debit exists. A paid purchase grants 30 days; renewal of the same plan extends its existing unexpired term. Different-plan purchases start a new term after approval, with no implicit proration.
+Currency starts as PHP. Paid prices are unset and Plus/Pro start coming soon. Admin must set prices and payment instructions before enabling manual requests. No automatic charge or recurring debit exists. A paid purchase grants one calendar month; renewal of the same plan extends its existing unexpired term. Different-plan purchases start a new term after approval, with no implicit proration.
 
 [Stripe's bank-transfer guidance](https://docs.stripe.com/payments/bank-transfers/accept-a-payment) uses references and reconciliation to match payments. Roleway adopts only the operational principle: create a request with a frozen amount and instructions, provide an account/reference identifier, collect the transfer reference, then have an authorized admin verify actual receipt. At most three requests can be created per account in 24 hours. A submitted reference is not payment proof and never grants access automatically.
 
@@ -39,3 +39,7 @@ Apply the forward migrations before deploying code. Review defaults and existing
 Apply each migration in one transaction (`psql --single-transaction`); the capacity backfill locks its metered tables while recalculating. `supabase/tests/plans_billing.sql` covers limits, preservation, expiry, manual payment replay, and authenticated RLS. The Agent transaction fixture explicitly uses Pro for its cross-Workspace scenarios.
 
 For stable browser validation alongside the development server, build first, then run `E2E_AUTH_MODE=admin E2E_BASE_URL=http://localhost:3004 E2E_WEB_SERVER_COMMAND='pnpm exec next start --port 3004' pnpm --filter @roleway/web test:e2e plans-admin`. Omit `plans-admin` for the full suite. This uses disposable accounts and synthetic payment records without enabling paid plans or collecting money. Admin fixture mode does not verify CAPTCHA or password login; email delivery and live AI provider checks are separate.
+
+## Private assignments
+
+Unlimited is hidden from public catalog queries, landing pricing, and self-service purchases. Only authorized admins can assign it on a user detail page. It bypasses Workspace and saved-content caps, keeps usage metering, and has no expiry; it does not grant admin permissions or bypass security/API rate limits. New accounts explicitly start Free. Plus and Pro start Coming soon and remain configurable in admin. Manual paid approvals grant one calendar month. Admin assignment defaults to one month when expiry is blank, with an optional explicit expiry for support corrections. Free and Unlimited ignore expiry.

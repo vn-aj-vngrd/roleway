@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireUser } from "@/lib/supabase/server";
+import { getPlans } from "@/features/billing/queries";
 import { formatBytes, type Plan, type Usage } from "@/features/billing/types";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -19,7 +20,7 @@ type UserDetail = {
   };
   plan: Plan;
   usage: Usage;
-  assignment: { plan_slug: string; expires_at: string } | null;
+  assignment: { plan_slug: string; expires_at: string | null } | null;
   records: Array<{ id: string; label: string }>;
   record: Record<string, unknown> | null;
 };
@@ -49,7 +50,7 @@ export default async function AdminUserPage({
   ];
   const kind = kinds.includes(q.kind || "") ? q.kind! : "workspaces";
   const record = z.string().uuid().safeParse(q.record);
-  const [detail, owner, manageable] = await Promise.all([
+  const [detail, owner, manageable, plans] = await Promise.all([
     auth.supabase.rpc("admin_user_detail", {
       input_user_id: id,
       input_kind: kind,
@@ -57,6 +58,7 @@ export default async function AdminUserPage({
     }),
     auth.supabase.rpc("is_roleway_owner"),
     auth.supabase.rpc("admin_target_is_manageable", { input_user_id: id }),
+    getPlans(true),
   ]);
   const d = detail.data as UserDetail | null;
   return (
@@ -93,12 +95,17 @@ export default async function AdminUserPage({
               <dd>{d.plan.name}</dd>
               <dt>Active Workspaces</dt>
               <dd>
-                {d.usage?.active_workspaces ?? 0} / {d.plan.workspace_limit}
+                {d.usage?.active_workspaces ?? 0} /{" "}
+                {d.plan.slug === "unlimited"
+                  ? "Unlimited"
+                  : d.plan.workspace_limit}
               </dd>
               <dt>Saved content</dt>
               <dd>
                 {formatBytes(d.usage?.content_bytes ?? 0)} /{" "}
-                {formatBytes(d.plan.storage_limit_bytes)}
+                {d.plan.slug === "unlimited"
+                  ? "Unlimited"
+                  : formatBytes(d.plan.storage_limit_bytes)}
               </dd>
               <dt>Paid term ends</dt>
               <dd>
@@ -112,7 +119,13 @@ export default async function AdminUserPage({
             <h2>Plan assignment</h2>
             <p>
               Use for a verified manual arrangement or support correction.
-              Existing data remains intact.
+              Existing data remains intact. Plus and Pro default to one calendar
+              month. Free and Unlimited do not expire; a plan assignment never
+              grants admin permissions.
+            </p>
+            <p id="plan-expiry-help">
+              Leave expiry blank for a one-month paid term. Ignored for Free and
+              Unlimited.
             </p>
             <form action={assignPlan} className="management-form">
               <input type="hidden" name="userId" value={id} />
@@ -124,19 +137,18 @@ export default async function AdminUserPage({
                     id="assigned-plan"
                     ariaLabel="Plan"
                     defaultValue={d.plan.slug}
-                    options={[
-                      { value: "free", label: "Free" },
-                      { value: "plus", label: "Plus" },
-                      { value: "pro", label: "Pro" },
-                    ]}
+                    options={plans.map((plan) => ({
+                      value: plan.slug,
+                      label: `${plan.name}${plan.slug === "unlimited" ? " (private)" : ""}`,
+                    }))}
                   />
                 </div>
                 <label>
-                  Paid expiry (UTC)
+                  Paid expiry override (UTC, optional)
                   <Input
                     name="expires"
                     type="date"
-                    defaultValue={d.assignment?.expires_at?.slice(0, 10)}
+                    aria-describedby="plan-expiry-help"
                   />
                 </label>
               </div>
@@ -160,7 +172,7 @@ export default async function AdminUserPage({
                       id="user-role"
                       ariaLabel="New admin role"
                       defaultValue=""
-                    required
+                      required
                       options={[
                         { value: "none", label: "No admin access" },
                         { value: "viewer", label: "Viewer" },
@@ -185,7 +197,7 @@ export default async function AdminUserPage({
                       id="user-access"
                       ariaLabel="Account access"
                       defaultValue=""
-                    required
+                      required
                       options={[
                         { value: "reactivate", label: "Reactivate" },
                         { value: "suspend", label: "Suspend" },

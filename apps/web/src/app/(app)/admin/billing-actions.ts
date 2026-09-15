@@ -20,7 +20,7 @@ function invalid(view: string, message: string): never {
 export async function savePlan(data: FormData) {
   const parsed = z
     .object({
-      slug: z.enum(["free", "plus", "pro"]),
+      slug: z.enum(["free", "plus", "pro", "unlimited"]),
       name: z.string().trim().min(1).max(40),
       description: z.string().trim().max(500),
       price: z.string().regex(/^\d*(\.\d{1,2})?$/),
@@ -39,6 +39,7 @@ export async function savePlan(data: FormData) {
   const price = p.price === "" ? null : Math.round(Number(p.price) * 100);
   if (
     p.slug !== "free" &&
+    p.slug !== "unlimited" &&
     p.availability === "available" &&
     (!price || price < 1)
   )
@@ -50,9 +51,12 @@ export async function savePlan(data: FormData) {
     input_slug: p.slug,
     input_name: p.name,
     input_description: p.description,
-    input_price_minor: p.slug === "free" ? 0 : price,
+    input_price_minor: p.slug === "free" || p.slug === "unlimited" ? 0 : price,
     input_currency: p.currency,
-    input_availability: p.slug === "free" ? "available" : p.availability,
+    input_availability:
+      p.slug === "free" || p.slug === "unlimited"
+        ? "available"
+        : p.availability,
     input_workspace_limit: p.workspaces,
     input_storage_limit_bytes: p.storage * 1048576,
   });
@@ -137,14 +141,17 @@ export async function assignPlan(data: FormData) {
   const p = z
     .object({
       userId: z.string().uuid(),
-      plan: z.enum(["free", "plus", "pro"]),
+      plan: z.enum(["free", "plus", "pro", "unlimited"]),
       expires: z.string(),
       reason: z.string().trim().min(3).max(1000),
     })
     .safeParse(Object.fromEntries(data));
   if (!p.success)
     invalid("users", "Check the assignment and provide a reason.");
-  const expires = p.data.plan === "free" ? null : new Date(p.data.expires);
+  const expires =
+    p.data.plan === "free" || p.data.plan === "unlimited" || !p.data.expires
+      ? null
+      : new Date(p.data.expires);
   if (expires && (!Number.isFinite(expires.getTime()) || expires <= new Date()))
     invalid("users", "Choose a future expiration date.");
   await run("users", "admin_assign_plan", {
