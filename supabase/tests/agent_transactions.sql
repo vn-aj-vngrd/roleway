@@ -12,6 +12,7 @@ declare
   reply jsonb; proposal jsonb; rejected boolean := false; tool text;
 begin
   insert into auth.users(id,email,email_confirmed_at) values(owner_id,'agent-test-'||owner_id||'@roleway.test',now()),(other_id,'agent-test-'||other_id||'@roleway.test',now());
+  insert into public.account_plans(user_id,plan_slug,expires_at) values(owner_id,'pro',now()+interval '1 day') on conflict(user_id) do nothing;
   perform set_config('request.jwt.claim.sub',owner_id::text,true);
   select active_project_id into origin_id from public.profiles where user_id=owner_id;
   insert into public.search_projects(user_id,name) values(owner_id,'Destination') returning id into destination_id;

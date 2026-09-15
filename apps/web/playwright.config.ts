@@ -2,6 +2,7 @@ import { defineConfig, devices } from "@playwright/test";
 import { loadEnvConfig } from "@next/env";
 
 loadEnvConfig(process.cwd());
+const baseURL = process.env.E2E_BASE_URL || "http://localhost:3003";
 
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -12,14 +13,14 @@ export default defineConfig({
   workers: 1,
   reporter: [["list"]],
   use: {
-    baseURL: "http://localhost:3003",
+    baseURL,
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {
-    command: "pnpm dev",
-    url: "http://localhost:3003/login",
+    command: process.env.E2E_WEB_SERVER_COMMAND || "pnpm dev",
+    url: `${baseURL}/login`,
     reuseExistingServer: true,
     timeout: 120_000,
   },

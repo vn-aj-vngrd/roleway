@@ -1,3 +1,5 @@
+import { CapacityNotice } from "@/components/capacity-notice";
+import type { PlanSummary } from "@/features/billing/types";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
@@ -14,7 +16,7 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
   if (!context.profile?.onboarding_completed) redirect("/onboarding");
   if (!context.project) redirect("/onboarding");
 
-  const [notificationsResult, adminResult, agentConnectionResult] = await Promise.all([
+  const [notificationsResult, adminResult, agentConnectionResult, planResult] = await Promise.all([
     context.supabase
       .from("notifications")
       .select("id", { count: "exact", head: true })
@@ -22,6 +24,7 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
       .is("read_at", null),
     context.supabase.rpc("is_roleway_admin"),
     createAdminClient().from("ai_connections").select("id, label").eq("user_id", context.user.id).eq("status", "connected").order("updated_at", { ascending: false }).limit(1).maybeSingle(),
+    context.supabase.rpc("account_plan_summary"),
   ]);
 
   return (
@@ -37,6 +40,7 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
       isAdmin={adminResult.data === true}
       agentConnection={agentConnectionResult.data}
     >
+      {planResult.data ? <CapacityNotice summary={planResult.data as PlanSummary}/> : null}
       {children}
     </AppShell>
   );

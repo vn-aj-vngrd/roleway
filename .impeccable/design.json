@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-08-26T18:15:00Z",
+  "generatedAt": "2026-09-15T05:34:47.355985+00:00",
   "title": "Design System: Roleway",
   "extensions": {
     "colorMeta": {
@@ -160,6 +160,13 @@
       "description": "A compact Job Inbox selection row that leads into one persistent listing dossier.",
       "html": "<button class=\"ds-triage-row\"><i>N</i><span><strong>Senior Product Engineer</strong><small>Northstar Systems</small><em>Remote · $165k–$190k</em></span><b>New</b></button>",
       "css": ".ds-triage-row{width:320px;min-height:84px;padding:11px 12px;border:0;border-bottom:1px solid var(--line);color:var(--ink);background:var(--accent-soft);display:grid;grid-template-columns:30px minmax(0,1fr) auto;align-items:start;gap:10px;text-align:left}.ds-triage-row i{width:30px;height:30px;border:1px solid var(--line);border-radius:6px;background:var(--canvas);display:grid;place-items:center;font:650 11px var(--font-geist);font-style:normal}.ds-triage-row span{min-width:0;display:grid;gap:2px}.ds-triage-row strong{font:610 12px var(--font-geist)}.ds-triage-row small,.ds-triage-row em,.ds-triage-row b{color:var(--muted);font:400 10px var(--font-geist);font-style:normal}.ds-triage-row:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}"
+    },
+    {
+      "name": "Management Table",
+      "kind": "custom",
+      "description": "Admin records keep headers, tabular values, readable secondary metadata, and scrolling inside the table region.",
+      "html": "<div class=\"ds-management-scroll\"><table class=\"ds-management-table\"><thead><tr><th scope=\"col\">Plan</th><th scope=\"col\">Capacity</th></tr></thead><tbody><tr><td>Free<small>Available</small></td><td>1 active Workspace</td></tr></tbody></table></div>",
+      "css": ".ds-management-scroll { max-width: 100%; overflow-x: auto; } .ds-management-table { border-collapse: collapse; width: 100%; text-align: left; font-size: 13px; color: var(--ink); background: var(--canvas); } .ds-management-table th { color: var(--muted); font-weight: 500; white-space: nowrap; } .ds-management-table th, .ds-management-table td { padding: 14px 12px; border-bottom: 1px solid var(--line); vertical-align: top; } .ds-management-table td { overflow-wrap: anywhere; min-width: 120px; font-variant-numeric: tabular-nums; } .ds-management-table td small { display: block; color: var(--muted); margin-top: 5px; font-size: 13px; line-height: 1.5; } .ds-management-table tr:hover td { background: var(--surface); }"
     }
   ],
   "narrative": {

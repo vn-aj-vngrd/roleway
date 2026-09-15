@@ -1,3 +1,5 @@
+import { getPlans } from "@/features/billing/queries";
+import { PlanComparison } from "@/components/plan-comparison";
 import { ArrowRight, Check } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -38,7 +40,7 @@ const structuredData = {
 };
 
 export default async function HomePage() {
-  const auth = await requireUser();
+  const [auth, plans] = await Promise.all([requireUser(), getPlans()]);
   const primaryHref = auth ? "/home" : "/signup";
   const primaryLabel = auth ? "Open Roleway" : "Create your workspace";
 
@@ -56,7 +58,8 @@ export default async function HomePage() {
           <a href="#opportunities-proof">Opportunities</a>
           <a href="#interviews-proof">Interviews</a>
           <a href="#agent-proof">Agent</a>
-          <a href="#insights-proof">Insights</a>
+          <a href="#pricing">Pricing</a>
+          <Link href="/help">Help</Link>
         </nav>
         <div className="rw-nav-actions">
           {!auth ? (
@@ -132,6 +135,8 @@ export default async function HomePage() {
             </strong>
           </div>
         </section>
+
+        <section id="pricing" className="rw-pricing"><h2>Start focused. Grow when you need to.</h2><p>Core job-search tools on every plan. Choose the capacity that fits your search.</p><PlanComparison plans={plans}/><p className="muted">Saved content includes document history and archived records. AI provider charges are separate.</p></section>
 
         <section className="rw-close" data-reveal>
           <div className="rw-close-copy">

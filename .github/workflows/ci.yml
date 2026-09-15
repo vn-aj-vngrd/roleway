@@ -55,7 +55,9 @@ jobs:
         run: |
           psql -v ON_ERROR_STOP=1 -f supabase/tests/support/auth-schema.sql
           for migration in supabase/migrations/*.sql; do
-            psql -v ON_ERROR_STOP=1 -f "$migration"
+            psql -v ON_ERROR_STOP=1 --single-transaction -f "$migration"
           done
           psql -v ON_ERROR_STOP=1 -f supabase/tests/agent_transactions.sql
           psql -v ON_ERROR_STOP=1 -f supabase/tests/signup_admission.sql
+          psql -v ON_ERROR_STOP=1 -f supabase/tests/plans_billing.sql
+          node scripts/plan-concurrency.test.mjs

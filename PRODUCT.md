@@ -49,7 +49,8 @@ Users work primarily at a desktop during focused planning and preparation, while
 - Users approve consequential changes and own every external action.
 - Roleway does not submit applications, contact employers, mass apply, or run background submission.
 - Job URL capture supports public Ashby, Greenhouse, and Lever endpoints plus JSON-LD/metadata fallbacks; missing fields are never fabricated.
-- The current product has no teams, billing, browser extension, email/calendar integration, external job aggregation, or consumer-AI-subscription bridge.
+- The current product has no teams, automated recurring billing, browser extension, email/calendar integration, external job aggregation, or consumer-AI-subscription bridge.
+- Plans have configurable account capacity. Manual payment requests require admin verification; paid access expires after its granted term. Pricing, payment instructions, and help articles are managed in the admin console.
 - Authenticated data is owner-scoped through Supabase Row Level Security and independently authorized server mutations.
 - The PWA caches only versioned static assets; authenticated pages and API responses remain network-only.
 

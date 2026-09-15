@@ -7,9 +7,9 @@ export async function GET() {
   const { data: withinQuota, error: quotaError } = await auth.supabase.rpc("consume_roleway_api_quota", { input_bucket: "export" });
   if (quotaError || withinQuota !== true) return NextResponse.json({ error: "Data exports are limited to three per hour." }, { status: 429, headers: { "Cache-Control": "no-store", "Retry-After": "3600" } });
 
-  const tables = ["profiles", "career_preferences", "search_projects", "jobs", "opportunities", "application_records", "tasks", "opportunity_notes", "opportunity_events", "contacts", "interviews", "documents", "document_versions", "notifications", "ai_runs", "agent_conversations", "agent_messages", "agent_run_steps", "agent_proposals", "agent_preferences"] as const;
+  const tables = ["profiles", "career_preferences", "search_projects", "jobs", "opportunities", "application_records", "tasks", "opportunity_notes", "opportunity_events", "contacts", "interviews", "documents", "document_versions", "notifications", "ai_runs", "agent_conversations", "agent_messages", "agent_run_steps", "agent_proposals", "agent_preferences", "account_plans", "account_usage", "payment_requests"] as const;
   const results = await Promise.all(tables.map(async (table) => {
-    const { data, error } = await auth.supabase.from(table).select("*");
+    const { data, error } = await auth.supabase.from(table).select("*").eq("user_id", auth.user.id);
     return [table, { data: data ?? [], error: error?.message }] as const;
   }));
   const failed = results.find(([, result]) => result.error);

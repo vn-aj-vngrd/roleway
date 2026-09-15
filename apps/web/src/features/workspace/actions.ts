@@ -1,4 +1,5 @@
 "use server";
+import { capacityError } from "@/features/billing/types";
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -47,7 +48,7 @@ export async function createJob(formData: FormData) {
   });
   if (error) {
     await recordSystemEvent({ category: "job_capture", code: "job_insert_failed", userId: auth.user.id, metadata: { databaseCode: error.code ?? "unknown" } });
-    redirect(errorHref("The job could not be saved."));
+    redirect(errorHref(capacityError(error, "The job could not be saved.")));
   }
   if (project.id !== auth.project.id) await auth.supabase.rpc("set_active_search_project", { input_project_id: project.id });
   revalidatePath("/", "layout");
@@ -216,7 +217,7 @@ export async function createDocument(formData: FormData) {
     if (!opportunity) redirect("/documents?error=That%20opportunity%20is%20not%20part%20of%20this%20workspace.");
   }
   const { data, error } = await auth.supabase.from("documents").insert({ user_id: auth.user.id, project_id: auth.project.id, opportunity_id: parsed.data.opportunityId || null, title: parsed.data.title, kind: parsed.data.kind, status: "draft" }).select("id").single();
-  if (error || !data) redirect("/documents?error=The%20document%20could%20not%20be%20created.");
+  if (error || !data) redirect(`/documents?error=${encodeURIComponent(capacityError(error, "The document could not be created."))}`);
   revalidatePath("/documents");
   redirect(`/documents/${data.id}?documentCreated=true`);
 }
@@ -230,7 +231,7 @@ export async function updateDocument(formData: FormData) {
     if (!opportunity) redirect(`/documents/${parsed.data.documentId}?error=That%20opportunity%20is%20not%20part%20of%20this%20workspace.`);
   }
   const { error } = await auth.supabase.from("documents").update({ title: parsed.data.title, status: parsed.data.status, opportunity_id: parsed.data.opportunityId || null, content: { body: parsed.data.body } }).eq("id", parsed.data.documentId).eq("user_id", auth.user.id).eq("project_id", auth.project.id);
-  if (error) redirect(`/documents/${parsed.data.documentId}?error=The%20document%20could%20not%20be%20saved.`);
+  if (error) redirect(`/documents/${parsed.data.documentId}?error=${encodeURIComponent(capacityError(error, "The document could not be saved."))}`);
   revalidatePath("/documents");
   revalidatePath(`/documents/${parsed.data.documentId}`);
   redirect(`/documents/${parsed.data.documentId}?saved=true`);

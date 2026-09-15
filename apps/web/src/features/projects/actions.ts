@@ -1,4 +1,5 @@
 "use server";
+import { capacityError } from "@/features/billing/types";
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -121,7 +122,7 @@ export async function createSearchProject(formData: FormData) {
     .single();
   if (error || !data) {
     if (error?.code !== "23505") await recordSystemEvent({ category: "search_project", code: "project_create_failed", userId: auth.user.id, metadata: { databaseCode: error?.code ?? "missing_result" } });
-    const message = error?.code === "23505" ? "That Workspace name or Opportunity key is already in use." : "The workspace could not be created.";
+    const message = error?.code === "23505" ? "That Workspace name or Opportunity key is already in use." : capacityError(error, "The workspace could not be created.");
     redirect(createErrorHref(message));
   }
   const { error: switchError } = await auth.supabase.rpc("set_active_search_project", { input_project_id: data.id });
@@ -195,7 +196,7 @@ export async function restoreSearchProject(formData: FormData) {
   const auth = await authenticated();
   const { error } = await auth.supabase.from("search_projects").update({ status: "active" }).eq("id", projectId.data).eq("user_id", auth.user.id).eq("status", "archived");
   if (error) {
-    const message = error.code === "23505" ? "Rename the current Workspace that already uses this name before restoring." : "The Workspace could not be restored.";
+    const message = error.code === "23505" ? "Rename the current Workspace that already uses this name before restoring." : capacityError(error, "The Workspace could not be restored.");
     redirect(`/settings/workspaces?error=${encodeURIComponent(message)}`);
   }
   revalidatePath("/", "layout");

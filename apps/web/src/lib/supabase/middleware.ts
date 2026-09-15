@@ -10,6 +10,8 @@ export async function updateSession(request: NextRequest) {
     || pathname === "/forgot-password"
     || pathname === "/reset-password"
     || pathname === "/auth/callback"
+    || pathname === "/help"
+    || pathname.startsWith("/help/")
     || pathname === "/privacy"
     || pathname === "/robots.txt"
     || pathname === "/sitemap.xml"
