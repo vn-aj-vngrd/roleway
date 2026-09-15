@@ -6,13 +6,13 @@ colors:
   accent-blue-hover: "oklch(0.54 0.18 264)"
   accent-blue-soft: "oklch(0.95 0.035 264)"
   canvas-light: "oklch(0.995 0 0)"
-  canvas-dark: "oklch(0.205 0.006 255)"
-  surface-light: "oklch(0.972 0.002 255)"
-  surface-dark: "oklch(0.24 0.007 255)"
-  graphite: "oklch(0.19 0.006 255)"
-  graphite-muted: "oklch(0.47 0.008 255)"
-  hairline: "oklch(0.905 0.004 255)"
-  hairline-strong: "oklch(0.82 0.007 255)"
+  canvas-dark: "oklch(0.205 0 0)"
+  surface-light: "oklch(0.972 0 0)"
+  surface-dark: "oklch(0.24 0 0)"
+  graphite: "oklch(0.19 0 0)"
+  graphite-muted: "oklch(0.47 0 0)"
+  hairline: "oklch(0.905 0 0)"
+  hairline-strong: "oklch(0.82 0 0)"
 typography:
   headline:
     fontFamily: "Inter Variable, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif"
@@ -266,3 +266,7 @@ Authentication uses one centered 384px form, 28px heading, visible labels, 44px 
 ### Alert status variants
 
 Use the shared Alert with `info` (Info icon, guidance), `success` (CircleCheck, completed action), `warning` (TriangleAlert, unavailable service or registration limits), or `danger` (CircleAlert, failed action requiring correction). `destructive` remains a compatibility alias for danger; `default` is neutral. Each status uses semantic foreground, soft-background, and border tokens in both themes. Icons align to the first text line, including wrapped messages. Info and success default to polite `role="status"`; warnings and errors use `role="alert"`. Keep clear recovery copy and icons so meaning does not depend on color. Do not classify arbitrary message strings to select severity; choose it at the originating state.
+
+### Neutral structural surfaces
+
+Canvas, sidebar, surfaces, structural text, and divider tokens use zero chroma in both themes. Low-chroma tinted colors can lose their hue during browser color mixing and produce an unintended warm cast. The main Workspace toolbar uses the same opaque canvas as the content plane. Board columns and hover states may differ in lightness but remain grayscale; reserve color for actions, Workspace identity, selection, and semantic feedback.
