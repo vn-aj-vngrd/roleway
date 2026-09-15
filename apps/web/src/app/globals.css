@@ -153,11 +153,18 @@ body {
   line-height: 1.45;
   text-rendering: optimizeLegibility;
 }
-button,
-input,
-textarea,
-select {
-  font: inherit;
+/* Resets must not override semantic utilities on shared controls. */
+@layer base {
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
+  }
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
 }
 button:not(:disabled),
 input:is([type="button"], [type="submit"], [type="reset"]):not(:disabled),
@@ -172,10 +179,6 @@ button,
 a {
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
-}
-a {
-  color: inherit;
-  text-decoration: none;
 }
 ::selection {
   background: var(--primary-soft);
