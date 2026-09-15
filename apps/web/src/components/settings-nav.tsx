@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Bell, BriefcaseBusiness, Navigation, Palette, Search, ShieldCheck, UserRound } from "lucide-react";
+import { ArrowLeft, BookOpen, CreditCard, Bell, BriefcaseBusiness, Navigation, Palette, Search, ShieldCheck, UserRound } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
@@ -17,6 +17,8 @@ const groups = [
     { href: "/settings/ai", label: "Agent", icon: Navigation },
   ] },
   { label: "Account", items: [
+    { href: "/settings/billing", label: "Plan & billing", icon: CreditCard },
+    { href: "/help", label: "Help & support", icon: BookOpen },
     { href: "/settings/privacy", label: "Privacy & data", icon: ShieldCheck },
   ] },
 ];

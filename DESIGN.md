@@ -272,3 +272,13 @@ Use the shared Alert with `info` (Info icon, guidance), `success` (CircleCheck, 
 Canvas, sidebar, surfaces, structural text, and divider tokens use zero chroma in both themes. Low-chroma tinted colors can lose their hue during browser color mixing and produce an unintended warm cast. The main Workspace toolbar uses the same opaque canvas as the content plane. Board columns and hover states may differ in lightness but remain grayscale; reserve color for actions, Workspace identity, selection, and semantic feedback.
 
 Selected tab counts use `--button-bg` and `--button-fg` together in both themes. The lighter dark-theme `--primary` is for accents and focus; it does not provide enough contrast behind small white count text.
+
+### Admin and billing
+
+Admin uses the settings shell with a dedicated, searchable section sidebar and Back to app. Retain its neutral work plane, rounded shared controls, and quiet gray navigation selection in both themes. Reserve Waypoint Blue for forward actions and focus. Management sections use quiet dividing rules and compact headings; labeled edit forms use two columns where space permits and one on mobile.
+
+Management tables retain real column headers, tabular numbers, wrapping identifiers, and contained horizontal scrolling on narrow screens. Primary values and secondary metadata both respect the operational 13px floor; metadata uses a 1.5 line height and muted semantic text. User-level actions live on the account detail page; list rows expose one clear View user action.
+
+Plan comparison uses one shared component on landing and billing. Present options within one rounded, divided surface, with columns on wide screens and a vertical stack on narrower screens. Capacity, pricing, and availability come from the catalog; unavailable plans retain an explicit status and disabled action. Billing puts current capacity before payment instructions and plan selection. Usage meters pair their fill with readable used/limit values. Manual payment instructions show an exact amount, request reference, beneficiary, and review state without implying automatic activation; long references wrap within the work plane.
+
+Help uses a readable single column with a simple branded header, search, and linked article titles and summaries separated by rules. Article text remains plain and spacious, with a visible route back to the guide list and a subordinate support section. Empty search results and unavailable content explain the next step in text.

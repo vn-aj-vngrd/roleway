@@ -6,7 +6,11 @@ import { randomBytes } from "node:crypto";
 
 const email = `e2e-${Date.now()}-${randomBytes(3).toString("hex")}@roleway.test`;
 const password = `Rw!${randomBytes(12).toString("hex")}`;
+// Audit settled content; landing motion has its own browser coverage.
 test.use({ trace: "off", screenshot: "off" });
+test.beforeEach(async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+});
 let opportunityPath = "";
 let userId = "";
 
@@ -31,7 +35,7 @@ async function signIn(page: Page) {
   if (usesAdminFixture) { await authenticateFixture(email, page); await page.goto("/home"); return; }
   await page.goto("/login");
   await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill(password);
+  await page.getByLabel("Password", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Log in" }).click();
   await page.waitForURL("**/home");
 }
@@ -49,6 +53,7 @@ async function expectNoSeriousAccessibilityViolations(page: Page) {
       id: violation.id,
       impact: violation.impact,
       targets: violation.nodes.flatMap((node) => node.target).slice(0, 8),
+      details: violation.nodes.slice(0, 3).map((node) => node.failureSummary),
     }));
   expect(violations).toEqual([]);
 }
@@ -56,7 +61,10 @@ async function expectNoSeriousAccessibilityViolations(page: Page) {
 async function auditAuthenticatedSurface(page: Page, path: string) {
   const auditPage = await page.context().newPage();
   try {
+    await auditPage.emulateMedia({ reducedMotion: "reduce" });
     await auditPage.goto(path);
+    // Some dossier headers are visually replaced by the app toolbar on desktop.
+    await expect(auditPage.locator("main h1").first()).toBeAttached();
     await expectNoSeriousAccessibilityViolations(auditPage);
   } finally {
     await auditPage.close();
@@ -93,6 +101,8 @@ test.describe.serial("critical product journey", () => {
   }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/");
+    await expect(page.locator("html")).toHaveClass(/rw-motion-ready/);
+    await expect(page.locator('[data-reveal]:not([data-visible="true"])')).toHaveCount(0);
     await expect(
       page.getByRole("heading", {
         name: "Your job search, with a clear next move.",
@@ -141,7 +151,7 @@ test.describe.serial("critical product journey", () => {
     } else {
     await page.goto("/signup");
     await page.getByLabel("Email").fill(email);
-    await page.getByLabel("Password").fill(password);
+    await page.getByLabel("Password", { exact: true }).fill(password);
     await page.getByLabel("Confirm password", { exact: true }).fill(password);
     await page.getByRole("button", { name: "Create account" }).click();
     await completeSignupVerification(email, password, page);
@@ -664,6 +674,8 @@ test.describe.serial("critical product journey", () => {
     page,
   }) => {
     await signIn(page);
+    const { error: planError } = await adminClient().from("account_plans").upsert({ user_id: userId, plan_slug: "pro", expires_at: new Date(Date.now() + 86400000).toISOString() });
+    if (planError) throw planError;
     await page.goto("/settings/workspaces?create=true");
     const projectDialog = page.getByRole("dialog", {
       name: "Create a workspace",
@@ -729,7 +741,7 @@ test.describe.serial("critical product journey", () => {
     if (roleError) throw roleError;
     await page.goto("/admin");
     await expect(
-      page.getByRole("heading", { name: "Admin console" }),
+      page.getByRole("heading", { name: "Overview", exact: true }),
     ).toBeVisible();
     await expect(
       page.getByRole("region", { name: "Platform metrics" }),
@@ -809,16 +821,21 @@ test.describe.serial("critical product journey", () => {
     await dialog.getByLabel("Confirm your name").fill("E2E User");
     await dialog.getByLabel("Confirm your email").fill(email);
     await dialog.getByLabel("Current password").fill(password);
-    await dialog
-      .getByRole("button", { name: "Delete account permanently" })
-      .click();
     if (usesAdminFixture) {
+      // Exercise server denial even when CAPTCHA correctly disables the UI button.
+      await dialog.locator("form").evaluate((form: HTMLFormElement) => {
+        (form.elements.namedItem("captchaToken") as HTMLInputElement).value = "";
+        form.requestSubmit();
+      });
       await expect(page).toHaveURL(/\/settings\/privacy\?error=/);
-      await expect(page.getByText("Security verification expired or failed. Please try again.", { exact: true })).toBeVisible();
+      await expect(page.getByText("Complete every confirmation field.", { exact: true })).toBeVisible();
       const { data: retained } = await adminClient().auth.admin.getUserById(userId);
       expect(retained.user?.id).toBe(userId);
       return;
     }
+    await dialog
+      .getByRole("button", { name: "Delete account permanently" })
+      .click();
     await expect(page).toHaveURL(/\/login\?message=/);
     await expect(
       page.getByText("Your Roleway account and workspace were deleted."),

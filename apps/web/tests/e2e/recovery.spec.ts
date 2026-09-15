@@ -43,7 +43,7 @@ test("implicit invitation session opens the password form without leaving tokens
     const fragment = new URLSearchParams({ type: "invite", access_token: data.session.access_token, refresh_token: data.session.refresh_token });
     await page.goto(`/reset-password#${fragment}`);
     await expect(page.getByLabel("New password", { exact: true })).toBeVisible();
-    await expect(page).toHaveURL("http://localhost:3003/reset-password");
+    await expect(page).toHaveURL(`${process.env.E2E_BASE_URL || "http://localhost:3003"}/reset-password`);
     const browserClient = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { cookies: { getAll: async () => page.context().cookies(), setAll: () => {} } });
     const { data: current } = await browserClient.auth.getUser();
     expect(current.user?.id).toBe(link.user.id);

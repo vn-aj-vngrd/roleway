@@ -163,5 +163,9 @@ The E2E suite must use a disposable account and verify normal-user admin denial 
 - No unsupported job aggregation or scraping-based marketplace.
 - No browser extension until permissions, privacy copy, ATS fallbacks, and review UX are complete.
 - No email/calendar integration until token storage and failure recovery are designed.
-- No generic workflow engine, automation builder, collaboration, billing, or team permissions in the individual product.
+- No generic workflow engine, automation builder, collaboration, automated payment collection, or team permissions in the individual product.
 - No opaque fit score; future fit work must map requirements to user-approved evidence and distinguish facts from inference.
+
+## Plans and administration
+
+[Plans, billing, and storage](PRICING_AND_BILLING.md) owns capacity accounting, tier availability, manual payment reconciliation, and activation. PostgreSQL enforces account quotas across direct API, app, and Agent writes. Admin content inspection is read-only, limited to core record types, and audited. Plan & billing lives in account Settings; public Help provides admin-managed articles.

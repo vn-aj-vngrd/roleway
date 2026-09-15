@@ -26,6 +26,7 @@ import {
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
+  Suspense,
   createContext,
   useCallback,
   useContext,
@@ -45,6 +46,7 @@ import { ProductTour } from "@/components/product-tour";
 import { SearchProjectSwitcher } from "@/components/search-project-switcher";
 import { WorkspaceMark } from "@/components/workspace-mark";
 import { WorkspaceCreateForm } from "@/components/workspace-create-form";
+import { AdminNav } from "@/components/admin-nav";
 import { SettingsNav } from "@/components/settings-nav";
 import { CountBadge } from "@/components/ui-primitives";
 import { Button } from "@/components/ui/button";
@@ -716,12 +718,8 @@ function AccountMenu({
             </Link>
           </div>
           <div className="account-menu-group">
-            <a
-              role="menuitem"
-              href="mailto:support@roleway.app?subject=Roleway%20support"
-            >
-              Help and support
-            </a>
+            <Link role="menuitem" href="/help">Help and support</Link>
+            <Link role="menuitem" href="/settings/billing">Plan &amp; billing</Link>
             {isAdmin ? (
               <Link role="menuitem" href="/admin">
                 Admin console
@@ -815,6 +813,7 @@ export function AppShell({
   }, [showTour]);
 
   useEffect(() => {
+    if (pathname.startsWith("/admin")) return;
     const openJob = () => {
       setCreateJobProjectId(activeProject.id);
       setCreateJobOpen(true);
@@ -872,6 +871,7 @@ export function AppShell({
   }, [mobileMoreOpen]);
 
   useEffect(() => {
+    if (pathname.startsWith("/admin")) return;
     const onKeyDown = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement;
       const editing = target.matches(
@@ -904,7 +904,7 @@ export function AppShell({
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [activeProject.id, router]);
+  }, [activeProject.id, pathname, router]);
 
   const toggleSidebar = useCallback(() => {
     setCompactSidebar((current) => {
@@ -930,6 +930,9 @@ export function AppShell({
   const mobileMoreActive = mobileMoreEntries.some(
     (item) => pathname === item.href || pathname.startsWith(`${item.href}/`),
   );
+
+  if (pathname.startsWith("/admin"))
+    return <div className="settings-app-shell admin-app-shell"><aside className="settings-shell-sidebar" aria-label="Admin navigation"><Suspense><AdminNav /></Suspense></aside><main className="settings-shell-main" id="main-content">{children}</main><ToastViewport /></div>;
 
   if (pathname.startsWith("/settings"))
     return (

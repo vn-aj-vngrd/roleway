@@ -31,7 +31,7 @@ export async function authenticateFixture(email: string, page?: Page): Promise<S
     getAll: () => Array.from(cookieJar, ([name, value]) => ({ name, value })),
     setAll: async (cookies) => {
       for (const { name, value } of cookies) cookieJar.set(name, value);
-      if (page) await page.context().addCookies(cookies.map(({name,value})=>({name,value,url:"http://localhost:3003",sameSite:"Lax" as const})));
+      if (page) await page.context().addCookies(cookies.map(({name,value})=>({name,value,url:process.env.E2E_BASE_URL || "http://localhost:3003",sameSite:"Lax" as const})));
     },
   } });
   const { error: authError } = await client.auth.verifyOtp({ token_hash: data.properties.hashed_token, type: "magiclink" });
