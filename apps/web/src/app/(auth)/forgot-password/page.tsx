@@ -1,4 +1,4 @@
-import { CircleAlert, Info } from "lucide-react";
+import { CircleAlert, CircleCheck, TriangleAlert } from "lucide-react";
 import Link from "next/link";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PasswordResetRequestForm } from "@/components/auth-protected-forms";
@@ -23,22 +23,22 @@ export default async function ForgotPasswordPage({
         </p>
       </div>
       {query.error ? (
-        <Alert variant="destructive">
+        <Alert variant="danger">
           <CircleAlert aria-hidden="true" />
           <AlertDescription>{query.error}</AlertDescription>
         </Alert>
       ) : null}
       {query.sent ? (
-        <Alert role="status">
-          <Info aria-hidden="true" />
+        <Alert variant="success">
+          <CircleCheck aria-hidden="true" />
           <AlertDescription>
             Check your email for a recovery link. It may take a few minutes to
             arrive.
           </AlertDescription>
         </Alert>
       ) : captchaUnavailable ? (
-        <Alert variant="destructive">
-          <CircleAlert aria-hidden="true" />
+        <Alert variant="warning">
+          <TriangleAlert aria-hidden="true" />
           <AlertDescription>
             Password recovery is unavailable while security verification is
             being configured.
