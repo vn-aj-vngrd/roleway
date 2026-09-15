@@ -39,7 +39,7 @@ supabase db push
 
 ## Environment
 
-Use `apps/web/.env.example` for the web app and browser tests; Next.js loads `apps/web/.env.local`. The root `.env.example` contains only project setup variables for Supabase management, Resend provisioning, and optional Studio AI; copy it to root `.env.local` when using those tools. Each variable belongs to one template. See [Auth email setup](docs/AUTH_EMAIL.md) for provisioning.
+Use `apps/web/.env.example` for the web app and browser tests; Next.js loads `apps/web/.env.local`. The root `.env.example` contains only project setup variables for Supabase management, Resend provisioning, and optional Studio AI; copy it to root `.env.local` when using those tools. Each variable belongs to one template. See [Auth email setup](docs/AUTH_EMAIL.md) for provisioning and [Google sign-in beta](docs/GOOGLE_AUTH.md) for OAuth setup.
 
 | Variable | Required | Purpose |
 | --- | --- | --- |
@@ -47,6 +47,7 @@ Use `apps/web/.env.example` for the web app and browser tests; Next.js loads `ap
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | yes | Browser/server user-scoped client |
 | `SUPABASE_SERVICE_ROLE_KEY` | yes | Account deletion, encrypted AI connections, redacted system events, E2E cleanup |
 | `NEXT_PUBLIC_SITE_URL` | yes | Canonical Auth recovery callback origin |
+| `NEXT_PUBLIC_GOOGLE_AUTH_ENABLED` | optional | Default `false`; enables the Google beta entry after provider setup |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | production | Public Cloudflare Turnstile widget key; leave blank only for the local bypass |
 | `AI_CREDENTIAL_ENCRYPTION_KEY` | for Agent | Base64-encoded 32-byte AES key |
 | `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY` | multi-instance self-hosting | Stable, independent base64-encoded 32-byte Server Actions key |

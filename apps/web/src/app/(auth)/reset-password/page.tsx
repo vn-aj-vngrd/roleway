@@ -26,7 +26,7 @@ export default async function ResetPasswordPage(props: {
         </p>
       </div>
       {query.error ? (
-        <Alert variant="destructive">
+        <Alert variant="danger">
           <CircleAlert aria-hidden="true" />
           <AlertDescription>{query.error}</AlertDescription>
         </Alert>

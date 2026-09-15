@@ -10,7 +10,7 @@ The release workflow follows Relay: successful push CI on main triggers a releas
 
 ## Activate and verify
 
-1. Merge the reviewed PR with passing CI after explicit user authorization.
+1. Squash and merge the reviewed PR with passing CI after explicit user authorization, following the squash-only rule in [Development workflow](DEVELOPMENT_WORKFLOW.md#merge-and-verify).
 2. Verify CI and Release completed for the expected main SHA. The job-scoped GitHub token creates tags/releases; no personal token is needed.
 3. Verify Vercel reports Ready for that same SHA and that the canonical alias serves the application.
 4. Run affected browser journeys against the deployment. Apply forward Supabase migrations before code that requires them, using the configured project's migration tooling and preserving data.

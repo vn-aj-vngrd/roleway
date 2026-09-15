@@ -25,7 +25,7 @@ A **Job** is captured listing data. An **Opportunity** is the user’s tracked r
 - Tailwind CSS 4 supplies the utility/token layer; shadcn source components in `apps/web/src/components/ui` use Base UI for accessible interaction primitives.
 - Product-specific layout primitives preserve Roleway’s route archetypes and compose shadcn controls rather than replacing the application structure.
 - Supabase PostgreSQL migrations are the authoritative schema.
-- Supabase Auth uses password sessions in HttpOnly cookies refreshed by middleware.
+- Supabase Auth supports password sessions and optional Google OAuth through the shared cookie-backed session client, refreshed by middleware. [Google sign-in setup](GOOGLE_AUTH.md) owns provider activation and callback behavior.
 - `requireSearchContext()` resolves the user, profile, available Workspaces, and active Workspace once per server render.
 - Pages query by the legacy `project_id` key; RLS independently checks user and Workspace ownership.
 - Server Actions authenticate again and constrain resource IDs to the active Workspace.

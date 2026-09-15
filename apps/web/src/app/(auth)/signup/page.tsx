@@ -1,4 +1,5 @@
-import { CircleAlert, Info } from "lucide-react";
+import { GoogleSignIn } from "@/components/google-sign-in";
+import { CircleAlert, TriangleAlert } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { SignupForm } from "@/components/signup-form";
@@ -36,14 +37,14 @@ export default async function SignupPage(props: {
         <p>Start one focused workspace for your job search.</p>
       </div>
       {query.error ? (
-        <Alert variant="destructive">
+        <Alert variant="danger">
           <CircleAlert aria-hidden="true" />
           <AlertDescription>{query.error}</AlertDescription>
         </Alert>
       ) : null}
       {productionUnavailable ? (
-        <Alert variant="destructive">
-          <CircleAlert aria-hidden="true" />
+        <Alert variant="warning">
+          <TriangleAlert aria-hidden="true" />
           <AlertDescription>
             Registration is unavailable while security verification is being
             configured.
@@ -51,14 +52,15 @@ export default async function SignupPage(props: {
         </Alert>
       ) : null}
       {!productionUnavailable && !acceptingSignups ? (
-        <Alert>
-          <Info aria-hidden="true" />
+        <Alert variant="warning">
+          <TriangleAlert aria-hidden="true" />
           <AlertDescription>{closedMessage}</AlertDescription>
         </Alert>
       ) : null}
       {acceptingSignups ? (
         <SignupForm siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY} />
       ) : null}
+      {acceptingSignups ? <GoogleSignIn /> : null}
       <p className="auth-minimal-switch">
         Already have an account? <Link href="/login">Log in</Link>
       </p>

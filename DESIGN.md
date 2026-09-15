@@ -6,13 +6,13 @@ colors:
   accent-blue-hover: "oklch(0.54 0.18 264)"
   accent-blue-soft: "oklch(0.95 0.035 264)"
   canvas-light: "oklch(0.995 0 0)"
-  canvas-dark: "oklch(0.205 0.006 255)"
-  surface-light: "oklch(0.972 0.002 255)"
-  surface-dark: "oklch(0.24 0.007 255)"
-  graphite: "oklch(0.19 0.006 255)"
-  graphite-muted: "oklch(0.47 0.008 255)"
-  hairline: "oklch(0.905 0.004 255)"
-  hairline-strong: "oklch(0.82 0.007 255)"
+  canvas-dark: "oklch(0.205 0 0)"
+  surface-light: "oklch(0.972 0 0)"
+  surface-dark: "oklch(0.24 0 0)"
+  graphite: "oklch(0.19 0 0)"
+  graphite-muted: "oklch(0.47 0 0)"
+  hairline: "oklch(0.905 0 0)"
+  hairline-strong: "oklch(0.82 0 0)"
 typography:
   headline:
     fontFamily: "Inter Variable, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif"
@@ -112,7 +112,7 @@ Treat the design system as code, not inspiration:
 2. **Tokens only.** Tailwind CSS 4 semantic utilities and component CSS map to the semantic variables in `globals.css` (`--canvas`, `--sidebar`, `--surface`, `--ink`, `--muted`, `--line`, `--primary`, spacing, radius, shadow, motion). Raw hex, RGB, or one-off OKLCH values belong only in the token definitions or a documented semantic exception.
 3. **One type floor.** Functional and descriptive UI text is at least 13px; controls default to 14px. Smaller type is not a solution for fitting content—truncate, wrap, simplify, or redesign the layout.
 4. **One geometry.** Buttons use compact 32px desktop heights and fully rounded ends; fields retain an 8px radius and 36px height. Compact operational icon controls may be 28px when they have accessible labels and are not used as mobile touch targets. Mobile interactive targets are at least 44px. Editors may use 6px, settings groups 10px, and the desktop work plane 12px.
-5. **One saturated voice.** Blue means action, focus, selection, or progress. Large blue slabs, colored chrome, decorative gradients, and arbitrary status colors are prohibited. Danger red is reserved for destructive/error states.
+5. **One saturated voice.** Blue means action, focus, selection, or progress. Large blue slabs, colored chrome, decorative gradients, and arbitrary status colors are prohibited. Semantic feedback uses blue for information, green for success, amber for warnings, and red for danger/errors; these colors stay within status messages rather than decorative chrome.
 6. **Spacing over boxes.** Use 4/8/12/16px for local grouping and 24/32px for section separation. Do not create a card merely to separate content. Hairlines mark real boundaries; shadows mark elevation.
 7. **State completeness.** Every reusable pattern must account for default, hover, active, focus-visible, disabled, pending, error, empty, dark theme, reduced motion, keyboard, 1440px desktop, and 390px mobile states.
 8. **No speculative UI.** Do not add decorative metrics, fake integrations, fake customers, chat bubbles, sparkle icons, generic gradient hero art, or controls without a working action.
@@ -262,3 +262,13 @@ Marketing uses the application itself as evidence. Measured graphite headlines l
 ### Public entry and feedback consistency
 
 Authentication uses one centered 384px form, 28px heading, visible labels, 44px fields and pill actions, and the shared appearance picker. Login, signup, recovery, and verification compose the same Field, Input, Button, and Alert primitives. Alerts pair one 16px outline icon with wrapping copy; error color remains readable in both themes. Toasts use an opaque canvas and the shared floating shadow. Interface icons share a 1.75 stroke; large illustrative watermark marks retain their own weight. Public display typography may scale from 32px section titles to a 72px hero; operational text retains the 13px floor.
+
+### Alert status variants
+
+Use the shared Alert with `info` (Info icon, guidance), `success` (CircleCheck, completed action), `warning` (TriangleAlert, unavailable service or registration limits), or `danger` (CircleAlert, failed action requiring correction). `destructive` remains a compatibility alias for danger; `default` is neutral. Each status uses semantic foreground, soft-background, and border tokens in both themes. Icons align to the first text line, including wrapped messages. Info and success default to polite `role="status"`; warnings and errors use `role="alert"`. Keep clear recovery copy and icons so meaning does not depend on color. Do not classify arbitrary message strings to select severity; choose it at the originating state.
+
+### Neutral structural surfaces
+
+Canvas, sidebar, surfaces, structural text, and divider tokens use zero chroma in both themes. Low-chroma tinted colors can lose their hue during browser color mixing and produce an unintended warm cast. The main Workspace toolbar uses the same opaque canvas as the content plane. Board columns and hover states may differ in lightness but remain grayscale; reserve color for actions, Workspace identity, selection, and semantic feedback.
+
+Selected tab counts use `--button-bg` and `--button-fg` together in both themes. The lighter dark-theme `--primary` is for accents and focus; it does not provide enough contrast behind small white count text.

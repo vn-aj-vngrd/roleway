@@ -1,4 +1,4 @@
-import { CircleAlert, Info } from "lucide-react";
+import { CircleAlert, CircleCheck, TriangleAlert, Info } from "lucide-react";
 import Link from "next/link";
 import { EmailConfirmationForm } from "@/components/auth-protected-forms";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -23,8 +23,8 @@ export default async function VerifyEmailPage({
         </p>
       </div>
       {query.sent ? (
-        <Alert role="status">
-          <Info aria-hidden="true" />
+        <Alert variant="success">
+          <CircleCheck aria-hidden="true" />
           <AlertDescription>
             If your account needs verification, a confirmation email has been
             requested. Check your inbox and spam folder. Links expire after one
@@ -33,18 +33,21 @@ export default async function VerifyEmailPage({
         </Alert>
       ) : null}
       {query.error ? (
-        <Alert variant="destructive">
+        <Alert variant="danger">
           <CircleAlert aria-hidden="true" />
           <AlertDescription>{query.error}</AlertDescription>
         </Alert>
       ) : null}
-      <p className="auth-minimal-help">
-        Missing the email? Check the address below and wait a minute before
-        requesting another link.
-      </p>
+      <Alert variant="info">
+        <Info aria-hidden="true" />
+        <AlertDescription>
+          Missing the email? Check the address below and wait a minute before
+          requesting another link.
+        </AlertDescription>
+      </Alert>
       {unavailable ? (
-        <Alert>
-          <Info aria-hidden="true" />
+        <Alert variant="warning">
+          <TriangleAlert aria-hidden="true" />
           <AlertDescription>
             Email verification is temporarily unavailable.
           </AlertDescription>

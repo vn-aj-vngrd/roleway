@@ -19,7 +19,7 @@ This is the authority for branches, commits, pull requests, reviews, and merge h
 
 ## Merge and verify
 
-Merge requires explicit user authorization, passing current-head checks, an up-to-date base, and resolved review blockers. Changes reach `main` through PRs, including hotfixes. Keep published history intact; merge `origin/main` to update a published branch. Squash with the validated PR title as the subject.
+Merge requires explicit user authorization, passing current-head checks, an up-to-date base, and resolved review blockers. Changes reach `main` through PRs, including hotfixes. Keep published history intact; merge `origin/main` to update a published branch. Use **Squash and merge** for every PR into `main`, with the validated PR title unchanged as the squash subject. This produces one Conventional Commit per PR so semantic-release derives the intended version and one release-note entry. Keep GitHub configured with squash merging enabled, merge commits and rebase merging disabled, and the PR title as the default squash subject. Verify those settings before merging.
 
 After merging, verify main CI, the GitHub release, and the Vercel production deployment independently. Follow [Deployment and releases](DEPLOYMENT_AND_RELEASES.md) for activation and failure recovery. Start the next independent task from freshly fetched main.
 

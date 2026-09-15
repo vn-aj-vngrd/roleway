@@ -17,6 +17,7 @@ jobs:
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.E2E_SUPABASE_SERVICE_ROLE_KEY }}
       AI_CREDENTIAL_ENCRYPTION_KEY: ${{ secrets.E2E_AI_CREDENTIAL_ENCRYPTION_KEY }}
       NEXT_PUBLIC_SITE_URL: http://localhost:3003
+      NEXT_PUBLIC_GOOGLE_AUTH_ENABLED: "true"
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v4

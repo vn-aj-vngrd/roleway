@@ -178,6 +178,17 @@ for (const theme of ["light", "dark"] as const) {
     );
     await page.goto("/");
     await expect(page.locator(".rw-site")).toBeVisible();
+    await page.locator(".rw-site").evaluate(async (site) => {
+      await Promise.all(
+        site
+          .getAnimations({ subtree: true })
+          .filter(
+            (animation) =>
+              animation.effect?.getTiming().iterations !== Infinity,
+          )
+          .map((animation) => animation.finished.catch(() => {})),
+      );
+    });
     const result = await new AxeBuilder({ page })
       .include(".rw-next-slip")
       .include(".rw-highlight-copy")

@@ -1,4 +1,5 @@
-import { CircleAlert, Info } from "lucide-react";
+import { GoogleSignIn } from "@/components/google-sign-in";
+import { CircleAlert, CircleCheck, TriangleAlert } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { LoginForm } from "@/components/auth-protected-forms";
@@ -23,20 +24,20 @@ export default async function LoginPage(props: {
         <p>Continue to your focused job search.</p>
       </div>
       {query.error ? (
-        <Alert variant="destructive">
+        <Alert variant="danger">
           <CircleAlert aria-hidden="true" />
           <AlertDescription>{query.error}</AlertDescription>
         </Alert>
       ) : null}
       {query.message ? (
-        <Alert role="status">
-          <Info aria-hidden="true" />
+        <Alert variant="success">
+          <CircleCheck aria-hidden="true" />
           <AlertDescription>{query.message}</AlertDescription>
         </Alert>
       ) : null}
       {captchaUnavailable ? (
-        <Alert variant="destructive">
-          <CircleAlert aria-hidden="true" />
+        <Alert variant="warning">
+          <TriangleAlert aria-hidden="true" />
           <AlertDescription>
             Login is unavailable while security verification is being
             configured.
@@ -45,6 +46,10 @@ export default async function LoginPage(props: {
       ) : (
         <LoginForm siteKey={siteKey} nextPath={query.next ?? ""} />
       )}
+      <GoogleSignIn
+        nextPath={query.next ?? "/home"}
+        showDivider={!captchaUnavailable}
+      />
       <p className="auth-minimal-switch">
         New to Roleway? <Link href="/signup">Create an account</Link>
       </p>
