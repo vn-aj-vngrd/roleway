@@ -1,13 +1,13 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
-test("primary links retain readable colors and keyboard navigation", async ({ page }) => {
-  await page.emulateMedia({ reducedMotion: "reduce" });
-  const errors: string[] = [];
-  page.on("pageerror", (error) => errors.push(error.message));
-  for (const width of [1440, 390]) {
-    await page.setViewportSize({ width, height: 1000 });
-    for (const theme of ["light", "dark"]) {
+for (const width of [1440, 390]) {
+  for (const theme of ["light", "dark"]) {
+    test(`primary links retain readable colors and keyboard navigation (${width}px, ${theme})`, async ({ page }) => {
+      await page.emulateMedia({ reducedMotion: "reduce" });
+      await page.setViewportSize({ width, height: 1000 });
+      const errors: string[] = [];
+      page.on("pageerror", (error) => errors.push(error.message));
       await page.addInitScript((value) => localStorage.setItem("roleway-theme", value), theme);
       await page.goto("/");
       const start = page.getByRole("link", { name: "Start with Free", exact: true });
@@ -48,7 +48,7 @@ test("primary links retain readable colors and keyboard navigation", async ({ pa
       await expect(submit).toBeVisible();
       // Native submit buttons and button-styled links share the same action tokens.
       expect(await submit.evaluate((element) => getComputedStyle(element).color)).toBe(referenceColors.color);
-    }
+      expect(errors).toEqual([]);
+    });
   }
-  expect(errors).toEqual([]);
-});
+}
