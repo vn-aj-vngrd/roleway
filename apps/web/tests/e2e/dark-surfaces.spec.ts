@@ -86,6 +86,32 @@ test("workspace structure stays neutral and header matches its canvas", async ({
             ),
           }));
         });
+        const countContrast = await page
+          .locator('.pill-tab[aria-selected="true"] .count-badge')
+          .first()
+          .evaluate((element) => {
+            const style = getComputedStyle(element);
+            const context = document.createElement("canvas").getContext("2d")!;
+            const luminance = (color: string) => {
+              context.clearRect(0, 0, 1, 1);
+              context.fillStyle = color;
+              context.fillRect(0, 0, 1, 1);
+              const channels = [...context.getImageData(0, 0, 1, 1).data]
+                .slice(0, 3)
+                .map((value) => {
+                  const channel = value / 255;
+                  return channel <= 0.04045
+                    ? channel / 12.92
+                    : ((channel + 0.055) / 1.055) ** 2.4;
+                });
+              return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
+            };
+            const foreground = luminance(style.color);
+            const background = luminance(style.backgroundColor);
+            return (Math.max(foreground, background) + 0.05) /
+              (Math.min(foreground, background) + 0.05);
+          });
+        expect(countContrast).toBeGreaterThanOrEqual(4.5);
         expect(palette[0].rgb).toEqual(palette[1].rgb);
         for (const { rgb } of palette)
           expect(Math.max(...rgb) - Math.min(...rgb)).toBeLessThanOrEqual(1);

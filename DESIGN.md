@@ -270,3 +270,5 @@ Use the shared Alert with `info` (Info icon, guidance), `success` (CircleCheck, 
 ### Neutral structural surfaces
 
 Canvas, sidebar, surfaces, structural text, and divider tokens use zero chroma in both themes. Low-chroma tinted colors can lose their hue during browser color mixing and produce an unintended warm cast. The main Workspace toolbar uses the same opaque canvas as the content plane. Board columns and hover states may differ in lightness but remain grayscale; reserve color for actions, Workspace identity, selection, and semantic feedback.
+
+Selected tab counts use `--button-bg` and `--button-fg` together in both themes. The lighter dark-theme `--primary` is for accents and focus; it does not provide enough contrast behind small white count text.
