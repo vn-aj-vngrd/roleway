@@ -226,7 +226,7 @@ Settings replace the application rail with a dedicated shell: Back to app, a loc
 The content plane is the application’s dominant structural region. It owns the route toolbar, action dossier, grouped Opportunity list, optional board, settings, and route-specific loading states. Opportunity dossiers read as one document with application, tasks, interviews, documents, people, and activity separated primarily by spacing; status, Next Action, decision properties, and listing facts live in the right rail. The Opportunity index leads with a grouped list, supports composable priority and due-date filters, and lets users save, rename, apply, or remove personal views; the board remains the direct-manipulation alternate. The Inbox uses a bounded disclosure list: each saved Job is one compact row and the selected Job expands in place into listing facts, description, and review actions. This intentional exception to the default queue/detail split avoids a wide, mostly empty review plane when intake is sparse while preserving fast sequential review. Contacts use a Workspace-scoped relationship list with Opportunity context and follow-up dates. The sidebar and inset work surface remain visibly distinct in both themes without turning internal sections into floating cards.
 
 ### Roleway Agent
-Agent is a first-class work surface and product highlight, not a dashboard card or generic support chatbot. The dedicated route uses a 44px chat switcher bar, quiet open work plane, centered prompt composer, Skills/templates access, attachment control, and explicit provider/context disclosure. Messages read as an inspectable working transcript rather than speech bubbles.
+Agent is a first-class work surface and product highlight, not a dashboard card or generic support chatbot. The dedicated route uses a 44px chat switcher bar, quiet open work plane, centered prompt composer, Create/Explore discovery through + and /, and explicit provider/context disclosure. Messages use restrained rounded bubbles, local timestamps above them, and Copy beneath them.
 
 Desktop keeps the composer near the visual center in an empty conversation and moves it to the bottom of the transcript once messages exist. Mobile removes the sidebar and frame decoration, retains route/chat identity, and gives the composer safe horizontal and bottom margins. History, Skills, provider setup, and approvals use shared menus, settings groups, and floating surfaces.
 
@@ -255,7 +255,7 @@ Marketing uses the application itself as evidence. Measured graphite headlines l
 - **Don't** add more than the single inset work surface or give every section its own floating island.
 - **Don't** tint application chrome blue or add secondary saturated colors, startup gradients, glass, glow, or decorative metrics.
 - **Don't** turn summaries into large dashboard cards or put empty-state icons in generic rounded tiles.
-- **Don't** use AI imagery, sparkles, robots, gradient magic, or speech-bubble styling to represent Agent.
+- **Don't** use AI imagery, sparkles, robots, or gradient magic to represent Agent.
 - **Don't** copy Notion’s brand assets, collaboration terminology, or AI-first positioning; only its workspace discipline is relevant.
 - **Don't** market Roleway with generic dashboard art, fake metrics, or product screenshots that still show a discarded shell.
 

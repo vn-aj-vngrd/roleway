@@ -41,9 +41,9 @@ const client = {
 };
 
 import { sendAgentMessage } from "./actions";
-function request() {
+function request(timeZone = "Asia/Manila") {
   const data = new FormData();
-  data.set("connectionId",record);data.set("message","What happens next?");
+  data.set("timeZone",timeZone);data.set("connectionId",record);data.set("message","What happens next?");
   return sendAgentMessage(data);
 }
 beforeEach(() => {
@@ -54,6 +54,18 @@ beforeEach(() => {
   fixtures.rpc.mockReset().mockResolvedValue({error:null});
 });
 describe("Agent result persistence", () => {
+  it("includes the caller timezone and bounded-context disclosure", async () => {
+    await expect(request()).rejects.toThrow(`redirect:/agent?conversation=${record}`);
+    const prompt = fixtures.generate.mock.calls[0]?.[2] as string;
+    expect(prompt).toContain('"timeZone":"Asia/Manila"');
+    expect(prompt).toContain('"currentTime":');
+    expect(prompt).toContain('"contextLimits":');
+    expect(prompt).toContain('"recentProposals":[]');
+  });
+  it("rejects invalid timezone input before calling the provider", async () => {
+    await expect(request("invalid-zone")).rejects.toThrow("Choose%20a%20valid%20timezone");
+    expect(fixtures.generate).not.toHaveBeenCalled();
+  });
   it("reports a provider timeout without exposing provider content", async () => {
     const error = new Error("sensitive provider detail"); error.name = "TimeoutError";
     fixtures.generate.mockRejectedValue(error);

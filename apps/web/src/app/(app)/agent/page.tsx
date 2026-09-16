@@ -1,6 +1,8 @@
 // OpenRouter free models may queue for minutes; leave time for bounded calls and persistence.
 export const maxDuration = 300;
 
+import "./agent-chat.css";
+import { AgentMessageInput, MessageActions, MessageTimestamp } from "@/features/agent/chat-controls";
 import { formatOpportunityTicket } from "@roleway/core";
 import { Archive, Check, ChevronDown, Circle, History, KeyRound, Navigation, Plus, Route, Send, X } from "lucide-react";
 import Link from "next/link";
@@ -35,7 +37,10 @@ export default async function AgentPage(props: { searchParams: Promise<AgentQuer
   const readyConnections = connections.filter((connection) => connection.status === "connected");
   const opportunities = (opportunitiesResult.data ?? []) as unknown as Opportunity[];
   const conversations = (conversationsResult.data ?? []) as Conversation[];
-  const activeConversation = query.conversation ? conversations.find((conversation) => conversation.id === query.conversation) ?? null : null;
+  const { data: selectedConversation } = query.conversation
+    ? await context.supabase.from("agent_conversations").select("id, project_id, title, opportunity_id, updated_at").eq("id", query.conversation).eq("user_id", context.user.id).eq("status", "active").maybeSingle()
+    : { data: null };
+  const activeConversation = selectedConversation as Conversation | null;
   if (query.conversation && !activeConversation) redirect("/agent?error=That%20conversation%20is%20not%20available.");
 
   let messages: Message[] = [];
@@ -44,12 +49,12 @@ export default async function AgentPage(props: { searchParams: Promise<AgentQuer
   let proposals: Proposal[] = [];
   if (activeConversation) {
     const [messagesResult, runsResult, stepsResult, proposalsResult] = await Promise.all([
-      context.supabase.from("agent_messages").select("id, role, content, run_id, created_at").eq("conversation_id", activeConversation.id).order("created_at", { ascending: true }).limit(200),
-      context.supabase.from("ai_runs").select("id, provider, model, status, input_tokens, output_tokens, created_at").eq("conversation_id", activeConversation.id).order("created_at", { ascending: true }).limit(100),
+      context.supabase.from("agent_messages").select("id, role, content, run_id, created_at").eq("conversation_id", activeConversation.id).order("created_at", { ascending: false }).limit(200),
+      context.supabase.from("ai_runs").select("id, provider, model, status, input_tokens, output_tokens, created_at").eq("conversation_id", activeConversation.id).order("created_at", { ascending: false }).limit(100),
       context.supabase.from("agent_run_steps").select("id, run_id, label, status, position").eq("conversation_id", activeConversation.id).order("position", { ascending: true }).limit(300),
-      context.supabase.from("agent_proposals").select("id, run_id, tool_name, target_id, destination_project_id, summary, arguments, status, created_at").eq("conversation_id", activeConversation.id).order("created_at", { ascending: true }).limit(100),
+      context.supabase.from("agent_proposals").select("id, run_id, tool_name, target_id, destination_project_id, summary, arguments, status, created_at").eq("conversation_id", activeConversation.id).order("created_at", { ascending: false }).limit(100),
     ]);
-    messages = (messagesResult.data ?? []) as Message[];
+    messages = ((messagesResult.data ?? []) as Message[]).reverse();
     runs = (runsResult.data ?? []) as Run[];
     steps = (stepsResult.data ?? []) as Step[];
     proposals = (proposalsResult.data ?? []) as Proposal[];
@@ -97,20 +102,23 @@ export default async function AgentPage(props: { searchParams: Promise<AgentQuer
             const runProposals = message.run_id ? proposals.filter((proposal) => proposal.run_id === message.run_id) : [];
             return (
               <article className={`agent-message ${message.role}`} key={message.id}>
-                <header><span className="agent-message-author">{message.role === "agent" ? <><Navigation aria-hidden="true" />Roleway Agent</> : "You"}</span><time dateTime={message.created_at}>{messageTime(message.created_at)}</time></header>
+                <MessageTimestamp value={message.created_at} />
+                <header><span className="agent-message-author">{message.role === "agent" ? <><Navigation aria-hidden="true" />Roleway Agent</> : "You"}</span></header>
                 <div className="agent-message-content">{message.content.split(/\n{2,}/).map((paragraph, index) => <p key={index}>{paragraph}</p>)}</div>
+                <MessageActions content={message.content} />
                 {run && (message.role === "agent" || run.status === "failed") ? <AgentRunDetails run={run} steps={runSteps} /> : null}
-                {runProposals.map((proposal) => <ApprovalCard workspace={proposal.destination_project_id ? projectMap.get(proposal.destination_project_id)?.name ?? "Unavailable Workspace" : undefined} proposal={proposal} opportunity={proposal.target_id ? opportunityMap.get(proposal.target_id) : undefined} key={proposal.id} />)}
+                {(message.role === "agent" ? runProposals : []).map((proposal) => <ApprovalCard workspace={proposal.destination_project_id ? projectMap.get(proposal.destination_project_id)?.name ?? "Unavailable Workspace" : undefined} proposal={proposal} opportunity={proposal.target_id ? opportunityMap.get(proposal.target_id) : undefined} key={proposal.id} />)}
               </article>
             );
           })}
         </div> : <div className="agent-empty-state">
           <div className="agent-waypoint-watermark" aria-hidden="true"><Navigation /></div>
           <div className="agent-empty-copy"><h1>Ask across your search.</h1><p>Agent can read context from all of your Workspaces. It answers questions, prepares drafts, and proposes Workspace-specific changes for your approval.</p></div>
-          <div className="agent-prompt-examples" aria-label="Example questions"><span>What needs attention today?</span><span>Prepare me for my next interview.</span><span>Create a follow-up task for Friday.</span></div>
+          <p className="agent-prompt-examples">Use + or / below to create work or explore your search.</p>
         </div>}
 
         <AgentComposer
+          messageKey={messages.at(-1)?.id ?? "new"}
           conversationId={activeConversation?.id ?? ""}
           connections={readyConnections}
           opportunities={opportunities}
@@ -122,12 +130,11 @@ export default async function AgentPage(props: { searchParams: Promise<AgentQuer
   );
 }
 
-function AgentComposer({ conversationId, connections, opportunities, focusedOpportunityId, projects }: { conversationId: string; connections: Connection[]; opportunities: Opportunity[]; focusedOpportunityId: string; projects: Map<string, { name: string; ticketKey: string }> }) {
+function AgentComposer({ messageKey, conversationId, connections, opportunities, focusedOpportunityId, projects }: { messageKey: string; conversationId: string; connections: Connection[]; opportunities: Opportunity[]; focusedOpportunityId: string; projects: Map<string, { name: string; ticketKey: string }> }) {
   if (!connections.length) return <section className="agent-native-composer agent-composer-disabled" aria-label="Connect an AI provider to use Agent"><label className="sr-only" htmlFor="disabled-agent-message">Message Roleway Agent</label><textarea id="disabled-agent-message" disabled placeholder="Connect a provider to ask Agent…" /><footer><span className="agent-context-disclosure"><KeyRound aria-hidden="true" />Your API key is encrypted before storage</span><Link className="agent-setup-link" href="/settings/ai">Set up connection</Link></footer></section>;
-  return <form action={sendAgentMessage} className="agent-native-composer">
+  return <form action={sendAgentMessage} className="agent-native-composer" key={conversationId}>
     <input type="hidden" name="conversationId" value={conversationId} />
-    <label className="sr-only" htmlFor="agent-message">Message Roleway Agent</label>
-    <textarea id="agent-message" name="message" maxLength={4000} required placeholder="Ask across your workspaces…" autoFocus={!conversationId} />
+    <AgentMessageInput key={messageKey} />
     <footer>
       <div className="agent-composer-context">
         <label><span>Provider</span><select name="connectionId" aria-label="Agent provider" defaultValue={connections[0]?.id}>{connections.map((connection) => <option value={connection.id} key={connection.id}>{connection.label} · {connection.model}</option>)}</select></label>
@@ -176,8 +183,4 @@ function toolLabel(tool: string) {
 function relativeDate(value: string) {
   const days = Math.max(0, Math.floor((Date.now() - Date.parse(value)) / 86_400_000));
   return days === 0 ? "Today" : days === 1 ? "Yesterday" : `${days}d ago`;
-}
-
-function messageTime(value: string) {
-  return new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(new Date(value));
 }

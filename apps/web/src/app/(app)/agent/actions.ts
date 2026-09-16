@@ -15,6 +15,7 @@ const sendSchema = z.object({
   conversationId: z.union([z.literal(""), z.string().uuid()]).default(""),
   connectionId: z.string().uuid(),
   opportunityId: z.union([z.literal(""), z.string().uuid()]).default(""),
+  timeZone: z.string().max(100).refine(value => { try { new Intl.DateTimeFormat("en", { timeZone: value }); return true; } catch { return false; } }, "Choose a valid timezone.").default("UTC"),
   message: z.string().trim().min(1, "Write a question or request.").max(4000),
 });
 
@@ -98,7 +99,7 @@ export async function sendAgentMessage(formData: FormData) {
 
   let failureCode = "context_read_failed";
   try {
-    const [profileResult, preferencesResult, opportunitiesResult, tasksResult, jobsResult, interviewsResult, contactsResult, documentsResult, historyResult, guidanceResult] = await Promise.all([
+    const [profileResult, preferencesResult, opportunitiesResult, tasksResult, jobsResult, interviewsResult, contactsResult, documentsResult, historyResult, guidanceResult, proposalHistoryResult] = await Promise.all([
       auth.supabase.from("profiles").select("full_name, headline, summary").eq("user_id", auth.user.id).maybeSingle(),
       auth.supabase.from("career_preferences").select("target_titles, preferred_technologies, allowed_locations, remote_preference, minimum_compensation, currency, excluded_criteria").eq("user_id", auth.user.id).maybeSingle(),
       auth.supabase.from("opportunities").select("id, project_id, reference_number, stage, priority, next_action, next_action_due_at, updated_at, jobs(company, title, description, location, compensation, remote_policy)").eq("user_id", auth.user.id).in("project_id", auth.projects.map((workspace) => workspace.id)).neq("stage", "closed").order("updated_at", { ascending: false }).limit(100),
@@ -109,9 +110,10 @@ export async function sendAgentMessage(formData: FormData) {
       auth.supabase.from("documents").select("id, project_id, opportunity_id, title, kind, status, updated_at").eq("user_id", auth.user.id).order("updated_at", { ascending: false }).limit(60),
       auth.supabase.from("agent_messages").select("role, content, created_at").eq("conversation_id", conversationId).order("created_at", { ascending: false }).limit(12),
       auth.supabase.from("agent_preferences").select("guidance").eq("user_id", auth.user.id).maybeSingle(),
+      auth.supabase.from("agent_proposals").select("tool_name, target_id, destination_project_id, summary, status").eq("conversation_id", conversationId).eq("user_id", auth.user.id).order("created_at", { ascending: false }).limit(20),
     ]);
 
-    if ([profileResult, preferencesResult, opportunitiesResult, tasksResult, jobsResult, interviewsResult, contactsResult, documentsResult, historyResult, guidanceResult].some((result) => result.error)) {
+    if ([profileResult, preferencesResult, opportunitiesResult, tasksResult, jobsResult, interviewsResult, contactsResult, documentsResult, historyResult, guidanceResult, proposalHistoryResult].some((result) => result.error)) {
       throw new Error("context_read_failed");
     }
     const opportunities = (opportunitiesResult.data ?? []).map((opportunity) => {
@@ -133,6 +135,10 @@ export async function sendAgentMessage(formData: FormData) {
     failureCode = "provider_request_failed";
     const history = (historyResult.data ?? []).reverse().map((message) => ({ role: message.role, content: message.content.slice(0, 6000) }));
     const contextPayload = {
+      currentTime: new Date().toISOString(),
+      timeZone: parsed.data.timeZone,
+      contextLimits: "Bounded snapshots: 100 active Opportunities/tasks, 60 Inbox Jobs/interviews/contacts/documents, 12 recent messages. Document bodies, activity history and full career evidence are not included. Only the focused Opportunity includes a Job description.",
+      recentProposals: proposalHistoryResult.data ?? [],
       workspaces: auth.projects.map((workspace) => ({
         id: workspace.id,
         name: workspace.name,
