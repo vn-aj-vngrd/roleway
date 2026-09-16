@@ -184,7 +184,7 @@ export default async function AdminPage({
           </p>
         </div>
         <span className="tag">
-          <ShieldCheck aria-hidden="true" />
+          <ShieldCheck aria-hidden="true" size={14} />
           Protected
         </span>
       </header>

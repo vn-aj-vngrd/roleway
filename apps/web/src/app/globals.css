@@ -14525,9 +14525,9 @@ body [data-tooltip]::after {
   flex-direction: column;
 }
 .agent-empty-state {
-  min-height: 430px;
+  min-height: 0;
   flex: 1;
-  padding: 70px 24px 210px;
+  padding: 70px 24px 32px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -14844,6 +14844,12 @@ body [data-tooltip]::after {
   left: auto;
   flex: 0 0 auto;
 }
+.agent-native-page.is-empty .agent-native-composer {
+  position: relative;
+  inset: auto;
+  flex: 0 0 auto;
+  margin: 0 auto 24px;
+}
 .agent-native-composer:focus-within {
   border-color: var(--line-strong);
   box-shadow:
@@ -14858,7 +14864,9 @@ body [data-tooltip]::after {
   padding: 15px 16px 8px;
   border: 0;
   outline: 0;
-  resize: vertical;
+  resize: none;
+  field-sizing: content;
+  overflow-y: auto;
   color: var(--ink);
   background: transparent;
   font-size: 14px;
@@ -15099,7 +15107,9 @@ body [data-tooltip]::after {
   border: 1px solid var(--line-strong);
   border-radius: 9px;
   outline: 0;
-  resize: vertical;
+  resize: none;
+  field-sizing: content;
+  overflow-y: auto;
   color: var(--ink);
   background: var(--canvas);
   font-size: 14px;
@@ -15322,8 +15332,8 @@ body [data-tooltip]::after {
     min-height: calc(100dvh - 102px);
   }
   .agent-empty-state {
-    min-height: 420px;
-    padding: 64px 18px 210px;
+    min-height: 0;
+    padding: 64px 18px 32px;
     align-items: stretch;
   }
   .agent-waypoint-watermark {
@@ -15364,11 +15374,10 @@ body [data-tooltip]::after {
     margin: auto;
   }
   .agent-native-page.is-empty .agent-native-composer {
-    position: absolute;
-    right: 12px;
-    bottom: 78px;
-    left: 12px;
-    width: auto;
+    position: relative;
+    inset: auto;
+    width: calc(100% - 24px);
+    margin: 0 auto 78px;
   }
   .agent-native-composer > textarea {
     min-height: 76px;
