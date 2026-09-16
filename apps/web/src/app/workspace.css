@@ -7505,7 +7505,18 @@
 
 /* Administration, plans, and help share the settings work plane. */
 .admin-app-shell .admin-page { max-width: none; padding: 32px 40px; }
-.admin-nav-title { padding: 8px 12px 20px; font-weight: 600; }
+.admin-shell-navigation { display: flex; flex-direction: column; min-height: 100%; gap: 16px; }
+.admin-nav-brand { display: flex; align-items: center; gap: 8px; min-height: 32px; padding: 0 8px; color: var(--ink); font-weight: 600; border-radius: 6px; }
+.admin-nav-brand .logo-mark { flex-shrink: 0; }
+.admin-nav-footer { margin-top: auto; padding-top: 16px; }
+@media (max-width: 760px) {
+  .admin-shell-navigation { gap: 12px; }
+  .admin-nav-footer { padding-top: 0; }
+  .admin-nav-brand,
+  .admin-shell-navigation .settings-back-link,
+  .admin-shell-navigation .settings-search,
+  .admin-shell-navigation .settings-nav a { min-height: 44px; }
+}
 .management-section, .billing-section { padding: 24px 0; border-bottom: 1px solid var(--line); }
 .management-section > h2, .billing-section > h2 { font-size: 18px; margin-bottom: 8px; }
 .management-section > p, .billing-section > p { color: var(--muted); margin-bottom: 20px; max-width: 75ch; }

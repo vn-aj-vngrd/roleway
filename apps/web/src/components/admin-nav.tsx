@@ -15,6 +15,7 @@ import {
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useState } from "react";
+import { LogoMark } from "@/components/logo";
 import { Input } from "@/components/ui/input";
 const sections = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
@@ -38,12 +39,15 @@ export function AdminNav() {
     item.label.toLowerCase().includes(query.toLowerCase()),
   );
   return (
-    <div className="settings-shell-navigation">
-      <Link className="settings-back-link" href="/home">
-        <ArrowLeft aria-hidden />
-        Back to app
+    <div className="settings-shell-navigation admin-shell-navigation">
+      <Link
+        className="admin-nav-brand"
+        href="/admin"
+        aria-label="Roleway admin console"
+      >
+        <LogoMark tile size={24} />
+        <span>Admin console</span>
       </Link>
-      <div className="admin-nav-title">Admin console</div>
       <label className="settings-search">
         <Search aria-hidden />
         <span className="sr-only">Search admin sections</span>
@@ -71,6 +75,12 @@ export function AdminNav() {
       {!visible.length ? (
         <p className="settings-search-empty">No sections found.</p>
       ) : null}
+      <div className="admin-nav-footer">
+        <Link className="settings-back-link" href="/home">
+          <ArrowLeft aria-hidden />
+          Back to app
+        </Link>
+      </div>
     </div>
   );
 }
