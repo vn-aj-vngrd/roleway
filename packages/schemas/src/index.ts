@@ -65,6 +65,7 @@ export const agentProposalSchema = z.object({
   name: z.string().trim().max(100).nullable(),
   objective: z.string().trim().max(500).nullable(),
 }).superRefine((proposal, context) => {
+  if (proposal.tool === "create_workspace" && !proposal.objective) context.addIssue({ code: "custom", message: "A Workspace search objective is required." });
   if (proposal.tool === "create_workspace" && !proposal.name) context.addIssue({ code: "custom", message: "A Workspace name is required." });
   if (["create_task", "set_next_action"].includes(proposal.tool) && (!proposal.targetId || !proposal.title)) context.addIssue({ code: "custom", message: "An Opportunity and title are required." });
   if (proposal.tool === "create_note" && (!proposal.targetId || !proposal.body)) context.addIssue({ code: "custom", message: "An Opportunity and note are required." });
