@@ -38,6 +38,13 @@ test("stale Next Action approval preserves manual edits and explains recovery", 
     const input = page.getByLabel("Message Roleway Agent", { exact: true });
     for (const width of [1440, 390]) {
       await page.setViewportSize({ width, height: 900 });
+      if (width === 390) {
+        for (const name of ["Show Agent actions", "Show slash commands"]) {
+          const bounds = await page.getByRole("button", { name, exact: true }).boundingBox();
+          expect(bounds!.width).toBeGreaterThanOrEqual(44);
+          expect(bounds!.height).toBeGreaterThanOrEqual(44);
+        }
+      }
       await page.getByRole("button", { name: "Show Agent actions", exact: true }).click();
       await expect(page.getByRole("listbox", { name: "Agent actions" })).toBeVisible();
       await expect(page.getByRole("listbox", { name: "Agent actions" }).getByRole("option")).toHaveCount(13);

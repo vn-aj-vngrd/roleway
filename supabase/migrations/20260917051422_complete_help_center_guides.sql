@@ -7,7 +7,7 @@ An account and a focused career target. Have a Job listing you want to consider.
 1. Create a Workspace for your target role during onboarding. Use its objective and preferences to describe the search you want to run.
 2. Open Inbox and add a Job. Review captured company, title, source and description; fill any missing information before saving.
 3. Track the Job when it deserves your time. Open the resulting Opportunity, choose a stage and priority, and set one Next Action.
-4. Prepare in the Opportunity dossier: add notes, tasks, contacts and documents. Keep your Career Profile accurate before requesting Agent drafts.
+4. Prepare in the Opportunity dossier with tasks, contacts and documents. To save a note, connect a provider in Settings → Agent, then use Agent → Create → Note and approve the proposal. Saved notes appear under Activity → Notes. Keep your Career Profile accurate before requesting Agent drafts.
 5. Submit your application yourself. Return to the Opportunity and record the submission details and documents you used.
 6. Record an interview when one is arranged, prepare for it, then record the result. When the Opportunity ends, close it with its actual outcome.
 7. Return to Home for due work and to Insights for recorded activity. Repeat this process for the next suitable Job.
@@ -158,10 +158,10 @@ Relevant people and planned follow-ups stay connected to your search.
 - A follow-up date is a reminder in Roleway, not an automatically sent email.
 - Check the current Workspace if a contact seems missing. Avoid creating duplicates for the same relationship.$guide$, true),
 ('notes-and-evidence', 'Keep useful notes and accurate career context', 'Separate stored facts, preparation ideas, and unverified assumptions.', $guide$## Before you start
-An Opportunity for notes, or access to your account Profile settings.
+An Opportunity and a tested provider connection in Settings → Agent for creating notes, or access to your account Profile settings.
 
 ## Step by step
-1. Open the Opportunity and add notes from research, recruiter conversations or your own preparation.
+1. Open Agent, choose Create → Note, and identify the Opportunity. Tell Agent what to save from research, recruiter conversations or preparation, then review and approve the proposal. Open the saved result to read it under Activity → Notes.
 2. Record the source and date when they matter. Distinguish an employer’s statement from your interpretation.
 3. Maintain your name, headline and career summary in Settings → Profile. Review these facts before using Agent to prepare text.
 4. Check every generated draft against your actual experience and the source listing before reusing it.
