@@ -1,0 +1,208 @@
+.help-content.help-center,
+.help-content.help-guide {
+  max-width: 1120px;
+}
+.help-intro {
+  max-width: 680px;
+  margin-bottom: 28px;
+}
+.help-intro p,
+.help-summary {
+  color: var(--muted);
+  line-height: 1.7;
+}
+.help-guide-layout {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 48px;
+  margin-top: 36px;
+}
+.help-topic-nav {
+  display: flex;
+  flex-direction: column;
+  align-self: start;
+  position: sticky;
+  top: 24px;
+  gap: 4px;
+}
+.help-topic-nav a {
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: var(--muted);
+}
+.help-topic-nav a[aria-current],
+.help-topic-nav a:hover {
+  color: var(--ink);
+  background: var(--surface);
+}
+.help-topic-nav a[aria-current] {
+  font-weight: 600;
+}
+.help-start {
+  margin-bottom: 36px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--line);
+}
+.help-start h2,
+.help-topic-section > h2,
+.help-results-heading h2 {
+  font-size: 20px;
+  margin: 0 0 8px;
+}
+.help-start p,
+.help-topic-section > p,
+.help-results-heading p {
+  color: var(--muted);
+  line-height: 1.65;
+}
+.help-start > a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  color: var(--primary);
+}
+.help-start svg {
+  width: 16px;
+}
+.help-topic-section {
+  margin-bottom: 32px;
+}
+.help-center .help-article-list {
+  margin: 12px 0 0;
+}
+.help-center .help-article-list > a {
+  padding: 18px 0;
+}
+.help-article-list h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.help-article-list a:hover h3 {
+  color: var(--primary);
+}
+.help-results-heading {
+  margin-bottom: 24px;
+}
+.help-results-heading > a {
+  display: inline-block;
+  min-height: 44px;
+  padding-block: 10px;
+  color: var(--primary);
+}
+.help-breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.help-breadcrumb a {
+  padding-block: 8px;
+}
+.help-guide > header {
+  max-width: 740px;
+}
+.help-reading-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 220px;
+  gap: 48px;
+  margin-top: 32px;
+}
+.help-guide-body {
+  min-width: 0;
+  max-width: 70ch;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+.help-guide-body section {
+  margin-bottom: 24px;
+  scroll-margin-top: 24px;
+}
+.help-guide-body h2 {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+.help-guide-body ol,
+.help-guide-body ul {
+  padding-left: 24px;
+}
+.help-guide-body ol {
+  list-style: decimal;
+}
+.help-guide-body ul {
+  list-style: disc;
+}
+.help-guide-body li {
+  padding-left: 4px;
+  margin-bottom: 12px;
+}
+.help-guide-body li::marker {
+  color: var(--primary);
+  font-weight: 600;
+}
+.help-article-reference {
+  align-self: start;
+  position: sticky;
+  top: 24px;
+  font-size: 13px;
+}
+.help-article-reference h2 {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.help-article-reference a {
+  display: block;
+  padding-block: 8px;
+  color: var(--muted);
+}
+.help-article-reference a:hover {
+  color: var(--primary);
+  text-decoration: underline;
+}
+.help-article-reference section,
+.help-article-reference nav {
+  margin-bottom: 24px;
+}
+.help-content a:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+}
+@media (max-width: 760px) {
+  .help-guide-layout,
+  .help-reading-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+  }
+  .help-topic-nav,
+  .help-article-reference {
+    position: static;
+  }
+  .help-topic-nav {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 4px;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 16px;
+  }
+  .help-topic-nav a {
+    font-size: 13px;
+    min-height: 40px;
+  }
+  .help-article-reference {
+    border-top: 1px solid var(--line);
+    padding-top: 24px;
+  }
+  .help-content h1 {
+    font-size: 30px;
+  }
+  .help-center .management-search {
+    display: flex;
+  }
+}

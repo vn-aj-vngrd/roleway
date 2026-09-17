@@ -1,6 +1,7 @@
+import "./help-center.css";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { LogoMark } from "@/components/logo";
 export default function HelpLayout({
   children,
@@ -15,13 +16,13 @@ export default function HelpLayout({
           Roleway help
         </Link>
         <div className="action-row">
-          <Button variant="outline" render={<Link href="/home" />}>
+          <Link href="/home" className={buttonVariants({ variant: "outline" })}>
             <ArrowLeft />
             Back to app
-          </Button>
-          <Button variant="outline" render={<Link href="/" />}>
+          </Link>
+          <Link href="/" className={buttonVariants({ variant: "outline" })}>
             Website
-          </Button>
+          </Link>
         </div>
       </header>
       <main id="main-content">{children}</main>
