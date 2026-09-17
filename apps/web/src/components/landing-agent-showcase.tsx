@@ -26,7 +26,14 @@ export function LandingAgentShowcase() {
         <ul>
           <li>Explore your next steps, Opportunities, and follow-ups.</li>
           <li>Create Workspaces, tasks, notes, and Next Actions.</li>
-          <li>Get step-by-step guidance from the Help Center.</li>
+          <li>
+            <Link
+              href="/help/agent-create"
+              className="underline underline-offset-4"
+            >
+              Read the step-by-step creation guide.
+            </Link>
+          </li>
         </ul>
         <p className="rw-agent-detail">
           No form to work through. Agent asks for missing details, then shows a
