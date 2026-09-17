@@ -95,7 +95,7 @@ export function LandingAgentDemo() {
           }
         }
       },
-      { threshold: 0.25 },
+      { threshold: 0 },
     );
     if (root.current) observer.observe(root.current);
     preference.addEventListener("change", syncPreference);
@@ -141,25 +141,22 @@ export function LandingAgentDemo() {
           <Navigation aria-hidden="true" /> {example.label}
         </span>
         <div>
-          {!reduced && !complete && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="rw-agent-demo-control"
-              aria-label={playing ? "Pause sample" : "Resume sample"}
-              onClick={() => setPlaying((value) => !value)}
-            >
-              {playing ? <Pause /> : <Play />}
-            </Button>
-          )}
           <Button
             variant="ghost"
             size="icon"
             className="rw-agent-demo-control"
-            aria-label="Replay sample"
-            onClick={() => choose(selected)}
+            aria-label={
+              complete
+                ? "Replay sample"
+                : playing
+                  ? "Pause sample"
+                  : "Resume sample"
+            }
+            onClick={() =>
+              complete ? choose(selected) : setPlaying((value) => !value)
+            }
           >
-            <RotateCcw />
+            {complete ? <RotateCcw /> : playing ? <Pause /> : <Play />}
           </Button>
         </div>
       </header>

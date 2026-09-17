@@ -18,9 +18,12 @@ for (const width of [1440, 390]) {
     const demo = page.getByRole("figure", {
       name: "Agent sample conversation",
     });
-    await demo.scrollIntoViewIfNeeded();
+    // Finish the hero anchor scroll before testing viewport-gated playback.
+    await demo.evaluate((element) =>
+      element.scrollIntoView({ behavior: "instant", block: "center" }),
+    );
     const messages = demo.locator(".rw-agent-demo-message");
-    await demo.getByRole("button", { name: "Replay sample" }).click();
+    await demo.getByRole("button", { name: "Next steps", exact: true }).click();
     await expect(
       demo.getByRole("button", { name: "Pause sample" }),
     ).toBeVisible();
@@ -29,7 +32,13 @@ for (const width of [1440, 390]) {
     await page.waitForTimeout(2000);
     await expect(messages).toHaveCount(pausedCount);
     await demo.getByRole("button", { name: "Resume sample" }).click();
+    await demo.evaluate((element) =>
+      element.scrollIntoView({ behavior: "instant", block: "center" }),
+    );
     await expect(messages).toHaveCount(4);
+    await expect(
+      demo.getByRole("button", { name: "Replay sample" }),
+    ).toBeFocused();
     await expect(
       demo.getByText("We can shape your answer together.", { exact: false }),
     ).toBeVisible();
