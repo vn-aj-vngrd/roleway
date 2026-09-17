@@ -24,12 +24,16 @@ export function SmoothScroll({ children }: { children: ReactNode }) {
     () => false,
   );
 
-  if (pathname !== "/" || prefersReducedMotion) return children;
+  if (pathname !== "/") return children;
 
   return (
     <ReactLenis
       root
-      options={{ duration: 0.9, smoothWheel: true, anchors: true }}
+      options={{
+        duration: prefersReducedMotion ? 0 : 0.9,
+        smoothWheel: !prefersReducedMotion,
+        anchors: !prefersReducedMotion,
+      }}
     >
       {children}
     </ReactLenis>

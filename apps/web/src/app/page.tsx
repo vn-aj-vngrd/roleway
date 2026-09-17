@@ -1,10 +1,11 @@
 import { getPlans } from "@/features/billing/queries";
 import { PlanComparison } from "@/components/plan-comparison";
-import { ArrowRight, Check } from "lucide-react";
+import { ArrowRight, Check, Navigation } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { LandingProductPages } from "@/components/landing-product-pages";
 import { LandingWorkspacePreview } from "@/components/landing-workspace-preview";
+import { LandingAgentShowcase } from "@/components/landing-agent-showcase";
 import { LandingMotion } from "@/components/landing-motion";
 import { LogoMark } from "@/components/logo";
 import { ThemePicker } from "@/components/theme-picker";
@@ -77,6 +78,7 @@ export default async function HomePage() {
       <main id="main-content">
         <section className="rw-hero">
           <div className="rw-hero-heading">
+            <a href="#agent-proof" className="rw-agent-intro"><Navigation aria-hidden="true" /> Meet Agent · your AI job-search assistant <ArrowRight aria-hidden="true" /></a>
             <h1>Your job search, with a clear next move.</h1>
             <p className="rw-hero-subtitle">
               Give each target its own Workspace. Review promising roles, run
@@ -109,6 +111,7 @@ export default async function HomePage() {
           </div>
         </section>
 
+        <LandingAgentShowcase />
         <LandingProductPages />
 
         <section className="rw-problem">

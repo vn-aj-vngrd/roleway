@@ -12,12 +12,7 @@ import {
   CircleDashed,
   FileText,
   GitBranch,
-  History,
   Mail,
-  Navigation,
-  Plus,
-  Route,
-  Send,
   Settings2,
   SquareCheckBig,
   Target,
@@ -240,8 +235,8 @@ export function LandingProductPages() {
           See the whole search. Move one thing forward.
         </h2>
         <p>
-          One Workspace holds one focused search. Every view below is assembled
-          from the same components used inside Roleway—not a marketing mockup.
+          One Workspace holds one focused search. Explore the product views below, with illustrative records and the
+          same components used inside Roleway.
         </p>
       </header>
       <nav className="rw-product-page-index" aria-label="Product pages">
@@ -272,9 +267,6 @@ export function LandingProductPages() {
           <DocumentSurface />
         </ProductProof>
       </div>
-      <ProductProof page={productPages[6]}>
-        <AgentSurface />
-      </ProductProof>
       <ProductProof page={productPages[7]}>
         <InsightsSurface />
       </ProductProof>
@@ -1360,88 +1352,6 @@ function DocumentRow({
       <time className="muted small">{date}</time>
       <ChevronRight aria-hidden="true" />
     </a>
-  );
-}
-
-function AgentSurface() {
-  return (
-    <div className="agent-native-page has-conversation">
-      <header className="agent-native-routebar">
-        <details className="agent-history-menu">
-          <summary>
-            <History />
-            <span>Interview preparation</span>
-            <ChevronDown />
-          </summary>
-        </details>
-        <span className="agent-native-scope">
-          <Route />
-          All workspaces
-        </span>
-        <span className="agent-new-chat">
-          <Plus />
-          <span>New conversation</span>
-        </span>
-      </header>
-      <main className="agent-native-workplane">
-        <div className="agent-transcript">
-          <article className="agent-message user">
-            <header>
-              <span className="agent-message-author">You</span>
-              <time>10:14 AM</time>
-            </header>
-            <div className="agent-message-content">
-              <p>Prepare me for the Northstar system design interview.</p>
-            </div>
-          </article>
-          <article className="agent-message agent">
-            <header>
-              <span className="agent-message-author">
-                <Navigation />
-                Roleway Agent
-              </span>
-              <time>10:14 AM</time>
-            </header>
-            <div className="agent-message-content">
-              <p>
-                Start with two verified project stories, then connect each one
-                to the architecture trade-offs in this role.
-              </p>
-            </div>
-            <section className="agent-approval-card proposed">
-              <header>
-                <span>
-                  <Navigation />
-                  Approval required
-                </span>
-                <strong>Create task</strong>
-              </header>
-              <p>Add a preparation task due Friday.</p>
-              <footer>
-                <span className="button ghost">Reject</span>
-                <span className="button primary">Approve change</span>
-              </footer>
-            </section>
-          </article>
-        </div>
-        <section className="agent-native-composer">
-          <textarea
-            readOnly
-            value=""
-            placeholder="Ask across your workspaces…"
-          />
-          <footer>
-            <span className="agent-context-disclosure">
-              <Route />
-              Career Profile and all Workspace context
-            </span>
-            <span className="agent-send">
-              <Send />
-            </span>
-          </footer>
-        </section>
-      </main>
-    </div>
   );
 }
 

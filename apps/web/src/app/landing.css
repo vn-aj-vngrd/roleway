@@ -595,3 +595,50 @@ html[data-theme="dark"] .rw-next-slip { background: color-mix(in oklch, var(--rw
   .rw-button-small { min-height: 44px; }
   .rw-product-page-index a { min-height: 44px; }
 }
+
+/* The Agent sample is an interactive conversation, separate from inert product previews. */
+.rw-agent-intro { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; margin-bottom: 24px; color: var(--rw-muted); font-size: 13px; }
+.rw-agent-intro svg { width: 16px; height: 16px; flex: none; }
+.rw-agent-intro svg:first-child, .rw-agent-label { color: var(--rw-accent-text); }
+.rw-agent-intro:hover { color: var(--rw-ink); }
+.rw-agent-showcase { width: min(1180px, calc(100% - 48px)); margin: 0 auto; padding: 88px 0 104px; display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center; scroll-margin-top: 88px; }
+.rw-agent-copy { min-width: 0; }
+.rw-agent-label { display: flex; align-items: center; gap: 9px; font-size: 16px; font-weight: 600; }
+.rw-agent-label svg { width: 23px; height: 23px; }
+.rw-agent-copy h2 { margin: 20px 0 24px; font-size: clamp(34px, 3.4vw, 48px); font-weight: 600; line-height: 1.08; letter-spacing: -.035em; }
+.rw-agent-copy > p:not(.rw-agent-label) { color: var(--rw-muted); line-height: 1.75; }
+.rw-agent-copy ul { padding: 0; margin: 24px 0; list-style: none; display: grid; gap: 12px; font-size: 14px; line-height: 1.6; }
+.rw-agent-copy .rw-agent-detail { font-size: 13px; margin: 20px 0; }
+.rw-agent-demo { min-width: 0; margin: 0; border: 1px solid var(--rw-line-strong); border-radius: 12px; background: var(--rw-surface); overflow: hidden; }
+.rw-agent-demo-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 20px; border-bottom: 1px solid var(--rw-line); font-size: 13px; }
+.rw-agent-demo-header > span, .rw-agent-demo-header > div { display: flex; align-items: center; gap: 8px; }
+.rw-agent-demo svg { width: 16px; height: 16px; flex: none; }
+.rw-agent-demo .rw-agent-demo-control { min-width: 44px; min-height: 44px; }
+.rw-agent-demo .rw-agent-demo-control[aria-disabled="true"] { opacity: .5; cursor: not-allowed; }
+.rw-agent-demo-transcript { height: 408px; padding: 20px 24px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+.rw-agent-demo-transcript:focus-visible { outline: 2px solid var(--rw-accent); outline-offset: -3px; }
+.rw-agent-demo-date { text-align: center; color: var(--rw-muted); font-size: 13px; margin: 0 0 22px; }
+.rw-agent-demo-message { margin-bottom: 20px; animation: rw-agent-message-in 220ms ease-out both; }
+.rw-agent-demo-message > span { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+.rw-agent-demo-message p { font-size: 14px; line-height: 1.7; margin: 0; overflow-wrap: anywhere; }
+.rw-agent-demo-message.is-user { margin-left: 36px; }
+.rw-agent-demo-message.is-user > span { justify-content: flex-end; color: var(--rw-muted); font-weight: 400; }
+.rw-agent-demo-message.is-user p { background: var(--rw-surface-2); border-radius: 18px; padding: 12px 16px; }
+.rw-agent-demo-message.is-agent { margin-right: 12px; }
+.rw-agent-demo-typing { display: flex; align-items: center; gap: 8px; color: var(--rw-muted); font-size: 13px; }
+.rw-agent-demo-typing .is-playing { animation: rw-agent-typing 1s ease-in-out infinite alternate; }
+.rw-agent-demo-options { display: flex; flex-wrap: wrap; gap: 4px; border-top: 1px solid var(--rw-line); padding: 12px; }
+.rw-agent-demo-options button { min-height: 44px; padding: 0 12px; font-size: 13px; }
+.rw-agent-demo-options button[aria-pressed="true"] { background: var(--rw-accent-soft); color: var(--rw-accent-text); }
+.rw-agent-demo figcaption { padding: 0 24px 20px; font-size: 13px; line-height: 1.6; color: var(--rw-muted); }
+@keyframes rw-agent-message-in { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: none; } }
+@keyframes rw-agent-typing { from { opacity: .4; } to { opacity: 1; } }
+@media (max-width: 800px) {
+  .rw-agent-showcase { grid-template-columns: 1fr; gap: 32px; padding: 56px 0 64px; }
+  .rw-agent-demo-transcript { height: 380px; padding: 16px; }
+  .rw-agent-demo-header { padding-inline: 16px; }
+  .rw-agent-demo figcaption { padding-inline: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rw-agent-demo-message, .rw-agent-demo-typing .is-playing { animation: none; }
+}
