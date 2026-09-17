@@ -62,6 +62,7 @@ export function PlanComparison({
               </Button>
             ) : !billing ? (
               <Button
+                nativeButton={false}
                 render={
                   <Link
                     href={

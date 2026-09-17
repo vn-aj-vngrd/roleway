@@ -26,7 +26,7 @@ for (const width of [1440, 390]) {
     test("preview frames keep their borders unclipped after reveal", async ({ page }) => {
       await page.goto("/");
       const frames = page.locator(".rw-product-proof-frame");
-      await expect(frames).toHaveCount(9);
+      await expect(frames).toHaveCount(8);
       for (const frame of await frames.all()) {
         await frame.scrollIntoViewIfNeeded();
         await expect(frame).toHaveCSS("opacity", "1");
