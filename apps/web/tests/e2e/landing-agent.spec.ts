@@ -55,7 +55,16 @@ for (const width of [1440, 390]) {
         { exact: false },
       ),
     ).toBeVisible();
+    await demo.getByRole("button", { name: "Replay sample" }).focus();
     await page.emulateMedia({ reducedMotion: "reduce" });
+    await expect(
+      demo.getByRole("region", { name: "Sample messages" }),
+    ).toBeFocused();
+    await expect(
+      demo.getByRole("button", {
+        name: "Animation disabled for reduced motion",
+      }),
+    ).toBeDisabled();
     const taskSample = demo.getByRole("button", {
       name: "Create a task",
       exact: true,

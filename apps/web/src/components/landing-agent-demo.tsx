@@ -60,6 +60,7 @@ const examples = [
 export function LandingAgentDemo() {
   const root = useRef<HTMLElement>(null);
   const transcript = useRef<HTMLDivElement>(null);
+  const playback = useRef<HTMLButtonElement>(null);
   const [selected, setSelected] = useState(0);
   // Show useful content before hydration and for reduced-motion readers.
   const [shown, setShown] = useState<number>(examples[0].messages.length);
@@ -73,6 +74,9 @@ export function LandingAgentDemo() {
   useEffect(() => {
     const preference = window.matchMedia("(prefers-reduced-motion: reduce)");
     const syncPreference = () => {
+      if (preference.matches && document.activeElement === playback.current) {
+        transcript.current?.focus({ preventScroll: true });
+      }
       setReduced(preference.matches);
       if (preference.matches) {
         setPlaying(false);
@@ -142,15 +146,19 @@ export function LandingAgentDemo() {
         </span>
         <div>
           <Button
+            ref={playback}
+            disabled={reduced}
             variant="ghost"
             size="icon"
             className="rw-agent-demo-control"
             aria-label={
-              complete
-                ? "Replay sample"
-                : playing
-                  ? "Pause sample"
-                  : "Resume sample"
+              reduced
+                ? "Animation disabled for reduced motion"
+                : complete
+                  ? "Replay sample"
+                  : playing
+                    ? "Pause sample"
+                    : "Resume sample"
             }
             onClick={() =>
               complete ? choose(selected) : setPlaying((value) => !value)
