@@ -15,6 +15,7 @@ import { OpportunityDetailsEditor } from "@/components/opportunity-details-edito
 import { OpportunityPropertiesEditor } from "@/components/opportunity-properties-editor";
 import { OpportunityStageControl } from "@/components/opportunity-stage-control";
 import { OpportunityTaskCreate } from "@/components/opportunity-task-create";
+import { LocalDateTime } from "@/components/local-date-time";
 import { SubmitButton } from "@/components/submit-button";
 import { CountBadge, PillTabs } from "@/components/ui-primitives";
 import { Badge } from "@/components/ui/badge";
@@ -126,7 +127,7 @@ export default async function OpportunityPage(
 
           <section className="ticket-section ticket-tab-content tab-activity" id="notes" aria-labelledby="notes-heading">
             <div className="ticket-section-heading"><h2 id="notes-heading">Notes</h2></div>
-            {notesResult.error ? <p role="alert">Notes could not be loaded. Refresh to try again.</p> : notesResult.data?.length ? notesResult.data.map(note => <article key={note.id} className="ticket-section"><time className="muted small">{new Intl.DateTimeFormat("en", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(note.created_at))}</time><div className="rich-text-content" dangerouslySetInnerHTML={{ __html: richTextForEditor(note.body) }} /></article>) : <p className="ticket-empty-row">No notes yet.</p>}
+            {notesResult.error ? <p role="alert">Notes could not be loaded. Refresh to try again.</p> : notesResult.data?.length ? notesResult.data.map(note => <article key={note.id} className="ticket-section"><LocalDateTime value={note.created_at} /><div className="rich-text-content" dangerouslySetInnerHTML={{ __html: richTextForEditor(note.body) }} /></article>) : <p className="ticket-empty-row">No notes yet.</p>}
           </section>
 
           <section className="ticket-section ticket-tab-content tab-tasks ticket-subtasks" aria-labelledby="ticket-tasks-heading">

@@ -3,6 +3,8 @@ import { createClient } from "@supabase/supabase-js";
 import { randomBytes } from "node:crypto";
 import { createFixtureAccount } from "./auth-fixture";
 
+test.use({ timezoneId: "Asia/Manila" });
+
 test("stale Next Action approval preserves manual edits and explains recovery", async ({ page }) => {
   const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } });
   let userId = "";
@@ -159,6 +161,10 @@ test("all four Create actions save once, show progress and open their results", 
         await card.getByRole("link", { name: entry.open, exact: true }).click();
         await expect(page).toHaveURL(new RegExp(`/settings/workspaces/${newWorkspaceId}$`));
       } else {
+        if (entry.tool === "create_note") {
+          const timestamp = await admin.from("opportunity_notes").update({ created_at: "2026-09-16T16:30:00.000Z" }).eq("opportunity_id", opportunity.data.id);
+          if (timestamp.error) throw timestamp.error;
+        }
         await card.getByRole("button", { name: entry.open, exact: true }).click();
         await expect(page).toHaveURL(new RegExp(`/opportunities/${opportunity.data.id}`));
         if (entry.tool === "create_task") {
@@ -167,6 +173,7 @@ test("all four Create actions save once, show progress and open their results", 
           expect(saved.data).toHaveLength(1);
         } else if (entry.tool === "create_note") {
           await expect(page.locator("#notes")).toContainText("Recruiter prefers TypeScript examples.");
+          await expect(page.locator("#notes time")).toHaveText("Sep 17, 2026, 12:30 AM");
           const saved = await admin.from("opportunity_notes").select("id").eq("opportunity_id", opportunity.data.id);
           expect(saved.data).toHaveLength(1);
         } else {

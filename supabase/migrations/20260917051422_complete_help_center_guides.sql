@@ -295,10 +295,3 @@ Product configuration and support actions are managed through role-protected con
 - Being able to see a link does not grant admin permissions. Access denial for a regular user is expected.
 - Only inspect customer records for an authorized support purpose. Never ask for passwords or provider API secrets.$guide$, true)
 on conflict (slug) do nothing;
-
--- Upgrade the original creation guide's presentation without changing its instructions.
-update public.help_articles
-set body = regexp_replace(replace(body, 'Settings → AI', 'Settings → Agent'),
-  E'(^|\n\n)(Before you start|Start a creation conversation|Create a Workspace|Create a task|Add a note|Set a Next Action|Review, correct, or reject|If a change cannot be applied|What this version supports)\n',
-  E'\\1## \\2\n', 'g'), updated_at = now()
-where slug = 'agent-create' and body like 'Before you start%';

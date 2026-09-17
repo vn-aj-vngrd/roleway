@@ -60,4 +60,5 @@ jobs:
           psql -v ON_ERROR_STOP=1 -f supabase/tests/agent_transactions.sql
           psql -v ON_ERROR_STOP=1 -f supabase/tests/signup_admission.sql
           psql -v ON_ERROR_STOP=1 -f supabase/tests/plans_billing.sql
+          psql -v ON_ERROR_STOP=1 -f supabase/tests/help_content.sql
           node scripts/plan-concurrency.test.mjs
