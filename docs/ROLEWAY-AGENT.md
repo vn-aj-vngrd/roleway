@@ -13,6 +13,10 @@ This is the implementation contract and audit for the current Agent version. Rea
 
 **Complete when:** a person can discover an action, answer naturally without a creation form, review the destination and details, approve once, and find exactly one resulting record after reload.
 
+## Help Center
+
+The public guide at `/help/agent-create` explains setup, all four Create flows, approval, corrections and recovery. Agent links to it as **Creation guide**. The forward migration `20260917051125_agent_creation_help.sql` inserts it into the existing admin-editable Help Center; deploy that migration with the Agent interface. Existing editorial content is preserved if the slug already exists.
+
 ## Current capability boundary
 
 `apps/web/src/features/agent/capabilities.ts` owns the discoverable prompt catalog. Provider policy is in `apps/web/src/lib/ai/providers.ts`; shared schemas allow only the four mutation tools below. Database approval functions remain the execution authority.

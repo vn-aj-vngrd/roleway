@@ -85,6 +85,7 @@ export default async function AgentPage(props: { searchParams: Promise<AgentQuer
             </div>
           </div>
         </details>
+        <Link href="/help/agent-create" className="agent-help-link">Creation guide</Link>
         <span className="agent-native-scope"><Route aria-hidden="true" />All workspaces</span>
         <Link className="agent-new-chat" href="/agent"><Plus aria-hidden="true" /><span>New conversation</span></Link>
       </header>
