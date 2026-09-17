@@ -41,7 +41,7 @@ Explore offers Today/follow-ups, Workspaces, Opportunities, Inbox Jobs, tasks, i
 - Context is bounded: up to 100 active Opportunities and outstanding tasks, 60 Inbox Jobs/scheduled interviews/contacts/documents, 12 recent conversation messages and 20 recent proposal summaries/statuses. A snapshot is not exhaustive account search.
 - Career Profile includes name, headline and summary, plus career preferences. Full career evidence is not loaded.
 - Only a focused Opportunity includes a bounded plain-text Job description. Documents contribute metadata, not their contents. Notes and activity history are not currently read.
-- Provider answers must identify missing context rather than claim they inspected absent source material. Recent proposal states distinguish proposed, rejected and applied work.
+- Provider answers must identify missing context rather than claim they inspected absent source material. Recent proposal states distinguish proposed, rejected and applied work. The latest four valid proposals also include their exact sanitized fields for corrections; ask again when older details are absent. Contacts with follow-up dates are ordered by due date before the 60-record cap.
 - Provider output is untrusted. Validate proposal arguments, sanitize note content, verify targets, and use the atomic completion/approval database functions.
 - Approval rechecks ownership, destination, status, expiry and domain rules. Next Action proposals retain the pre-generation value/date so stale approvals preserve intervening edits.
 - Credentials remain encrypted and server-only. Redacted system events must never include prompts, document text, API keys or provider payloads.

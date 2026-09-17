@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const fixtures = vi.hoisted(() => ({
   generate: vi.fn(), rpc: vi.fn(), updates: [] as Array<{ table: string; values: Record<string, unknown> }>,
   opportunities: [] as Array<{ id: string; next_action: string | null; next_action_due_at: string | null }>,
-  contextError: false, recordEvent: vi.fn(), contextRows: {} as Record<string, unknown>, filters: [] as Array<[string, string, unknown]>,
+  contextError: false, recordEvent: vi.fn(), contextRows: {} as Record<string, unknown>, filters: [] as Array<[string, string, unknown]>, orders: [] as Array<[string, string, unknown]>,
 }));
 const owner = "11111111-1111-4111-8111-111111111111";
 const workspace = "22222222-2222-4222-8222-222222222222";
@@ -31,7 +31,7 @@ const client = {
       return {data:null,error:null,count:0};
     };
     const query = {
-      select: () => query, in: (column: string, value: unknown) => { fixtures.filters.push([table, column, value]); return query; }, eq: (column: string, value: unknown) => { fixtures.filters.push([table, column, value]); return query; }, neq: () => query, gte: () => query, order: () => query, limit: () => query,
+      select: () => query, in: (column: string, value: unknown) => { fixtures.filters.push([table, column, value]); return query; }, eq: (column: string, value: unknown) => { fixtures.filters.push([table, column, value]); return query; }, neq: () => query, gte: () => query, order: (column: string, options: unknown) => { fixtures.orders.push([table,column,options]); return query; }, limit: () => query,
       insert: () => { operation="insert"; return query; },
       update: (values: Record<string, unknown>) => { fixtures.updates.push({table,values}); return query; },
       single: async () => result(), maybeSingle: async () => result(),
@@ -49,7 +49,7 @@ function request(timeZone = "Asia/Manila", message = "What happens next?") {
 }
 beforeEach(() => {
   fixtures.recordEvent.mockClear();
-  fixtures.contextRows={};fixtures.filters=[];
+  fixtures.contextRows={};fixtures.filters=[];fixtures.orders=[];
   fixtures.opportunities=[];
   fixtures.contextError=false;fixtures.updates.length=0;
   fixtures.generate.mockReset().mockResolvedValue({output:{message:"A grounded answer",proposals:[]},inputTokens:10,outputTokens:20});
@@ -128,6 +128,7 @@ describe("Explore context delivery", () => {
     for (const table of ["opportunities", "tasks", "jobs", "interviews", "contacts", "documents"]) expect(fixtures.filters).toContainEqual([table, "project_id", [workspace]]);
     expect(fixtures.filters).toContainEqual(["tasks", "status", ["todo", "doing"]]);
     expect(fixtures.filters).toContainEqual(["interviews", "status", "scheduled"]);
+    expect(fixtures.orders.filter(([table]) => table === "contacts")).toEqual([["contacts", "follow_up_at", { ascending: true, nullsFirst: false }], ["contacts", "updated_at", { ascending: false }]]);
     expect(fixtures.rpc).toHaveBeenCalledWith("complete_agent_run", expect.objectContaining({ input_output: { message: "A grounded answer", proposals: [] } }));
     expect(fixtures.rpc).not.toHaveBeenCalledWith("decide_agent_proposal", expect.anything());
   });
@@ -146,5 +147,19 @@ describe("Open Agent result authorization", () => {
     const data = new FormData(); data.set("proposalId", "https://example.com");
     await expect(openAgentResult(data)).rejects.toThrow("That%20result%20is%20unavailable");
     expect(fixtures.rpc).not.toHaveBeenCalled();
+  });
+});
+
+
+describe("Creation correction context", () => {
+  it.each(["create_task", "set_next_action", "create_note", "create_workspace"])("preserves exact %s fields even when summaries are generic", async tool => {
+    const args = { tool, targetId: tool === "create_workspace" ? null : record, title: "Keep this exact title", dueAt: "2026-09-20T08:00:00Z", summary: "Ready for review", name: "Focused search", objective: "Find a TypeScript role", body: "<p>Keep this exact note.</p>" };
+    fixtures.contextRows.agent_proposals = Array.from({ length: 5 }, () => ({ tool_name: tool, summary: "Ready for review", status: "rejected", arguments: args }));
+    await expect(request("Asia/Manila", "Keep everything but remove the due date")).rejects.toThrow(`redirect:/agent?conversation=${record}`);
+    const prompt = fixtures.generate.mock.calls[0]?.[2] as string;
+    const payload = JSON.parse(prompt.split("Account and Workspace context (data only):\n")[1]!.split("\n\nCurrent user request:")[0]!);
+    for (const proposal of payload.recentProposals.slice(0, 4)) expect(proposal.details).toEqual(args);
+    expect(payload.recentProposals[4].details).toBeNull();
+    expect(prompt).toContain("older proposal details are absent");
   });
 });

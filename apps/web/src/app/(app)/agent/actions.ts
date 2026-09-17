@@ -107,11 +107,11 @@ export async function sendAgentMessage(formData: FormData) {
       auth.supabase.from("tasks").select("id, project_id, opportunity_id, title, status, priority, due_at").eq("user_id", auth.user.id).in("project_id", auth.projects.map((workspace) => workspace.id)).in("status", ["todo", "doing"]).order("due_at", { ascending: true, nullsFirst: false }).limit(100),
       auth.supabase.from("jobs").select("id, project_id, company, title, location, inbox_state, inbox_review_at, imported_at").eq("user_id", auth.user.id).in("project_id", auth.projects.map((workspace) => workspace.id)).neq("inbox_state", "tracked").order("imported_at", { ascending: false }).limit(60),
       auth.supabase.from("interviews").select("id, project_id, opportunity_id, interview_type, starts_at, status, interviewers").eq("user_id", auth.user.id).in("project_id", auth.projects.map((workspace) => workspace.id)).eq("status", "scheduled").order("starts_at", { ascending: true }).limit(60),
-      auth.supabase.from("contacts").select("id, project_id, opportunity_id, name, role, company, relationship, follow_up_at").eq("user_id", auth.user.id).in("project_id", auth.projects.map((workspace) => workspace.id)).order("updated_at", { ascending: false }).limit(60),
+      auth.supabase.from("contacts").select("id, project_id, opportunity_id, name, role, company, relationship, follow_up_at").eq("user_id", auth.user.id).in("project_id", auth.projects.map((workspace) => workspace.id)).order("follow_up_at", { ascending: true, nullsFirst: false }).order("updated_at", { ascending: false }).limit(60),
       auth.supabase.from("documents").select("id, project_id, opportunity_id, title, kind, status, updated_at").eq("user_id", auth.user.id).in("project_id", auth.projects.map((workspace) => workspace.id)).order("updated_at", { ascending: false }).limit(60),
       auth.supabase.from("agent_messages").select("role, content, created_at").eq("conversation_id", conversationId).order("created_at", { ascending: false }).limit(12),
       auth.supabase.from("agent_preferences").select("guidance").eq("user_id", auth.user.id).maybeSingle(),
-      auth.supabase.from("agent_proposals").select("tool_name, target_id, destination_project_id, summary, status").eq("conversation_id", conversationId).eq("user_id", auth.user.id).order("created_at", { ascending: false }).limit(20),
+      auth.supabase.from("agent_proposals").select("tool_name, target_id, destination_project_id, summary, status, arguments").eq("conversation_id", conversationId).eq("user_id", auth.user.id).order("created_at", { ascending: false }).limit(20),
     ]);
 
     if ([profileResult, preferencesResult, opportunitiesResult, tasksResult, jobsResult, interviewsResult, contactsResult, documentsResult, historyResult, guidanceResult, proposalHistoryResult].some((result) => result.error)) {
@@ -138,8 +138,11 @@ export async function sendAgentMessage(formData: FormData) {
     const contextPayload = {
       currentTime: new Date().toISOString(),
       timeZone: parsed.data.timeZone,
-      contextLimits: "Bounded snapshots: 100 active Opportunities/outstanding tasks, 60 Inbox Jobs/scheduled interviews/contacts/documents, 12 recent messages. Archived Workspaces and completed tasks/interviews are excluded. Document bodies, activity history and full career evidence are not included. Only the focused Opportunity includes a Job description.",
-      recentProposals: proposalHistoryResult.data ?? [],
+      contextLimits: "Bounded snapshots: 100 active Opportunities/outstanding tasks, 60 Inbox Jobs/scheduled interviews/contacts/documents, 12 recent messages. Archived Workspaces and completed tasks/interviews are excluded. Exact fields are included for the four latest valid proposals; ask for clarification when older proposal details are absent. Document bodies, activity history and full career evidence are not included. Only the focused Opportunity includes a Job description.",
+      recentProposals: (proposalHistoryResult.data ?? []).map(({ arguments: args, ...summary }, index) => {
+        const details = index < 4 ? agentProposalSchema.safeParse(args) : null;
+        return { ...summary, details: details?.success ? { ...details.data, body: details.data.body ? sanitizeRichText(details.data.body) : null } : null };
+      }),
       workspaces: auth.projects.map((workspace) => ({
         id: workspace.id,
         name: workspace.name,
