@@ -48,12 +48,12 @@ test("live OpenRouter answer → approval → persisted task", async ({page}) =>
     const before=await admin.from("tasks").select("id",{count:"exact",head:true}).eq("user_id",userId).eq("created_by","agent");
     expect(before.count).toBe(0);
     await card.getByRole("button",{name:"Approve change",exact:true}).click();
-    await expect(card.getByText("Applied",{exact:true})).toBeVisible();
+    await expect(card.getByText("Task created",{exact:true})).toBeVisible();
     const after=await admin.from("tasks").select("title,opportunity_id,project_id").eq("user_id",userId).eq("created_by","agent");
     expect(after.error).toBeNull();
     expect(after.data).toEqual([{title:"Prepare TypeScript examples",opportunity_id:opportunity.id,project_id:profile.active_project_id}]);
     await page.reload();
-    await expect(page.getByText("Applied",{exact:true})).toBeVisible();
+    await expect(page.getByText("Task created",{exact:true})).toBeVisible();
     for(const width of [1440,390]) {
       await page.setViewportSize({width,height:900});
       expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);

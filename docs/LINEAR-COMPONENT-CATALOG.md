@@ -467,7 +467,7 @@ Required Roleway variants:
 - Error with retry/recovery.
 - Interrupted/cancelled response.
 
-Messages should read like a working transcript, not speech bubbles. Use aligned document blocks, restrained avatars, and clear authorship.
+Roleway messages use restrained rounded bubbles with clear authorship, local timestamps above, and Copy beneath. See ROLEWAY-AGENT.md for the current Create/Explore contract.
 
 ### `AgentProgress`
 

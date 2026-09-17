@@ -1,6 +1,8 @@
 // OpenRouter free models may queue for minutes; leave time for bounded calls and persistence.
 export const maxDuration = 300;
 
+import "./agent-chat.css";
+import { AgentMessageInput, MessageActions, MessageTimestamp, SavedResultFocus } from "@/features/agent/chat-controls";
 import { formatOpportunityTicket } from "@roleway/core";
 import { Archive, Check, ChevronDown, Circle, History, KeyRound, Navigation, Plus, Route, Send, X } from "lucide-react";
 import Link from "next/link";
@@ -8,7 +10,7 @@ import { redirect } from "next/navigation";
 import { SubmitButton } from "@/components/submit-button";
 import { requireSearchContext } from "@/features/projects/context";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { archiveAgentConversation, decideAgentProposal, sendAgentMessage } from "./actions";
+import { archiveAgentConversation, decideAgentProposal, sendAgentMessage, openAgentResult } from "./actions";
 
 type Connection = { id: string; label: string; provider: string; model: string; status: string };
 type Opportunity = { id: string; project_id: string; reference_number: number; next_action: string | null; jobs: { company: string; title: string } | null };
@@ -18,7 +20,7 @@ type Run = { id: string; provider: string; model: string; status: string; input_
 type Step = { id: string; run_id: string; label: string; status: "pending" | "active" | "completed" | "failed"; position: number };
 type Proposal = { id: string; run_id: string; tool_name: string; target_id: string | null; destination_project_id: string | null; summary: string; arguments: Record<string, unknown>; status: string; created_at: string };
 
-type AgentQuery = { conversation?: string; opportunity?: string; error?: string; decision?: string };
+type AgentQuery = { conversation?: string; opportunity?: string; error?: string; decision?: string; record?: string; proposal?: string };
 
 export default async function AgentPage(props: { searchParams: Promise<AgentQuery> }) {
   const searchParams = await props.searchParams;
@@ -35,7 +37,10 @@ export default async function AgentPage(props: { searchParams: Promise<AgentQuer
   const readyConnections = connections.filter((connection) => connection.status === "connected");
   const opportunities = (opportunitiesResult.data ?? []) as unknown as Opportunity[];
   const conversations = (conversationsResult.data ?? []) as Conversation[];
-  const activeConversation = query.conversation ? conversations.find((conversation) => conversation.id === query.conversation) ?? null : null;
+  const { data: selectedConversation } = query.conversation
+    ? await context.supabase.from("agent_conversations").select("id, project_id, title, opportunity_id, updated_at").eq("id", query.conversation).eq("user_id", context.user.id).eq("status", "active").maybeSingle()
+    : { data: null };
+  const activeConversation = selectedConversation as Conversation | null;
   if (query.conversation && !activeConversation) redirect("/agent?error=That%20conversation%20is%20not%20available.");
 
   let messages: Message[] = [];
@@ -44,12 +49,12 @@ export default async function AgentPage(props: { searchParams: Promise<AgentQuer
   let proposals: Proposal[] = [];
   if (activeConversation) {
     const [messagesResult, runsResult, stepsResult, proposalsResult] = await Promise.all([
-      context.supabase.from("agent_messages").select("id, role, content, run_id, created_at").eq("conversation_id", activeConversation.id).order("created_at", { ascending: true }).limit(200),
-      context.supabase.from("ai_runs").select("id, provider, model, status, input_tokens, output_tokens, created_at").eq("conversation_id", activeConversation.id).order("created_at", { ascending: true }).limit(100),
+      context.supabase.from("agent_messages").select("id, role, content, run_id, created_at").eq("conversation_id", activeConversation.id).order("created_at", { ascending: false }).limit(200),
+      context.supabase.from("ai_runs").select("id, provider, model, status, input_tokens, output_tokens, created_at").eq("conversation_id", activeConversation.id).order("created_at", { ascending: false }).limit(100),
       context.supabase.from("agent_run_steps").select("id, run_id, label, status, position").eq("conversation_id", activeConversation.id).order("position", { ascending: true }).limit(300),
-      context.supabase.from("agent_proposals").select("id, run_id, tool_name, target_id, destination_project_id, summary, arguments, status, created_at").eq("conversation_id", activeConversation.id).order("created_at", { ascending: true }).limit(100),
+      context.supabase.from("agent_proposals").select("id, run_id, tool_name, target_id, destination_project_id, summary, arguments, status, created_at").eq("conversation_id", activeConversation.id).order("created_at", { ascending: false }).limit(100),
     ]);
-    messages = (messagesResult.data ?? []) as Message[];
+    messages = ((messagesResult.data ?? []) as Message[]).reverse();
     runs = (runsResult.data ?? []) as Run[];
     steps = (stepsResult.data ?? []) as Step[];
     proposals = (proposalsResult.data ?? []) as Proposal[];
@@ -80,12 +85,14 @@ export default async function AgentPage(props: { searchParams: Promise<AgentQuer
             </div>
           </div>
         </details>
+        <Link href="/help/agent-create" className="agent-help-link">Creation guide</Link>
         <span className="agent-native-scope"><Route aria-hidden="true" />All workspaces</span>
         <Link className="agent-new-chat" href="/agent"><Plus aria-hidden="true" /><span>New conversation</span></Link>
       </header>
 
+      {query.proposal && proposals.some(proposal => proposal.id === query.proposal && proposal.status === "applied") ? <SavedResultFocus proposalId={query.proposal} /> : null}
       {query.error ? <div className="agent-inline-state error" role="alert"><X aria-hidden="true" /><span>{query.error}</span></div> : null}
-      {query.decision === "applied" ? <div className="agent-inline-state success" role="status"><Check aria-hidden="true" /><span>Approved change applied. The originating record is up to date.</span></div> : null}
+      {query.decision === "applied" ? <div className="agent-inline-state success" role="status"><Check aria-hidden="true" /><span>Saved successfully. You can open the result below.</span></div> : null}
       {query.decision === "unchanged" ? <div className="agent-inline-state" role="status"><Circle aria-hidden="true" /><span>No change applied. If the proposal expired, ask Agent for a fresh proposal using your current records.</span></div> : null}
       {query.decision === "rejected" ? <div className="agent-inline-state" role="status"><Circle aria-hidden="true" /><span>Proposal rejected. No Roleway record changed.</span></div> : null}
 
@@ -97,20 +104,23 @@ export default async function AgentPage(props: { searchParams: Promise<AgentQuer
             const runProposals = message.run_id ? proposals.filter((proposal) => proposal.run_id === message.run_id) : [];
             return (
               <article className={`agent-message ${message.role}`} key={message.id}>
-                <header><span className="agent-message-author">{message.role === "agent" ? <><Navigation aria-hidden="true" />Roleway Agent</> : "You"}</span><time dateTime={message.created_at}>{messageTime(message.created_at)}</time></header>
+                <MessageTimestamp value={message.created_at} />
+                <header><span className="agent-message-author">{message.role === "agent" ? <><Navigation aria-hidden="true" />Roleway Agent</> : "You"}</span></header>
                 <div className="agent-message-content">{message.content.split(/\n{2,}/).map((paragraph, index) => <p key={index}>{paragraph}</p>)}</div>
+                <MessageActions content={message.content} />
                 {run && (message.role === "agent" || run.status === "failed") ? <AgentRunDetails run={run} steps={runSteps} /> : null}
-                {runProposals.map((proposal) => <ApprovalCard workspace={proposal.destination_project_id ? projectMap.get(proposal.destination_project_id)?.name ?? "Unavailable Workspace" : undefined} proposal={proposal} opportunity={proposal.target_id ? opportunityMap.get(proposal.target_id) : undefined} key={proposal.id} />)}
+                {(message.role === "agent" ? runProposals : []).map((proposal) => <ApprovalCard createdWorkspaceId={query.proposal === proposal.id && query.decision === "applied" && projectMap.has(query.record ?? "") ? query.record : undefined} workspace={proposal.destination_project_id ? projectMap.get(proposal.destination_project_id)?.name ?? "Unavailable Workspace" : undefined} proposal={proposal} opportunity={proposal.target_id ? opportunityMap.get(proposal.target_id) : undefined} key={proposal.id} />)}
               </article>
             );
           })}
         </div> : <div className="agent-empty-state">
           <div className="agent-waypoint-watermark" aria-hidden="true"><Navigation /></div>
           <div className="agent-empty-copy"><h1>Ask across your search.</h1><p>Agent can read context from all of your Workspaces. It answers questions, prepares drafts, and proposes Workspace-specific changes for your approval.</p></div>
-          <div className="agent-prompt-examples" aria-label="Example questions"><span>What needs attention today?</span><span>Prepare me for my next interview.</span><span>Create a follow-up task for Friday.</span></div>
+          <p className="agent-prompt-examples">Use + or / below to create work or explore your search.</p>
         </div>}
 
         <AgentComposer
+          messageKey={messages.at(-1)?.id ?? "new"}
           conversationId={activeConversation?.id ?? ""}
           connections={readyConnections}
           opportunities={opportunities}
@@ -122,12 +132,11 @@ export default async function AgentPage(props: { searchParams: Promise<AgentQuer
   );
 }
 
-function AgentComposer({ conversationId, connections, opportunities, focusedOpportunityId, projects }: { conversationId: string; connections: Connection[]; opportunities: Opportunity[]; focusedOpportunityId: string; projects: Map<string, { name: string; ticketKey: string }> }) {
+function AgentComposer({ messageKey, conversationId, connections, opportunities, focusedOpportunityId, projects }: { messageKey: string; conversationId: string; connections: Connection[]; opportunities: Opportunity[]; focusedOpportunityId: string; projects: Map<string, { name: string; ticketKey: string }> }) {
   if (!connections.length) return <section className="agent-native-composer agent-composer-disabled" aria-label="Connect an AI provider to use Agent"><label className="sr-only" htmlFor="disabled-agent-message">Message Roleway Agent</label><textarea id="disabled-agent-message" disabled placeholder="Connect a provider to ask Agent…" /><footer><span className="agent-context-disclosure"><KeyRound aria-hidden="true" />Your API key is encrypted before storage</span><Link className="agent-setup-link" href="/settings/ai">Set up connection</Link></footer></section>;
-  return <form action={sendAgentMessage} className="agent-native-composer">
+  return <form action={sendAgentMessage} className="agent-native-composer" key={conversationId}>
     <input type="hidden" name="conversationId" value={conversationId} />
-    <label className="sr-only" htmlFor="agent-message">Message Roleway Agent</label>
-    <textarea id="agent-message" name="message" maxLength={4000} required placeholder="Ask across your workspaces…" autoFocus={!conversationId} />
+    <AgentMessageInput key={messageKey} />
     <footer>
       <div className="agent-composer-context">
         <label><span>Provider</span><select name="connectionId" aria-label="Agent provider" defaultValue={connections[0]?.id}>{connections.map((connection) => <option value={connection.id} key={connection.id}>{connection.label} · {connection.model}</option>)}</select></label>
@@ -146,17 +155,18 @@ function AgentRunDetails({ run, steps }: { run: Run; steps: Step[] }) {
   </details>;
 }
 
-function ApprovalCard({ proposal, opportunity, workspace }: { proposal: Proposal; opportunity: Opportunity | undefined; workspace: string | undefined }) {
+function ApprovalCard({ proposal, opportunity, workspace, createdWorkspaceId }: { createdWorkspaceId: string | undefined; proposal: Proposal; opportunity: Opportunity | undefined; workspace: string | undefined }) {
+  const feedback = creationFeedback[proposal.tool_name];
   const details = proposalDetails(proposal, opportunity);
   if (workspace) details.unshift(["Workspace", workspace]);
-  return <section className={`agent-approval-card ${proposal.status}`} aria-label="Agent proposed change">
-    <header><span><Navigation aria-hidden="true" />Approval required</span><strong>{toolLabel(proposal.tool_name)}</strong></header>
+  return <section id={`proposal-${proposal.id}`} className={`agent-approval-card ${proposal.status}`} aria-label="Agent proposed change">
+    <header><span><Navigation aria-hidden="true" />{proposal.status === "proposed" ? "Approval required" : proposal.status === "applied" ? "Saved result" : "Proposal"}</span><strong>{toolLabel(proposal.tool_name)}</strong></header>
     <p>{proposal.summary}</p>
     <dl>{details.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
     {proposal.status === "proposed" ? <footer>
       <form action={decideAgentProposal}><input type="hidden" name="proposalId" value={proposal.id} /><input type="hidden" name="decision" value="reject" /><SubmitButton className="button ghost" pendingLabel="Rejecting…">Reject</SubmitButton></form>
-      <form action={decideAgentProposal}><input type="hidden" name="proposalId" value={proposal.id} /><input type="hidden" name="decision" value="approve" /><SubmitButton pendingLabel="Applying…">Approve change</SubmitButton></form>
-    </footer> : <div className="agent-approval-outcome"><span className={`agent-proposal-status ${proposal.status}`}><Check aria-hidden="true" />{proposal.status === "applied" ? "Applied" : proposal.status === "rejected" ? "Rejected" : proposal.status === "failed" ? "Could not apply" : proposal.status}</span></div>}
+      <form action={decideAgentProposal}><input type="hidden" name="proposalId" value={proposal.id} /><input type="hidden" name="decision" value="approve" /><SubmitButton pendingLabel={feedback?.pending ?? "Saving…"}>Approve change</SubmitButton></form>
+    </footer> : <div className="agent-approval-outcome" tabIndex={-1}><span className={`agent-proposal-status ${proposal.status}`}><Check aria-hidden="true" />{proposal.status === "applied" ? feedback?.success ?? "Saved" : proposal.status === "rejected" ? "Rejected" : proposal.status === "failed" ? "Could not apply" : proposal.status}</span>{proposal.status === "applied" ? proposal.tool_name === "create_workspace" ? <Link className="button secondary" href={createdWorkspaceId ? `/settings/workspaces/${createdWorkspaceId}` : "/settings/workspaces"}>{createdWorkspaceId ? "Open Workspace" : "View Workspaces"}</Link> : <form action={openAgentResult}><input type="hidden" name="proposalId" value={proposal.id} /><SubmitButton variant="outline" pendingLabel="Opening…">{feedback?.open ?? "Open Opportunity"}</SubmitButton></form> : null}</div>}
   </section>;
 }
 
@@ -178,6 +188,9 @@ function relativeDate(value: string) {
   return days === 0 ? "Today" : days === 1 ? "Yesterday" : `${days}d ago`;
 }
 
-function messageTime(value: string) {
-  return new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(new Date(value));
-}
+const creationFeedback: Record<string, { pending: string; success: string; open: string }> = {
+  create_workspace: { pending: "Creating Workspace…", success: "Workspace created", open: "Open Workspace" },
+  create_task: { pending: "Creating task…", success: "Task created", open: "Open task" },
+  create_note: { pending: "Creating note…", success: "Note created", open: "Open note" },
+  set_next_action: { pending: "Setting Next Action…", success: "Next Action saved", open: "Open Next Action" },
+};

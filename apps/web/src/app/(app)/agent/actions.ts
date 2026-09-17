@@ -1,5 +1,6 @@
 "use server";
 
+import { capacityError } from "@/features/billing/types";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { agentProposalSchema } from "@roleway/schemas";
@@ -15,6 +16,7 @@ const sendSchema = z.object({
   conversationId: z.union([z.literal(""), z.string().uuid()]).default(""),
   connectionId: z.string().uuid(),
   opportunityId: z.union([z.literal(""), z.string().uuid()]).default(""),
+  timeZone: z.string().max(100).refine(value => { try { new Intl.DateTimeFormat("en", { timeZone: value }); return true; } catch { return false; } }, "Choose a valid timezone.").default("UTC"),
   message: z.string().trim().min(1, "Write a question or request.").max(4000),
 });
 
@@ -98,20 +100,21 @@ export async function sendAgentMessage(formData: FormData) {
 
   let failureCode = "context_read_failed";
   try {
-    const [profileResult, preferencesResult, opportunitiesResult, tasksResult, jobsResult, interviewsResult, contactsResult, documentsResult, historyResult, guidanceResult] = await Promise.all([
+    const [profileResult, preferencesResult, opportunitiesResult, tasksResult, jobsResult, interviewsResult, contactsResult, documentsResult, historyResult, guidanceResult, proposalHistoryResult] = await Promise.all([
       auth.supabase.from("profiles").select("full_name, headline, summary").eq("user_id", auth.user.id).maybeSingle(),
       auth.supabase.from("career_preferences").select("target_titles, preferred_technologies, allowed_locations, remote_preference, minimum_compensation, currency, excluded_criteria").eq("user_id", auth.user.id).maybeSingle(),
       auth.supabase.from("opportunities").select("id, project_id, reference_number, stage, priority, next_action, next_action_due_at, updated_at, jobs(company, title, description, location, compensation, remote_policy)").eq("user_id", auth.user.id).in("project_id", auth.projects.map((workspace) => workspace.id)).neq("stage", "closed").order("updated_at", { ascending: false }).limit(100),
-      auth.supabase.from("tasks").select("id, project_id, opportunity_id, title, status, priority, due_at").eq("user_id", auth.user.id).neq("status", "cancelled").order("due_at", { ascending: true, nullsFirst: false }).limit(100),
-      auth.supabase.from("jobs").select("id, project_id, company, title, location, inbox_state, inbox_review_at, imported_at").eq("user_id", auth.user.id).neq("inbox_state", "tracked").order("imported_at", { ascending: false }).limit(60),
-      auth.supabase.from("interviews").select("id, project_id, opportunity_id, interview_type, starts_at, status, interviewers").eq("user_id", auth.user.id).order("starts_at", { ascending: true }).limit(60),
-      auth.supabase.from("contacts").select("id, project_id, opportunity_id, name, role, company, relationship, follow_up_at").eq("user_id", auth.user.id).order("updated_at", { ascending: false }).limit(60),
-      auth.supabase.from("documents").select("id, project_id, opportunity_id, title, kind, status, updated_at").eq("user_id", auth.user.id).order("updated_at", { ascending: false }).limit(60),
+      auth.supabase.from("tasks").select("id, project_id, opportunity_id, title, status, priority, due_at").eq("user_id", auth.user.id).in("project_id", auth.projects.map((workspace) => workspace.id)).in("status", ["todo", "doing"]).order("due_at", { ascending: true, nullsFirst: false }).limit(100),
+      auth.supabase.from("jobs").select("id, project_id, company, title, location, inbox_state, inbox_review_at, imported_at").eq("user_id", auth.user.id).in("project_id", auth.projects.map((workspace) => workspace.id)).neq("inbox_state", "tracked").order("imported_at", { ascending: false }).limit(60),
+      auth.supabase.from("interviews").select("id, project_id, opportunity_id, interview_type, starts_at, status, interviewers").eq("user_id", auth.user.id).in("project_id", auth.projects.map((workspace) => workspace.id)).eq("status", "scheduled").order("starts_at", { ascending: true }).limit(60),
+      auth.supabase.from("contacts").select("id, project_id, opportunity_id, name, role, company, relationship, follow_up_at").eq("user_id", auth.user.id).in("project_id", auth.projects.map((workspace) => workspace.id)).order("follow_up_at", { ascending: true, nullsFirst: false }).order("updated_at", { ascending: false }).limit(60),
+      auth.supabase.from("documents").select("id, project_id, opportunity_id, title, kind, status, updated_at").eq("user_id", auth.user.id).in("project_id", auth.projects.map((workspace) => workspace.id)).order("updated_at", { ascending: false }).limit(60),
       auth.supabase.from("agent_messages").select("role, content, created_at").eq("conversation_id", conversationId).order("created_at", { ascending: false }).limit(12),
       auth.supabase.from("agent_preferences").select("guidance").eq("user_id", auth.user.id).maybeSingle(),
+      auth.supabase.from("agent_proposals").select("tool_name, target_id, destination_project_id, summary, status, arguments").eq("conversation_id", conversationId).eq("user_id", auth.user.id).order("created_at", { ascending: false }).limit(20),
     ]);
 
-    if ([profileResult, preferencesResult, opportunitiesResult, tasksResult, jobsResult, interviewsResult, contactsResult, documentsResult, historyResult, guidanceResult].some((result) => result.error)) {
+    if ([profileResult, preferencesResult, opportunitiesResult, tasksResult, jobsResult, interviewsResult, contactsResult, documentsResult, historyResult, guidanceResult, proposalHistoryResult].some((result) => result.error)) {
       throw new Error("context_read_failed");
     }
     const opportunities = (opportunitiesResult.data ?? []).map((opportunity) => {
@@ -133,6 +136,13 @@ export async function sendAgentMessage(formData: FormData) {
     failureCode = "provider_request_failed";
     const history = (historyResult.data ?? []).reverse().map((message) => ({ role: message.role, content: message.content.slice(0, 6000) }));
     const contextPayload = {
+      currentTime: new Date().toISOString(),
+      timeZone: parsed.data.timeZone,
+      contextLimits: "Bounded snapshots: 100 active Opportunities/outstanding tasks, 60 Inbox Jobs/scheduled interviews/contacts/documents, 12 recent messages. Archived Workspaces and completed tasks/interviews are excluded. Exact fields are included for the four latest valid proposals; ask for clarification when older proposal details are absent. Document bodies, activity history and full career evidence are not included. Only the focused Opportunity includes a Job description.",
+      recentProposals: (proposalHistoryResult.data ?? []).map(({ arguments: args, ...summary }, index) => {
+        const details = index < 4 ? agentProposalSchema.safeParse(args) : null;
+        return { ...summary, details: details?.success ? { ...details.data, body: details.data.body ? sanitizeRichText(details.data.body) : null } : null };
+      }),
       workspaces: auth.projects.map((workspace) => ({
         id: workspace.id,
         name: workspace.name,
@@ -212,7 +222,8 @@ export async function decideAgentProposal(formData: FormData) {
   });
   if (error) {
     await recordSystemEvent({ category: "ai", code: "agent_tool_failed", userId: auth.user.id, metadata: { tool: proposal.tool_name } });
-    redirect(`${conversationHref}&error=The%20change%20could%20not%20be%20applied.%20Nothing%20was%20changed;%20review%20the%20target%20and%20retry.`);
+    const message = capacityError(error, "The change could not be applied. Nothing was changed; review the target and retry.");
+    redirect(`${conversationHref}&error=${encodeURIComponent(message)}`);
   }
 
   revalidatePath("/agent");
@@ -220,7 +231,7 @@ export async function decideAgentProposal(formData: FormData) {
   revalidatePath("/opportunities");
   if (proposal.target_id) revalidatePath(`/opportunities/${proposal.target_id}`);
   revalidatePath("/settings/workspaces");
-  redirect(`${conversationHref}&decision=${parsed.data.decision === "reject" ? "rejected" : appliedRecordId ? "applied" : "unchanged"}&record=${appliedRecordId ?? ""}`);
+  redirect(`${conversationHref}&decision=${parsed.data.decision === "reject" ? "rejected" : appliedRecordId ? "applied" : "unchanged"}&record=${appliedRecordId ?? ""}&proposal=${proposal.id}#proposal-${proposal.id}`);
 }
 
 export async function archiveAgentConversation(formData: FormData) {
@@ -230,4 +241,24 @@ export async function archiveAgentConversation(formData: FormData) {
   await auth.supabase.from("agent_conversations").update({ status: "archived" }).eq("id", conversationId.data).eq("user_id", auth.user.id);
   revalidatePath("/agent");
   redirect("/agent");
+}
+
+/** Open only an applied, owned proposal and switch to its verified destination. */
+export async function openAgentResult(formData: FormData) {
+  const id = z.string().uuid().safeParse(formData.get("proposalId"));
+  const auth = await authenticated();
+  if (!id.success) redirect("/agent?error=That%20result%20is%20unavailable.");
+  const { data: proposal } = await auth.supabase.from("agent_proposals")
+    .select("conversation_id, tool_name, target_id, destination_project_id")
+    .eq("id", id.data).eq("user_id", auth.user.id).eq("status", "applied").maybeSingle();
+  if (!proposal?.target_id || !proposal.destination_project_id) redirect("/agent?error=That%20result%20is%20unavailable.");
+  const { data: target } = await auth.supabase.from("opportunities").select("id")
+    .eq("id", proposal.target_id).eq("project_id", proposal.destination_project_id).eq("user_id", auth.user.id).maybeSingle();
+  const failureHref = `/agent?conversation=${proposal.conversation_id}&error=The%20result%20is%20no%20longer%20available.`;
+  if (!target) redirect(failureHref);
+  const { error } = await auth.supabase.rpc("set_active_search_project", { input_project_id: proposal.destination_project_id });
+  if (error) redirect(failureHref);
+  revalidatePath("/", "layout");
+  const section = proposal.tool_name === "create_task" ? "?tab=tasks" : proposal.tool_name === "create_note" ? "?tab=activity#notes" : "#next-action";
+  redirect(`/opportunities/${target.id}${section}`);
 }

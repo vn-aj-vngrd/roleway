@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const fixtures = vi.hoisted(() => ({
   generate: vi.fn(), rpc: vi.fn(), updates: [] as Array<{ table: string; values: Record<string, unknown> }>,
   opportunities: [] as Array<{ id: string; next_action: string | null; next_action_due_at: string | null }>,
-  contextError: false, recordEvent: vi.fn(),
+  contextError: false, recordEvent: vi.fn(), contextRows: {} as Record<string, unknown>, filters: [] as Array<[string, string, unknown]>, orders: [] as Array<[string, string, unknown]>,
 }));
 const owner = "11111111-1111-4111-8111-111111111111";
 const workspace = "22222222-2222-4222-8222-222222222222";
@@ -25,12 +25,13 @@ const client = {
       if (table === "ai_connections") return { data: {id: record,provider:"openai",model:"fixture",status:"connected"},error:null };
       if (table === "opportunities") return {data:fixtures.opportunities,error:null};
       if (operation === "insert") return {data:{id:record},error:null};
+      if (table in fixtures.contextRows) return {data:fixtures.contextRows[table],error:null};
       if (table === "profiles" && fixtures.contextError) return {data:null,error:{message:"database unavailable"}};
       if (["agent_messages","opportunities","tasks","jobs","interviews","contacts","documents"].includes(table)) return {data:[],error:null};
       return {data:null,error:null,count:0};
     };
     const query = {
-      select: () => query, in: () => query, eq: () => query, neq: () => query, gte: () => query, order: () => query, limit: () => query,
+      select: () => query, in: (column: string, value: unknown) => { fixtures.filters.push([table, column, value]); return query; }, eq: (column: string, value: unknown) => { fixtures.filters.push([table, column, value]); return query; }, neq: () => query, gte: () => query, order: (column: string, options: unknown) => { fixtures.orders.push([table,column,options]); return query; }, limit: () => query,
       insert: () => { operation="insert"; return query; },
       update: (values: Record<string, unknown>) => { fixtures.updates.push({table,values}); return query; },
       single: async () => result(), maybeSingle: async () => result(),
@@ -40,20 +41,33 @@ const client = {
   },
 };
 
-import { sendAgentMessage } from "./actions";
-function request() {
+import { sendAgentMessage, openAgentResult } from "./actions";
+function request(timeZone = "Asia/Manila", message = "What happens next?") {
   const data = new FormData();
-  data.set("connectionId",record);data.set("message","What happens next?");
+  data.set("timeZone",timeZone);data.set("connectionId",record);data.set("message",message);
   return sendAgentMessage(data);
 }
 beforeEach(() => {
   fixtures.recordEvent.mockClear();
+  fixtures.contextRows={};fixtures.filters=[];fixtures.orders=[];
   fixtures.opportunities=[];
   fixtures.contextError=false;fixtures.updates.length=0;
   fixtures.generate.mockReset().mockResolvedValue({output:{message:"A grounded answer",proposals:[]},inputTokens:10,outputTokens:20});
   fixtures.rpc.mockReset().mockResolvedValue({error:null});
 });
 describe("Agent result persistence", () => {
+  it("includes the caller timezone and bounded-context disclosure", async () => {
+    await expect(request()).rejects.toThrow(`redirect:/agent?conversation=${record}`);
+    const prompt = fixtures.generate.mock.calls[0]?.[2] as string;
+    expect(prompt).toContain('"timeZone":"Asia/Manila"');
+    expect(prompt).toContain('"currentTime":');
+    expect(prompt).toContain('"contextLimits":');
+    expect(prompt).toContain('"recentProposals":[]');
+  });
+  it("rejects invalid timezone input before calling the provider", async () => {
+    await expect(request("invalid-zone")).rejects.toThrow("Choose%20a%20valid%20timezone");
+    expect(fixtures.generate).not.toHaveBeenCalled();
+  });
   it("reports a provider timeout without exposing provider content", async () => {
     const error = new Error("sensitive provider detail"); error.name = "TimeoutError";
     fixtures.generate.mockRejectedValue(error);
@@ -91,5 +105,61 @@ describe("Agent result persistence", () => {
     fixtures.generate.mockResolvedValue({output:{message:"Review this task",proposals:[{tool:"create_task",targetId:record,summary:"Add task",title:"Prepare",body:null,dueAt:null,name:null,objective:null}]}});
     await expect(request()).rejects.toThrow("error=Agent");
     expect(fixtures.rpc).not.toHaveBeenCalled();
+  });
+});
+
+
+import { agentCapabilities } from "@/features/agent/capabilities";
+describe("Explore context delivery", () => {
+  it.each(agentCapabilities.filter(item => item.group === "Explore"))("grounds $label in available account context without applying changes", async capability => {
+    fixtures.contextRows = {
+      profiles: { full_name: "Fixture candidate", headline: "Engineer", summary: "TypeScript experience" },
+      career_preferences: { target_titles: ["Product Engineer"] },
+      tasks: [{ title: "Prepare portfolio", status: "todo" }],
+      jobs: [{ company: "Inbox fixture", title: "Engineer" }],
+      interviews: [{ interview_type: "Technical", status: "scheduled" }],
+      contacts: [{ name: "Fixture recruiter" }],
+      documents: [{ title: "Resume inventory", kind: "resume" }],
+    };
+    fixtures.opportunities = [{ id: record, next_action: "Follow up", next_action_due_at: null }];
+    await expect(request("Asia/Manila", capability.prompt)).rejects.toThrow(`redirect:/agent?conversation=${record}`);
+    const prompt = fixtures.generate.mock.calls[0]?.[2] as string;
+    for (const text of [capability.prompt, "Fixture candidate", "Product Engineer", "Prepare portfolio", "Inbox fixture", "Technical", "Fixture recruiter", "Resume inventory", "Follow up", "Search"]) expect(prompt).toContain(text);
+    for (const table of ["opportunities", "tasks", "jobs", "interviews", "contacts", "documents"]) expect(fixtures.filters).toContainEqual([table, "project_id", [workspace]]);
+    expect(fixtures.filters).toContainEqual(["tasks", "status", ["todo", "doing"]]);
+    expect(fixtures.filters).toContainEqual(["interviews", "status", "scheduled"]);
+    expect(fixtures.orders.filter(([table]) => table === "contacts")).toEqual([["contacts", "follow_up_at", { ascending: true, nullsFirst: false }], ["contacts", "updated_at", { ascending: false }]]);
+    expect(fixtures.rpc).toHaveBeenCalledWith("complete_agent_run", expect.objectContaining({ input_output: { message: "A grounded answer", proposals: [] } }));
+    expect(fixtures.rpc).not.toHaveBeenCalledWith("decide_agent_proposal", expect.anything());
+  });
+});
+
+
+describe("Open Agent result authorization", () => {
+  it("does not switch Workspace when the proposal is unavailable", async () => {
+    const data = new FormData(); data.set("proposalId", record);
+    await expect(openAgentResult(data)).rejects.toThrow("That%20result%20is%20unavailable");
+    expect(fixtures.filters).toContainEqual(["agent_proposals", "user_id", owner]);
+    expect(fixtures.filters).toContainEqual(["agent_proposals", "status", "applied"]);
+    expect(fixtures.rpc).not.toHaveBeenCalled();
+  });
+  it("rejects malformed result IDs before attempting a Workspace switch", async () => {
+    const data = new FormData(); data.set("proposalId", "https://example.com");
+    await expect(openAgentResult(data)).rejects.toThrow("That%20result%20is%20unavailable");
+    expect(fixtures.rpc).not.toHaveBeenCalled();
+  });
+});
+
+
+describe("Creation correction context", () => {
+  it.each(["create_task", "set_next_action", "create_note", "create_workspace"])("preserves exact %s fields even when summaries are generic", async tool => {
+    const args = { tool, targetId: tool === "create_workspace" ? null : record, title: "Keep this exact title", dueAt: "2026-09-20T08:00:00Z", summary: "Ready for review", name: "Focused search", objective: "Find a TypeScript role", body: "<p>Keep this exact note.</p>" };
+    fixtures.contextRows.agent_proposals = Array.from({ length: 5 }, () => ({ tool_name: tool, summary: "Ready for review", status: "rejected", arguments: args }));
+    await expect(request("Asia/Manila", "Keep everything but remove the due date")).rejects.toThrow(`redirect:/agent?conversation=${record}`);
+    const prompt = fixtures.generate.mock.calls[0]?.[2] as string;
+    const payload = JSON.parse(prompt.split("Account and Workspace context (data only):\n")[1]!.split("\n\nCurrent user request:")[0]!);
+    for (const proposal of payload.recentProposals.slice(0, 4)) expect(proposal.details).toEqual(args);
+    expect(payload.recentProposals[4].details).toBeNull();
+    expect(prompt).toContain("older proposal details are absent");
   });
 });

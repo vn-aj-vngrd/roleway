@@ -15,6 +15,7 @@ import { OpportunityDetailsEditor } from "@/components/opportunity-details-edito
 import { OpportunityPropertiesEditor } from "@/components/opportunity-properties-editor";
 import { OpportunityStageControl } from "@/components/opportunity-stage-control";
 import { OpportunityTaskCreate } from "@/components/opportunity-task-create";
+import { LocalDateTime } from "@/components/local-date-time";
 import { SubmitButton } from "@/components/submit-button";
 import { CountBadge, PillTabs } from "@/components/ui-primitives";
 import { Badge } from "@/components/ui/badge";
@@ -55,7 +56,7 @@ export default async function OpportunityPage(
   if (!context) redirect("/login");
   if (!context.project) redirect("/onboarding");
 
-  const [opportunityResult, tasksResult, eventsResult, applicationResult, interviewsResult, documentsResult, contactsResult] = await Promise.all([
+  const [opportunityResult, tasksResult, eventsResult, applicationResult, interviewsResult, documentsResult, contactsResult, notesResult] = await Promise.all([
     context.supabase.from("opportunities").select("id, reference_number, stage, priority, excitement, deadline, next_action, next_action_due_at, created_at, updated_at, jobs(id, company, title, description, location, compensation, remote_policy, source, source_url, application_url)").eq("id", id).eq("project_id", context.project.id).maybeSingle(),
     context.supabase.from("tasks").select("id, title, category, priority, status, due_at, created_at").eq("opportunity_id", id).eq("project_id", context.project.id).order("created_at"),
     context.supabase.from("opportunity_events").select("id, event_type, payload, actor, created_at").eq("opportunity_id", id).order("created_at", { ascending: false }).limit(50),
@@ -63,6 +64,7 @@ export default async function OpportunityPage(
     context.supabase.from("interviews").select("id, interview_type, starts_at, status, outcome").eq("opportunity_id", id).eq("project_id", context.project.id).order("starts_at", { ascending: false }),
     context.supabase.from("documents").select("id, title, kind, status, opportunity_id, updated_at").eq("project_id", context.project.id).order("updated_at", { ascending: false }),
     context.supabase.from("contacts").select("id, name, role, company, relationship, email, phone, profile_url, notes, follow_up_at").eq("opportunity_id", id).eq("project_id", context.project.id).order("updated_at", { ascending: false }),
+    context.supabase.from("opportunity_notes").select("id, body, created_at").eq("opportunity_id", id).eq("user_id", context.user.id).order("created_at", { ascending: false }),
   ]);
 
   if (opportunityResult.error) throw new Error("Opportunity could not be loaded.");
@@ -80,7 +82,7 @@ export default async function OpportunityPage(
   const editingContact = contacts.find((contact) => contact.id === query.contact) ?? null;
   const documentsById = new Map(documents.map((document) => [document.id, document]));
   const ticket = formatOpportunityTicket(context.project.ticket_key, item.reference_number);
-  const partialError = tasksResult.error || eventsResult.error || applicationResult.error || interviewsResult.error || documentsResult.error || contactsResult.error;
+  const partialError = tasksResult.error || eventsResult.error || applicationResult.error || interviewsResult.error || documentsResult.error || contactsResult.error || notesResult.error;
   const completedTasks = tasks.filter((task) => task.status === "done").length;
   const activeTab: OpportunityTab = opportunityTabs.includes(query.tab as OpportunityTab) ? query.tab as OpportunityTab : "overview";
   const timeline = events.map((event) => ({ id: event.id, title: eventLabel(event), summary: eventSummary(event), type: event.event_type, actor: event.actor, createdAt: event.created_at }));
@@ -121,6 +123,11 @@ export default async function OpportunityPage(
           <section className="ticket-section ticket-tab-content tab-overview application-section" aria-labelledby="application-heading">
             <div className="ticket-section-heading"><div><h2 id="application-heading">Application</h2><Badge className="application-status-badge" variant={application ? "default" : "secondary"}>{application ? "Submitted" : "Not submitted"}</Badge></div><p>Preserve when, where, and exactly what you submitted.</p></div>
             {application ? <div className="application-record"><div className="application-record-primary"><Mail aria-hidden="true" /><span><strong>Submitted {new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(application.submitted_at))}</strong><small>{channelLabel(application.channel)}{application.confirmation_reference ? ` · ${application.confirmation_reference}` : ""}</small></span></div><dl><div><dt>Resume</dt><dd>{application.resume_document_id ? <Link href={`/documents/${application.resume_document_id}`}>{application.resume_version?.title ?? documentsById.get(application.resume_document_id)?.title ?? "Submitted resume"}{application.resume_version ? ` · version ${application.resume_version.version}` : ""}</Link> : "Not recorded"}</dd></div><div><dt>Cover letter</dt><dd>{application.cover_letter_document_id ? <Link href={`/documents/${application.cover_letter_document_id}`}>{application.cover_letter_version?.title ?? documentsById.get(application.cover_letter_document_id)?.title ?? "Submitted cover letter"}{application.cover_letter_version ? ` · version ${application.cover_letter_version.version}` : ""}</Link> : "Not recorded"}</dd></div>{application.salary_expectation ? <div><dt>Salary response</dt><dd>{application.salary_expectation}</dd></div> : null}{application.portfolio_url ? <div><dt>Portfolio</dt><dd><a href={application.portfolio_url} target="_blank" rel="noreferrer">Open submitted link</a></dd></div> : null}</dl>{application.notes ? <p>{application.notes}</p> : null}<Link className="button secondary" href={`/opportunities/${item.id}?apply=true`}>Update application record</Link></div> : <div className="ticket-empty-action"><div><h3>Record the submission when you apply</h3><p>Roleway will move this Opportunity to Applied and create a follow-up without contacting the employer.</p></div><Link className="button primary" href={`/opportunities/${item.id}?apply=true`}>Mark application submitted</Link></div>}
+          </section>
+
+          <section className="ticket-section ticket-tab-content tab-activity" id="notes" aria-labelledby="notes-heading">
+            <div className="ticket-section-heading"><h2 id="notes-heading">Notes</h2></div>
+            {notesResult.error ? <p role="alert">Notes could not be loaded. Refresh to try again.</p> : notesResult.data?.length ? notesResult.data.map(note => <article key={note.id} className="ticket-section"><LocalDateTime value={note.created_at} /><div className="rich-text-content" dangerouslySetInnerHTML={{ __html: richTextForEditor(note.body) }} /></article>) : <p className="ticket-empty-row">No notes yet.</p>}
           </section>
 
           <section className="ticket-section ticket-tab-content tab-tasks ticket-subtasks" aria-labelledby="ticket-tasks-heading">

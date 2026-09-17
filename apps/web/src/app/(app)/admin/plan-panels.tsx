@@ -398,8 +398,9 @@ export async function AdminHelp({
     <section className="management-section">
       <h2>Help articles</h2>
       <p>
-        Publish practical guidance beside the product. Article text is displayed
-        as plain paragraphs, with no executable markup.
+        Publish practical guidance beside the product. Use ## for section headings,
+        numbered lines for steps, and - for bullet lists. Separate sections with a blank line.
+        HTML is displayed as text.
       </p>
       <div className="table-scroll">
         <table className="management-table">
