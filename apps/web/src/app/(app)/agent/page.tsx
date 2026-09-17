@@ -2,7 +2,7 @@
 export const maxDuration = 300;
 
 import "./agent-chat.css";
-import { AgentMessageInput, MessageActions, MessageTimestamp } from "@/features/agent/chat-controls";
+import { AgentMessageInput, MessageActions, MessageTimestamp, SavedResultFocus } from "@/features/agent/chat-controls";
 import { formatOpportunityTicket } from "@roleway/core";
 import { Archive, Check, ChevronDown, Circle, History, KeyRound, Navigation, Plus, Route, Send, X } from "lucide-react";
 import Link from "next/link";
@@ -10,7 +10,7 @@ import { redirect } from "next/navigation";
 import { SubmitButton } from "@/components/submit-button";
 import { requireSearchContext } from "@/features/projects/context";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { archiveAgentConversation, decideAgentProposal, sendAgentMessage } from "./actions";
+import { archiveAgentConversation, decideAgentProposal, sendAgentMessage, openAgentResult } from "./actions";
 
 type Connection = { id: string; label: string; provider: string; model: string; status: string };
 type Opportunity = { id: string; project_id: string; reference_number: number; next_action: string | null; jobs: { company: string; title: string } | null };
@@ -20,7 +20,7 @@ type Run = { id: string; provider: string; model: string; status: string; input_
 type Step = { id: string; run_id: string; label: string; status: "pending" | "active" | "completed" | "failed"; position: number };
 type Proposal = { id: string; run_id: string; tool_name: string; target_id: string | null; destination_project_id: string | null; summary: string; arguments: Record<string, unknown>; status: string; created_at: string };
 
-type AgentQuery = { conversation?: string; opportunity?: string; error?: string; decision?: string };
+type AgentQuery = { conversation?: string; opportunity?: string; error?: string; decision?: string; record?: string; proposal?: string };
 
 export default async function AgentPage(props: { searchParams: Promise<AgentQuery> }) {
   const searchParams = await props.searchParams;
@@ -90,8 +90,9 @@ export default async function AgentPage(props: { searchParams: Promise<AgentQuer
         <Link className="agent-new-chat" href="/agent"><Plus aria-hidden="true" /><span>New conversation</span></Link>
       </header>
 
+      {query.proposal && proposals.some(proposal => proposal.id === query.proposal && proposal.status === "applied") ? <SavedResultFocus proposalId={query.proposal} /> : null}
       {query.error ? <div className="agent-inline-state error" role="alert"><X aria-hidden="true" /><span>{query.error}</span></div> : null}
-      {query.decision === "applied" ? <div className="agent-inline-state success" role="status"><Check aria-hidden="true" /><span>Approved change applied. The originating record is up to date.</span></div> : null}
+      {query.decision === "applied" ? <div className="agent-inline-state success" role="status"><Check aria-hidden="true" /><span>Saved successfully. You can open the result below.</span></div> : null}
       {query.decision === "unchanged" ? <div className="agent-inline-state" role="status"><Circle aria-hidden="true" /><span>No change applied. If the proposal expired, ask Agent for a fresh proposal using your current records.</span></div> : null}
       {query.decision === "rejected" ? <div className="agent-inline-state" role="status"><Circle aria-hidden="true" /><span>Proposal rejected. No Roleway record changed.</span></div> : null}
 
@@ -108,7 +109,7 @@ export default async function AgentPage(props: { searchParams: Promise<AgentQuer
                 <div className="agent-message-content">{message.content.split(/\n{2,}/).map((paragraph, index) => <p key={index}>{paragraph}</p>)}</div>
                 <MessageActions content={message.content} />
                 {run && (message.role === "agent" || run.status === "failed") ? <AgentRunDetails run={run} steps={runSteps} /> : null}
-                {(message.role === "agent" ? runProposals : []).map((proposal) => <ApprovalCard workspace={proposal.destination_project_id ? projectMap.get(proposal.destination_project_id)?.name ?? "Unavailable Workspace" : undefined} proposal={proposal} opportunity={proposal.target_id ? opportunityMap.get(proposal.target_id) : undefined} key={proposal.id} />)}
+                {(message.role === "agent" ? runProposals : []).map((proposal) => <ApprovalCard createdWorkspaceId={query.proposal === proposal.id && query.decision === "applied" && projectMap.has(query.record ?? "") ? query.record : undefined} workspace={proposal.destination_project_id ? projectMap.get(proposal.destination_project_id)?.name ?? "Unavailable Workspace" : undefined} proposal={proposal} opportunity={proposal.target_id ? opportunityMap.get(proposal.target_id) : undefined} key={proposal.id} />)}
               </article>
             );
           })}
@@ -154,17 +155,18 @@ function AgentRunDetails({ run, steps }: { run: Run; steps: Step[] }) {
   </details>;
 }
 
-function ApprovalCard({ proposal, opportunity, workspace }: { proposal: Proposal; opportunity: Opportunity | undefined; workspace: string | undefined }) {
+function ApprovalCard({ proposal, opportunity, workspace, createdWorkspaceId }: { createdWorkspaceId: string | undefined; proposal: Proposal; opportunity: Opportunity | undefined; workspace: string | undefined }) {
+  const feedback = creationFeedback[proposal.tool_name];
   const details = proposalDetails(proposal, opportunity);
   if (workspace) details.unshift(["Workspace", workspace]);
-  return <section className={`agent-approval-card ${proposal.status}`} aria-label="Agent proposed change">
-    <header><span><Navigation aria-hidden="true" />Approval required</span><strong>{toolLabel(proposal.tool_name)}</strong></header>
+  return <section id={`proposal-${proposal.id}`} className={`agent-approval-card ${proposal.status}`} aria-label="Agent proposed change">
+    <header><span><Navigation aria-hidden="true" />{proposal.status === "proposed" ? "Approval required" : proposal.status === "applied" ? "Saved result" : "Proposal"}</span><strong>{toolLabel(proposal.tool_name)}</strong></header>
     <p>{proposal.summary}</p>
     <dl>{details.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
     {proposal.status === "proposed" ? <footer>
       <form action={decideAgentProposal}><input type="hidden" name="proposalId" value={proposal.id} /><input type="hidden" name="decision" value="reject" /><SubmitButton className="button ghost" pendingLabel="Rejecting…">Reject</SubmitButton></form>
-      <form action={decideAgentProposal}><input type="hidden" name="proposalId" value={proposal.id} /><input type="hidden" name="decision" value="approve" /><SubmitButton pendingLabel="Applying…">Approve change</SubmitButton></form>
-    </footer> : <div className="agent-approval-outcome"><span className={`agent-proposal-status ${proposal.status}`}><Check aria-hidden="true" />{proposal.status === "applied" ? "Applied" : proposal.status === "rejected" ? "Rejected" : proposal.status === "failed" ? "Could not apply" : proposal.status}</span></div>}
+      <form action={decideAgentProposal}><input type="hidden" name="proposalId" value={proposal.id} /><input type="hidden" name="decision" value="approve" /><SubmitButton pendingLabel={feedback?.pending ?? "Saving…"}>Approve change</SubmitButton></form>
+    </footer> : <div className="agent-approval-outcome" tabIndex={-1}><span className={`agent-proposal-status ${proposal.status}`}><Check aria-hidden="true" />{proposal.status === "applied" ? feedback?.success ?? "Saved" : proposal.status === "rejected" ? "Rejected" : proposal.status === "failed" ? "Could not apply" : proposal.status}</span>{proposal.status === "applied" ? proposal.tool_name === "create_workspace" ? <Link className="button secondary" href={createdWorkspaceId ? `/settings/workspaces/${createdWorkspaceId}` : "/settings/workspaces"}>{createdWorkspaceId ? "Open Workspace" : "View Workspaces"}</Link> : <form action={openAgentResult}><input type="hidden" name="proposalId" value={proposal.id} /><SubmitButton variant="outline" pendingLabel="Opening…">{feedback?.open ?? "Open Opportunity"}</SubmitButton></form> : null}</div>}
   </section>;
 }
 
@@ -185,3 +187,10 @@ function relativeDate(value: string) {
   const days = Math.max(0, Math.floor((Date.now() - Date.parse(value)) / 86_400_000));
   return days === 0 ? "Today" : days === 1 ? "Yesterday" : `${days}d ago`;
 }
+
+const creationFeedback: Record<string, { pending: string; success: string; open: string }> = {
+  create_workspace: { pending: "Creating Workspace…", success: "Workspace created", open: "Open Workspace" },
+  create_task: { pending: "Creating task…", success: "Task created", open: "Open task" },
+  create_note: { pending: "Creating note…", success: "Note created", open: "Open note" },
+  set_next_action: { pending: "Setting Next Action…", success: "Next Action saved", open: "Open Next Action" },
+};

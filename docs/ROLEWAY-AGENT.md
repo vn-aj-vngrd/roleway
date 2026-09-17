@@ -4,12 +4,13 @@ This is the implementation contract and audit for the current Agent version. Rea
 
 ## User journey
 
-1. Connect and test a supported API provider in Settings → AI. Without a connection, show a direct setup action.
+1. Connect and test a supported API provider in Settings → Agent. Without a connection, show a direct setup action.
 2. Open Agent, optionally focused on an Opportunity, and start or resume a conversation.
 3. Use `+`, the `/` button, or type `/` at the start of the composer to discover Create and Explore. Both buttons open the same composer-width popover above the input. Typing filters commands; arrows and Enter select; Escape dismisses. Selection fills a prompt for review; Send starts the conversation.
 4. For Create, ask one missing question at a time. Reuse supplied information, clarify ambiguous targets and dates, and show an exact proposal once the required details are present.
 5. Approve or reject the proposal. Only successful database application means a record was created. Continuing the conversation is not approval.
-6. Resume from durable history. Messages show local calendar dates/times and copy controls beneath rounded message bubbles. Mobile retains the same actions and approval flow.
+6. After approval, show Creating Workspace…, Creating task…, Creating note…, or Setting Next Action… while saving. Confirm the specific saved result and offer Open. Task, note and Next Action controls verify the applied proposal and destination, switch Workspace, and open the relevant Opportunity section. Newly created Workspaces link to their settings page; older history without the creation-result URL links to the Workspace list.
+7. Resume from durable history. Messages show local calendar dates/times and copy controls beneath rounded message bubbles. Mobile retains the same actions and approval flow.
 
 **Complete when:** a person can discover an action, answer naturally without a creation form, review the destination and details, approve once, and find exactly one resulting record after reload.
 
@@ -37,7 +38,7 @@ Explore offers Today/follow-ups, Workspaces, Opportunities, Inbox Jobs, tasks, i
 ## Context and safety
 
 - Reads are authenticated and account-owned; mutations resolve one exact destination Workspace.
-- Context is bounded: up to 100 active Opportunities and tasks, 60 Inbox Jobs/interviews/contacts/documents, 12 recent conversation messages and 20 recent proposal summaries/statuses. A snapshot is not exhaustive account search.
+- Context is bounded: up to 100 active Opportunities and outstanding tasks, 60 Inbox Jobs/scheduled interviews/contacts/documents, 12 recent conversation messages and 20 recent proposal summaries/statuses. A snapshot is not exhaustive account search.
 - Career Profile includes name, headline and summary, plus career preferences. Full career evidence is not loaded.
 - Only a focused Opportunity includes a bounded plain-text Job description. Documents contribute metadata, not their contents. Notes and activity history are not currently read.
 - Provider answers must identify missing context rather than claim they inspected absent source material. Recent proposal states distinguish proposed, rejected and applied work.
@@ -90,3 +91,13 @@ For this version, finish and verify the bounded Create/Explore flow before expan
 - No database migration or hosted deployment is part of this change.
 - Broader browser run: 33 passed, two pipeline tests failed on a landing-page Base UI native-button warning, one live-provider test skipped. The public-signup journey remained at a disabled Create account button and was interrupted after three minutes; seven later tests did not run. This is not a green full-suite result.
 - Follow-up with `E2E_AUTH_MODE=admin`: all five critical journeys passed, including Opportunity/application/interview workflows, Workspace isolation, export/search, normal-user admin denial, cross-owner RLS denial, and account deletion. This fixture verifies the authenticated product, not CAPTCHA/password signup.
+
+### Creation feedback follow-up
+
+- Saved Opportunity notes now appear under Activity → Notes, with sanitized rich text, empty and loading-error states.
+- Explore scopes operational records to available Workspaces and excludes completed/cancelled tasks and interviews so historical work cannot fill the snapshot ahead of outstanding work.
+- Verification covers all nine Explore prompts delivering available context to the provider seam, unavailable result authorization, and browser approval/result navigation for all four Create actions. Provider fixtures do not verify a live model's conversational choices.
+
+- Workspace capacity failures use the shared plan-limit explanation and preserve the proposal for retry. Success redirects anchor the saved card into view on long mobile chats.
+
+- Follow-up verification: all four approval → persisted record → Open browser journeys passed at desktop/mobile sizes, including reload, visible result controls, cross-Workspace navigation, Workspace capacity rejection and retry, and one saved record per creation. Stale Next Action recovery also passed. All 122 unit tests passed, including the nine Explore context paths and result authorization checks. The live-provider browser test remains skipped because its opt-in key is absent.

@@ -107,3 +107,19 @@ export function MessageTimestamp({ value }: { value: string }) {
   const mounted = useSyncExternalStore(subscribe, () => true, () => false);
   return <time className="agent-message-timestamp" dateTime={value}>{mounted ? formatMessageTimestamp(value) : ""}</time>;
 }
+
+/** Reveal the saved result inside the app's nested scroll area after hydration. */
+export function SavedResultFocus({ proposalId }: { proposalId: string }) {
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      const card = document.getElementById(`proposal-${proposalId}`);
+      const result = card?.querySelector<HTMLElement>(".agent-approval-outcome");
+      if (result) {
+        result.scrollIntoView({ block: "center", behavior: "instant" });
+        result.focus({ preventScroll: true });
+      }
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [proposalId]);
+  return null;
+}
