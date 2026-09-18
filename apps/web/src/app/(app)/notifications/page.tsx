@@ -11,7 +11,7 @@ import {
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { EmptyState, PageHeader } from "@/components/ui-primitives";
+import { EmptyState, PageHeader, PillTabs } from "@/components/ui-primitives";
 import { requireSearchContext } from "@/features/projects/context";
 import {
   markAllNotificationsRead,
@@ -91,17 +91,14 @@ export default async function NotificationsPage({ searchParams }: NotificationsP
 
       <div className="notifications-layout">
         <main className="notifications-main">
-          <nav className="notification-filters" aria-label="Notification view">
-            <Link href="/notifications" aria-current={view === "all" ? "page" : undefined}>
-              All <span>{accountNotifications.length}</span>
-            </Link>
-            <Link
-              href="/notifications?view=unread"
-              aria-current={view === "unread" ? "page" : undefined}
-            >
-              Unread <span>{unreadNotifications.length}</span>
-            </Link>
-          </nav>
+          <PillTabs
+            className="notification-view-tabs"
+            label="Notification view"
+            items={[
+              { href: "/notifications", label: "All", count: accountNotifications.length, active: view === "all" },
+              { href: "/notifications?view=unread", label: "Unread", count: unreadNotifications.length, active: view === "unread" },
+            ]}
+          />
 
           {!error && visibleNotifications.length === 0 ? (
             <EmptyState

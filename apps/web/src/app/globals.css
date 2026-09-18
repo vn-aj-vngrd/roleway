@@ -16183,3 +16183,29 @@ body [data-tooltip]::after {
   .app-shell .global-agent-launch { display: none; }
   .mobile-more-sheet nav button { border: 0; background: transparent; text-align: left; font-family: inherit; cursor: pointer; }
 }
+
+@media (max-width: 760px) {
+  .settings-app-shell .global-agent-launch { display: none; }
+  .settings-shell-main .settings-group-header-action { flex-direction: column; gap: 12px; }
+  .create-modal .create-modal-panel,
+  .create-modal:has(.job-create-workspace) .create-modal-panel,
+  .create-modal:has(.workspace-composer-form) .create-modal-panel,
+  .create-modal.is-fullscreen:has(.job-create-workspace) .create-modal-panel,
+  .create-modal.is-fullscreen:has(.workspace-composer-form) .create-modal-panel {
+    height: 100dvh;
+    max-height: 100dvh;
+  }
+  .create-modal .composer-footer { padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+}
+
+@media (max-width: 480px) {
+  .field-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+.ticket-title-input { field-sizing: content; min-height: 1.22em; resize: none; overflow-wrap: anywhere; }
+
+@media (max-width: 760px) {
+  .appearance-control > button { grid-template-columns: 80px minmax(0, 1fr); }
+  .appearance-preview { height: 60px; }
+  .appearance-option-copy small { white-space: normal; overflow: visible; }
+}

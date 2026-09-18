@@ -205,6 +205,7 @@ export async function AdminBilling({ canManage }: { canManage: boolean }) {
                       <Button
                         size="sm"
                         variant="outline"
+                        nativeButton={false}
                         render={<Link href={`/admin/users/${r.user_id}`} />}
                       >
                         View account
@@ -424,6 +425,7 @@ export async function AdminHelp({
                     <Button
                       size="sm"
                       variant="outline"
+                      nativeButton={false}
                       render={
                         <Link href={`/admin?view=help&article=${a.slug}`} />
                       }
@@ -434,6 +436,7 @@ export async function AdminHelp({
                       <Button
                         size="sm"
                         variant="outline"
+                        nativeButton={false}
                         render={<Link href={`/help/${a.slug}`} />}
                       >
                         View
@@ -504,6 +507,7 @@ export async function AdminHelp({
             {selected ? (
               <Button
                 variant="outline"
+                nativeButton={false}
                 render={<Link href="/admin?view=help" />}
               >
                 New article

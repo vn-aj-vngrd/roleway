@@ -289,4 +289,4 @@ Shared PillTabs keep a 30px visible capsule with 10px horizontal padding on ever
 
 Mobile action buttons share 32px minimum visible height, 13px text, and compact horizontal padding across public pages, authentication, settings, and Workspace controls. Invisible vertical hit extensions preserve tap space without enlarging the painted control. Multiline actions may grow with their labels; fields and navigation keep their existing sizing.
 
-Mobile navigation uses Home, Inbox, Opportunities, Agent, and More in that order, with matching plain icons. Search lives in More; the floating Agent launcher is reserved for desktop and Settings.
+Mobile navigation uses Home, Inbox, Opportunities, Agent, and More in that order, with matching plain icons. Search lives in More; the floating Agent launcher is reserved for desktop.

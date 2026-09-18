@@ -158,6 +158,9 @@ test("workspace structure stays neutral and header matches its canvas", async ({
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/home");
     await expect(page.locator(".home-v2-header:not(.skeleton-home-page-header)")).toHaveCSS("border-bottom-width", "1px");
+    await page.getByRole("button", { name: "Add job", exact: true }).click();
+    await expect(page.locator("dialog[open] .create-modal-panel")).toHaveCSS("max-height", "844px");
+    await page.getByRole("button", { name: "Close Add a job", exact: true }).click();
     const mobileNavigation = page.getByRole("navigation", { name: "Mobile navigation" });
     await expect(mobileNavigation.locator(".nav-link")).toHaveText(["Home", "Inbox", "Opportunities", "Agent", "More"]);
     await expect(mobileNavigation.getByRole("link", { name: "Agent", exact: true })).toHaveCSS("border-width", "0px");
@@ -172,6 +175,13 @@ test("workspace structure stays neutral and header matches its canvas", async ({
     const nav = await page.getByRole("navigation", { name: "Mobile navigation" }).boundingBox();
     expect(composer!.y + composer!.height).toBeLessThanOrEqual(nav!.y);
     expect(nav!.y - composer!.y - composer!.height).toBeLessThanOrEqual(14);
+    await page.goto("/notifications");
+    await expect(page.getByRole("navigation", { name: "Notification view" }).getByRole("link").first()).toHaveCSS("height", "30px");
+    await page.goto("/settings/ai");
+    await expect(page.locator(".settings-group-header-action")).toHaveCSS("flex-direction", "column");
+    await expect(page.getByRole("button", { name: "Open Roleway Agent" })).toBeHidden();
+    await page.goto("/settings/appearance");
+    await expect(page.locator(".appearance-option-copy small").first()).toHaveCSS("white-space", "normal");
   } finally {
     if (userId) {
       const { error } = await admin.auth.admin.deleteUser(userId);

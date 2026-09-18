@@ -105,6 +105,11 @@ test("plans, manual review, focused admin and public help", async ({
       .from("admin_members")
       .insert({ user_id: userId, role: "admin" });
     if (roleError) throw roleError;
+    await page.goto("/admin");
+    await page.setViewportSize({ width: 320, height: 740 });
+    await expect(page.getByRole("heading", { name: "Overview", exact: true })).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
+    await page.setViewportSize({ width: 1440, height: 1000 });
     await page.goto("/admin?view=billing");
     await expect(
       page.getByRole("link", { name: "Back to app", exact: true }),

@@ -7698,3 +7698,18 @@
   .app-shell .skeleton-contacts-page .skeleton-contact-row { min-height: 164px; }
   .app-shell .skeleton-home-groups .home-action-copy { gap: 8px; }
 }
+
+.app-shell .notification-view-tabs { min-height: 44px; margin-bottom: 12px; border-bottom: 1px solid var(--line); }
+@media (max-width: 760px) {
+  .app-shell .home-action-copy strong { white-space: normal; overflow: visible; }
+}
+
+.admin-section { min-width: 0; }
+.admin-table { max-width: 100%; overflow-x: auto; }
+.content-tabs { min-width: 0; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+.content-tabs > * { flex: 0 0 auto; }
+.content-tabs::-webkit-scrollbar { display: none; }
+@media (max-width: 760px) {
+  .admin-overview-grid { grid-template-columns: minmax(0, 1fr); }
+  .admin-section > header { flex-wrap: wrap; align-items: flex-start; gap: 12px; }
+}

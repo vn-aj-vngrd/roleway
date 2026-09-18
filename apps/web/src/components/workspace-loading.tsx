@@ -530,6 +530,7 @@ function ContactsSkeleton() {
         <div className="workspace-view-primary pill-tabs skeleton-contacts-tabs">
           <Bone className="skeleton-pipeline-tab" />
           <Bone className="skeleton-pipeline-tab" />
+          <Bone className="skeleton-pipeline-tab" />
         </div>
         <div className="workspace-view-actions skeleton-collection-controls">
           <Bone className="skeleton-home-icon-button" />
@@ -706,6 +707,7 @@ function DocumentsSkeleton() {
         <div className="workspace-view-primary pill-tabs skeleton-document-tabs">
           <Bone className="skeleton-pipeline-tab" />
           <Bone className="skeleton-pipeline-tab" />
+          <Bone className="skeleton-pipeline-tab" />
         </div>
         <div className="workspace-view-actions skeleton-collection-controls">
           <Bone className="skeleton-home-icon-button" />
@@ -859,9 +861,9 @@ function NotificationsSkeleton() {
       <PageHeading />
       <div className="notifications-layout">
         <main className="notifications-main">
-          <div className="notification-filters">
-            <Bone className="skeleton-tag" />
-            <Bone className="skeleton-tag" />
+          <div className="pill-tabs notification-view-tabs">
+            <Bone className="skeleton-pipeline-tab" />
+            <Bone className="skeleton-pipeline-tab" />
           </div>
           <div className="skeleton-notification-groups">
             {[3, 2].map((rows, group) => (
