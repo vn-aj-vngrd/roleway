@@ -32,6 +32,11 @@ for (const width of [1440, 390]) {
         await expect(frame).toHaveCSS("opacity", "1");
         await expect(frame).toHaveCSS("clip-path", "none");
         await expect(frame).toHaveCSS("transform", "none");
+        if (width === 390) {
+          // A visible border alone does not catch content cropped inside the frame.
+          expect(await frame.evaluate((element) => element.scrollHeight - element.clientHeight)).toBeLessThanOrEqual(1);
+          expect(await frame.evaluate((element) => element.scrollWidth - element.clientWidth)).toBeLessThanOrEqual(1);
+        }
         for (const side of ["top", "right", "bottom", "left"]) {
           await expect(frame).toHaveCSS(`border-${side}-width`, "1px");
           await expect(frame).toHaveCSS(`border-${side}-style`, "solid");
@@ -61,3 +66,19 @@ for (const preference of ["dark", "system"]) {
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   });
 }
+
+test("mobile preview tabs scroll in one row and labeled actions keep their width", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 900 });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+  const tabs = page.locator("#interviews-proof .pill-tabs");
+  await tabs.scrollIntoViewIfNeeded();
+  await expect(tabs).toHaveCSS("scrollbar-width", "none");
+  expect(await tabs.evaluate((element) => new Set(Array.from(element.children, child => (child as HTMLElement).offsetTop)).size)).toBe(1);
+  await tabs.hover();
+  await page.mouse.wheel(240, 0);
+  await expect.poll(() => tabs.evaluate((element) => element.scrollLeft)).toBeGreaterThan(0);
+  const track = page.locator('#inbox-proof [data-slot="button"]').filter({ hasText: "Track as opportunity" });
+  await expect(track).toHaveAttribute("data-size", "default");
+  expect(await track.evaluate((element) => element.scrollWidth - element.clientWidth)).toBeLessThanOrEqual(1);
+});

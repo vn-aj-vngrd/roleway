@@ -63,7 +63,7 @@ export default async function AdminUserPage({
   const d = detail.data as UserDetail | null;
   return (
     <div className="page admin-page">
-      <Button variant="outline" render={<Link href="/admin?view=users" />}>
+      <Button variant="outline" nativeButton={false} render={<Link href="/admin?view=users" />}>
         Back to users
       </Button>
       {detail.error || !d ? (
@@ -223,6 +223,7 @@ export default async function AdminUserPage({
                   key={k}
                   variant={k === kind ? "secondary" : "outline"}
                   size="sm"
+                  nativeButton={false}
                   render={
                     <Link
                       href={`/admin/users/${id}?kind=${k}`}
@@ -242,6 +243,7 @@ export default async function AdminUserPage({
                       key={r.id}
                       className="record-choice"
                       variant={r.id === q.record ? "secondary" : "ghost"}
+                      nativeButton={false}
                       render={
                         <Link
                           href={`/admin/users/${id}?kind=${kind}&record=${r.id}`}

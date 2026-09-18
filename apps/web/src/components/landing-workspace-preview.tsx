@@ -16,6 +16,7 @@ import {
   Target,
   UserRound,
 } from "lucide-react";
+import { LandingPreviewContent } from "@/components/landing-preview-content";
 import { LogoMark } from "@/components/logo";
 import {
   PipelineBoard,
@@ -165,12 +166,7 @@ export function LandingWorkspacePreview() {
       role="img"
       aria-label="Current Roleway opportunities list preview"
     >
-      <div
-        className="app-shell"
-        data-sidebar="expanded"
-        aria-hidden="true"
-        inert
-      >
+      <LandingPreviewContent className="app-shell" data-sidebar="expanded">
         <aside className="sidebar">
           <div className="sidebar-brand-row">
             <span className="sidebar-logo">
@@ -279,7 +275,7 @@ export function LandingWorkspacePreview() {
             </div>
           </div>
         </main>
-      </div>
+      </LandingPreviewContent>
     </div>
   );
 }

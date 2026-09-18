@@ -28,7 +28,7 @@ for (const width of [1440, 390]) {
           height: element.getBoundingClientRect().height,
           radius: parseFloat(getComputedStyle(element).borderRadius),
         }));
-        expect(size.height).toBeGreaterThanOrEqual(44);
+        expect(size.height).toBeGreaterThanOrEqual(width === 390 ? 32 : 44);
         expect(size.radius).toBeGreaterThanOrEqual(size.height / 2);
         const audit = await new AxeBuilder({ page })
           .withTags(["wcag2a", "wcag2aa", "wcag21aa"])

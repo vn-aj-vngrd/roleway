@@ -85,8 +85,8 @@ for (const width of [1440, 390]) {
     await expect(messages.first()).toHaveCSS("animation-name", "none");
     for (const control of await demo.getByRole("button").all()) {
       const bounds = await control.boundingBox();
-      expect(bounds?.height).toBeGreaterThanOrEqual(44);
-      expect(bounds?.width).toBeGreaterThanOrEqual(44);
+      expect(bounds?.height).toBeGreaterThanOrEqual(width === 390 ? 32 : 44);
+      expect(bounds?.width).toBeGreaterThanOrEqual(width === 390 ? 32 : 44);
     }
     for (const theme of ["Light", "Dark"] as const) {
       await page

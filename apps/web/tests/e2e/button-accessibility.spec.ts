@@ -10,7 +10,7 @@ for (const width of [1440, 390]) {
       page.on("pageerror", (error) => errors.push(error.message));
       await page.addInitScript((value) => localStorage.setItem("roleway-theme", value), theme);
       await page.goto("/");
-      const start = page.getByRole("link", { name: "Start with Free", exact: true });
+      const start = page.getByRole("button", { name: "Start with Free", exact: true });
       const reference = page.getByRole("link", { name: "Create your workspace", exact: true }).first();
       await expect(start).toBeVisible();
       await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
@@ -39,7 +39,10 @@ for (const width of [1440, 390]) {
         const audit = await new AxeBuilder({ page }).include("#pricing").withTags(["wcag2aa", "wcag21aa", "wcag22aa"]).analyze();
         expect(audit.violations).toEqual([]);
       }
-      if (width === 390) expect((await start.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+      if (width === 390) {
+        expect((await start.boundingBox())!.height).toBeLessThanOrEqual(34);
+        expect(await start.evaluate((element) => getComputedStyle(element, "::before").top)).toBe("-6px");
+      }
       expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
       await page.screenshot({ path: `/tmp/roleway-button-${width}-${theme}.png` });
       await page.keyboard.press("Enter");

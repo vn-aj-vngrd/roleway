@@ -43,7 +43,7 @@ export function OpportunityDetailsEditor({ opportunityId, ticket, descriptionHtm
         <span>{job.company}</span>
       </div>
       <label className="sr-only" htmlFor="opportunity-title">Opportunity title</label>
-      <input className="ticket-title-input" id="opportunity-title" name="title" required defaultValue={job.title} placeholder="Untitled opportunity" />
+      <textarea className="ticket-title-input" id="opportunity-title" name="title" rows={2} required defaultValue={job.title} placeholder="Untitled opportunity" />
       {navigation}
 
       {showOverview ? <RichTextEditor id="roleDescription" name="description" initialHtml={descriptionHtml} placeholder="Add the role description, responsibilities, and requirements…" className="issue-description-editor" onDirty={() => setDirty(true)} /> : <input type="hidden" name="description" value={job.description} />}

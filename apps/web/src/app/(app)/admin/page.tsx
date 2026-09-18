@@ -328,6 +328,7 @@ function AdminOverview({
             </div>
             <Button
               variant="outline"
+              nativeButton={false}
               render={<Link href="/admin?view=users" />}
             >
               View users
@@ -461,6 +462,7 @@ function AdminUsers({
                     <Button
                       size="sm"
                       variant="outline"
+                      nativeButton={false}
                       render={<Link href={`/admin/users/${user.id}`} />}
                     >
                       View user

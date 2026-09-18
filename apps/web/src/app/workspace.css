@@ -1567,12 +1567,19 @@
 }
 .app-shell .pill-tabs {
   min-width: 0;
+  max-width: 100%;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
   display: flex;
   align-items: center;
   gap: 6px;
 }
 .app-shell .pill-tab {
+  white-space: nowrap;
+  position: relative;
   min-height: 30px;
+  height: 30px;
   padding: 0 10px;
   border: 1px solid var(--line);
   border-radius: 999px;
@@ -1997,6 +2004,7 @@
   padding: 0;
 }
 .app-shell .board-page .pipeline-controls {
+  flex-wrap: nowrap;
   width: 100%;
   height: 44px;
   min-height: 44px;
@@ -2010,6 +2018,8 @@
   background: var(--canvas);
 }
 .app-shell .pipeline-filters {
+  order: 1;
+  flex: 1 1 auto;
   min-width: 0;
   height: 44px;
   gap: 6px;
@@ -2020,6 +2030,7 @@
   display: none;
 }
 .app-shell .pipeline-tools-row {
+  order: 2;
   height: 30px;
   margin-left: auto;
   display: flex;
@@ -3759,8 +3770,8 @@
   .app-shell .linear-ticket .ticket-view-tabs {
     width: 100%;
     margin-inline: 0;
-    flex-wrap: wrap;
-    overflow: visible;
+    flex-wrap: nowrap;
+    overflow-x: auto;
   }
   .app-shell
     .ticket-body[data-active-tab="overview"]
@@ -4695,9 +4706,6 @@
     min-height: 58px;
     padding-inline: 14px;
   }
-  .app-shell .interview-index-page .pill-tab {
-    min-height: 44px;
-  }
   .app-shell .interview-notices {
     width: calc(100% - 32px);
     margin-top: 12px;
@@ -4930,9 +4938,6 @@
   max-width: 100%;
 }
 @media (max-width: 760px) {
-  .app-shell .skeleton-interview-tabs .skeleton-pipeline-tab {
-    height: 44px;
-  }
   .app-shell .skeleton-interview-status {
     display: none;
   }
@@ -5477,11 +5482,6 @@
   }
   .app-shell .contacts-index-page .pill-tabs {
     width: 100%;
-  }
-  .app-shell .contacts-index-page .pill-tab {
-    min-height: 44px;
-    flex: 1;
-    justify-content: center;
   }
   .app-shell .contacts-index-page .workspace-view-actions {
     width: 100%;
@@ -6143,9 +6143,6 @@
     min-height: 58px;
     padding-inline: 14px;
   }
-  .app-shell .documents-index-page .pill-tab {
-    min-height: 44px;
-  }
   .app-shell .documents-index-page .workspace-toolbar-note {
     display: none;
   }
@@ -6300,11 +6297,9 @@
   gap: 12px;
 }
 @media (max-width: 760px) {
-  .app-shell .skeleton-document-tabs .skeleton-pipeline-tab {
-    height: 44px;
-  }
   .app-shell .skeleton-document-row .skeleton-tag {
-    display: none;
+    grid-column: 2;
+    grid-row: 2;
   }
   .app-shell .skeleton-document-row > .skeleton-line {
     grid-column: 2;
@@ -7598,3 +7593,123 @@
 .capacity-notice a { font-weight:600; text-decoration:underline; }
 .settings-shell-main .billing-content { width:min(100%,760px); margin-inline:auto; }
 .management-table td small { font-size:13px; line-height:1.5; }
+
+/* Keep capsule geometry consistent; surrounding space supplies the touch target. */
+@media (max-width: 760px) {
+  .app-shell .pill-tab { margin-block: 7px; }
+  .app-shell .pill-tab::after { content: ""; position: absolute; inset: -7px 0; border-radius: inherit; }
+}
+
+/* Scrollable tabs keep their compact row without visible scrollbar chrome. */
+.pill-tabs::-webkit-scrollbar,
+.workspace-view-primary::-webkit-scrollbar,
+.pipeline-filters::-webkit-scrollbar { display: none; }
+
+@media (max-width: 760px) {
+  .app-shell .home-v2-page > .home-v2-header {
+    min-height: 60px;
+    padding: 8px 16px;
+    align-items: center;
+    border-bottom: 1px solid var(--line);
+  }
+}
+
+/* Loading placeholders inherit the same work plane and control geometry as content. */
+.workspace-loading { min-height: 0; width: 100%; }
+.workspace-loading:has(.agent-native-page) { height: 100%; min-height: 0; display: flex; flex-direction: column; }
+.workspace-loading .skeleton-bone { max-width: 100%; }
+.workspace-loading .workspace-page-heading .skeleton-title { width: 140px; height: 20px; }
+.workspace-loading .workspace-page-actions .skeleton-action { height: 32px; border-radius: 999px; flex-shrink: 0; }
+.workspace-loading .skeleton-settings { grid-template-columns: minmax(0, 1fr); }
+.workspace-loading .skeleton-dossier-heading { display: grid; gap: 12px; padding-bottom: 20px; }
+.workspace-loading .skeleton-dossier-heading .skeleton-subtitle { margin: 0; }
+.workspace-loading .ticket-view-tabs { min-height: 44px; }
+.app-shell .skeleton-pipeline-tab { height: 30px; flex: 0 0 auto; }
+.app-shell .skeleton-inbox-tab { flex: 0 0 auto; }
+.app-shell .skeleton-collection-controls { flex: 0 0 auto; }
+.app-shell .skeleton-pipeline-tool { flex: 0 0 auto; }
+
+@media (max-width: 760px) {
+  .workspace-loading .skeleton-heading { gap: 12px; }
+  .workspace-loading .skeleton-title { width: min(180px, 50vw); }
+  .workspace-loading .skeleton-action { height: 32px; border-radius: 999px; }
+  .app-shell .workspace-loading .workspace-page { min-height: 0; }
+  .app-shell .skeleton-home-page-header .skeleton-title { width: 58px; }
+  .app-shell .skeleton-inbox-page-header .skeleton-title { width: 62px; }
+  .app-shell .skeleton-opportunities-header .skeleton-title { width: 136px; }
+  .app-shell .skeleton-home-icon-button,
+  .app-shell .skeleton-pipeline-tool { width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0; }
+  .app-shell .skeleton-document-tabs .skeleton-pipeline-tab { height: 30px; }
+  .workspace-loading .pill-tabs { min-height: 44px; flex-wrap: nowrap; overflow: hidden; }
+  .app-shell .skeleton-inbox-action.is-primary { width: 100%; grid-column: 1 / -1; }
+  .app-shell .skeleton-inbox-action.is-dismiss { grid-column: auto; margin-left: auto; }
+  .app-shell .skeleton-inbox-copy { height: 32px; margin: 0; }
+  .workspace-loading .skeleton-agent-routebar { flex: 0 0 44px; }
+  .workspace-loading .skeleton-agent-switcher { flex: 1; width: auto; min-width: 0; }
+  .workspace-loading .skeleton-agent-scope { display: flex; }
+  .workspace-loading .skeleton-agent-scope > .skeleton-agent-icon { display: none; }
+  .workspace-loading .skeleton-agent-new { width: 32px; height: 32px; flex-shrink: 0; }
+  .workspace-loading .skeleton-agent-title { max-width: 100%; }
+  .workspace-loading .skeleton-agent-input { min-height: 64px; }
+  .workspace-loading .skeleton-agent-composer > footer { flex-wrap: nowrap; }
+  .workspace-loading .skeleton-agent-controls { width: auto; flex: 1; }
+  .workspace-loading .skeleton-agent-select { height: 32px; max-width: 88px; }
+  .workspace-loading .skeleton-agent-composer > footer > .skeleton-line { display: none; }
+  .app-shell .skeleton-insights-page > .skeleton-heading .skeleton-action,
+  .app-shell .skeleton-notifications-page > .skeleton-heading .skeleton-action { height: 32px; }
+  .app-shell .skeleton-notifications-page .notification-row .skeleton-action { width: 32px; height: 32px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-bone { animation: none; }
+}
+
+.workspace-loading .skeleton-line.medium { width: min(170px, 70%); }
+.workspace-loading .skeleton-line.long { width: min(290px, 90%); }
+.workspace-loading .home-action-copy,
+.workspace-loading .inbox-review-facts > div,
+.workspace-loading .contact-identity > span { min-width: 0; grid-template-columns: minmax(0, 1fr); }
+.workspace-loading .agent-prompt-examples > .skeleton-line { height: 10px; min-height: 0; padding: 0; border: 0; border-radius: 5px; }
+@media (max-width: 760px) {
+  .workspace-loading .home-action-row > .skeleton-time { grid-column: 2; grid-row: 1; }
+  .workspace-loading .skeleton-agent-send { width: 88px; border-radius: 999px; }
+  .workspace-loading .skeleton-agent-controls .skeleton-agent-select { width: 140px; max-width: 100%; height: 10px; }
+  .workspace-loading .skeleton-agent-controls .skeleton-agent-select + .skeleton-agent-select { display: none; }
+}
+.workspace-loading :is(.contacts-directory-header, .interview-schedule-header, .documents-library-header) > div { display: grid; gap: 10px; }
+.workspace-loading .contact-identity > span { display: grid; gap: 6px; }
+@media (max-width: 760px) {
+  .workspace-loading :is(.contacts-directory-header, .interview-schedule-header, .documents-library-header) > div > .skeleton-line:first-child { height: 18px; }
+  .workspace-loading :is(.contacts-directory-header, .interview-schedule-header, .documents-library-header) > div > .skeleton-line:last-child { height: 32px; }
+  .app-shell .skeleton-contact-row { min-height: 164px; }
+  .app-shell .skeleton-contact-row .contact-avatar { width: 38px; height: 38px; }
+}
+.workspace-loading .skeleton-settings-page .skeleton-heading .skeleton-action { display: none; }
+.workspace-loading .skeleton-settings-page .settings-row .skeleton-input { width: 100%; max-width: 360px; margin: 0; }
+.workspace-loading .skeleton-settings-page .settings-group-header { display: grid; gap: 10px; }
+.workspace-loading .skeleton-settings-card { padding: 20px; display: grid; gap: 16px; margin-bottom: 24px; }
+.workspace-loading .skeleton-plan-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 760px) {
+  .workspace-loading .skeleton-plan-options { grid-template-columns: minmax(0, 1fr); }
+}
+.workspace-loading .skeleton-settings-page > .skeleton-heading { min-height: 0; margin-bottom: 32px; }
+.workspace-loading .skeleton-settings-page > .skeleton-heading .skeleton-subtitle { display: none; }
+@media (max-width: 760px) {
+  .app-shell .skeleton-contacts-page .skeleton-contact-row { min-height: 164px; }
+  .app-shell .skeleton-home-groups .home-action-copy { gap: 8px; }
+}
+
+.app-shell .notification-view-tabs { min-height: 44px; margin-bottom: 12px; border-bottom: 1px solid var(--line); }
+@media (max-width: 760px) {
+  .app-shell .home-action-copy strong { white-space: normal; overflow: visible; }
+}
+
+.admin-section { min-width: 0; }
+.admin-table { max-width: 100%; overflow-x: auto; }
+.content-tabs { min-width: 0; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+.content-tabs > * { flex: 0 0 auto; }
+.content-tabs::-webkit-scrollbar { display: none; }
+@media (max-width: 760px) {
+  .admin-overview-grid { grid-template-columns: minmax(0, 1fr); }
+  .admin-section > header { flex-wrap: wrap; align-items: flex-start; gap: 12px; }
+}

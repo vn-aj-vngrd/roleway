@@ -118,7 +118,6 @@ test.describe.serial("critical product journey", () => {
       "Interviews",
       "Contacts",
       "Documents",
-      "Agent",
       "Insights",
       "Notifications",
     ]) {
@@ -126,6 +125,7 @@ test.describe.serial("critical product journey", () => {
         page.getByRole("img", { name: `${pageName} page preview` }),
       ).toBeVisible();
     }
+    await expect(page.getByRole("figure", { name: "Agent sample conversation" })).toBeVisible();
     expect(
       await page.evaluate(
         () =>
@@ -214,7 +214,6 @@ test.describe.serial("critical product journey", () => {
     expect(launcherBounds!.y + launcherBounds!.height).toBeLessThanOrEqual(
       page.viewportSize()!.height,
     );
-    await page.setViewportSize({ width: 390, height: 844 });
     await agentLauncher.click();
     const agentPopover = page.getByRole("dialog", { name: "Roleway Agent" });
     await expect(
@@ -226,7 +225,7 @@ test.describe.serial("critical product journey", () => {
     const popoverBounds = await agentPopover.boundingBox();
     expect(popoverBounds).not.toBeNull();
     expect(popoverBounds!.x).toBeGreaterThanOrEqual(0);
-    expect(popoverBounds!.x + popoverBounds!.width).toBeLessThanOrEqual(390);
+    expect(popoverBounds!.x + popoverBounds!.width).toBeLessThanOrEqual(page.viewportSize()!.width);
     expect(
       await page.evaluate(
         () =>
@@ -235,6 +234,11 @@ test.describe.serial("critical product journey", () => {
       ),
     ).toBeLessThanOrEqual(1);
     await agentPopover.getByRole("button", { name: "Close Agent" }).click();
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(agentLauncher).toBeHidden();
+    await page.getByRole("navigation", { name: "Mobile navigation" }).getByRole("link", { name: "Agent", exact: true }).click();
+    await expect(page).toHaveURL(/\/agent$/);
+    await expect(page.getByRole("heading", { name: "Ask across your search." })).toBeVisible();
     await page.setViewportSize({ width: 1440, height: 900 });
 
     await page.goto(`/agent?opportunity=${opportunityPath.split("/").at(-1)}`);

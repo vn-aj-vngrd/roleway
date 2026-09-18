@@ -111,6 +111,7 @@ export default async function BillingPage({
               </p>
               <Button
                 variant="outline"
+                nativeButton={false}
                 render={<Link href="/settings/workspaces" />}
               >
                 Manage Workspaces
@@ -227,6 +228,7 @@ export default async function BillingPage({
           </section>
           <Button
             variant="outline"
+            nativeButton={false}
             render={<Link href="/help/manual-payments" />}
           >
             Payment help
