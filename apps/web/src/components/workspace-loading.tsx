@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import React, { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { LogoMark } from "@/components/logo";
 
 function Bone({ className = "", style }: { className?: string; style?: CSSProperties }) {
@@ -18,6 +18,16 @@ function PageHeading() {
       <Bone className="skeleton-action" />
     </header>
   );
+}
+
+function CollectionHeading({ className = "", count = true }: { className?: string; count?: boolean }) {
+  return <header className={`workspace-page-header ${className}`}>
+    <div className="workspace-page-heading"><div>
+      <Bone className="skeleton-title" />
+      {count ? <Bone className="skeleton-home-count" /> : null}
+    </div></div>
+    <div className="workspace-page-actions"><Bone className="skeleton-action" /></div>
+  </header>;
 }
 
 function ListSkeleton({ rows = 5 }: { rows?: number }) {
@@ -40,13 +50,7 @@ function ListSkeleton({ rows = 5 }: { rows?: number }) {
 function HomeSkeleton() {
   return (
     <div className="workspace-page home-v2-page skeleton-page skeleton-home-page">
-      <header className="workspace-page-header home-v2-header skeleton-home-page-header">
-        <div>
-          <Bone className="skeleton-title" />
-          <Bone className="skeleton-subtitle" />
-        </div>
-        <Bone className="skeleton-action" />
-      </header>
+      <CollectionHeading className="home-v2-header skeleton-home-page-header" count={false} />
       <div className="home-v2-layout skeleton-home-layout">
         <main className="home-focus-panel">
           <section className="home-workspace-overview skeleton-home-overview">
@@ -153,13 +157,7 @@ function HomeSkeleton() {
 function InboxSkeleton() {
   return (
     <div className="workspace-page inbox-page skeleton-page skeleton-inbox-page">
-      <header className="workspace-page-header skeleton-inbox-page-header">
-        <div>
-          <Bone className="skeleton-title" />
-          <Bone className="skeleton-subtitle" />
-        </div>
-        <Bone className="skeleton-action" />
-      </header>
+      <CollectionHeading className="skeleton-inbox-page-header" />
       <div className="workspace-view-toolbar inbox-top-view-toolbar">
         <div className="workspace-view-primary">
           <div className="pill-tabs inbox-view-tabs skeleton-inbox-tabs">
@@ -176,7 +174,6 @@ function InboxSkeleton() {
         <div className="inbox-review-layout">
           <div className="inbox-review-main">
             <section className="inbox-review-intro">
-              <Bone className="skeleton-inbox-title" />
               <Bone className="skeleton-inbox-copy" />
             </section>
             <section className="inbox-review-list skeleton-inbox-list">
@@ -285,16 +282,7 @@ function OpportunitiesSkeletonFrame({
       className="workspace-page board-page has-board skeleton-page skeleton-opportunities-page"
       data-skeleton-view={view}
     >
-      <header className="workspace-page-header skeleton-opportunities-header">
-        <div className="workspace-page-heading">
-          <div>
-            <Bone className="skeleton-opportunities-title" />
-            <Bone className="skeleton-home-count" />
-          </div>
-          <Bone className="skeleton-opportunities-context" />
-        </div>
-        <Bone className="skeleton-opportunities-add" />
-      </header>
+      <CollectionHeading className="skeleton-opportunities-header" />
       <div className="pipeline-controls skeleton-pipeline-controls">
         <div className="pill-tabs pipeline-filters skeleton-pipeline-tabs">
           {[72, 110, 74].map((width) => (
@@ -416,83 +404,79 @@ function OpportunityListSkeleton() {
 }
 
 function OpportunitiesSkeleton() {
-  const [view, setView] = useState<"board" | "list">("board");
+  const [view, setView] = useState<"board" | "list">("list");
   useEffect(() => {
     try {
       const preferences = JSON.parse(
         localStorage.getItem("roleway:page-preferences:opportunities:v1") ??
           "null",
       ) as { viewMode?: string } | null;
-      setView(preferences?.viewMode === "list" ? "list" : "board");
+      setView(preferences?.viewMode === "board" ? "board" : "list");
     } catch {
-      /* The default board skeleton remains usable when preferences are unavailable. */
+      /* The default list skeleton remains usable when preferences are unavailable. */
     }
   }, []);
   return view === "list" ? <OpportunityListSkeleton /> : <KanbanSkeleton />;
 }
 
-function SettingsSkeleton() {
-  return (
-    <div className="page settings-page skeleton-page">
-      <PageHeading />
-      <div className="skeleton-settings">
-        <aside>
-          {[1, 2, 3, 4, 5].map((item) => (
-            <Bone className="skeleton-nav-line" key={item} />
-          ))}
-        </aside>
-        <main>
-          <div className="skeleton-profile">
-            <Bone className="skeleton-avatar" />
-            <div>
-              <Bone className="skeleton-line medium" />
-              <Bone className="skeleton-line short" />
-            </div>
-          </div>
-          {[1, 2, 3].map((item) => (
-            <div className="skeleton-field" key={item}>
-              <Bone className="skeleton-line short" />
-              <Bone className="skeleton-input" />
-            </div>
-          ))}
-        </main>
-      </div>
-    </div>
-  );
+function SettingsSkeleton({ pathname }: { pathname: string }) {
+  const profile = pathname.endsWith("/profile");
+  const workspaceList = pathname.endsWith("/workspaces") || pathname.endsWith("/searches");
+  const billing = pathname.endsWith("/billing");
+  return <div className="page settings-page skeleton-page skeleton-settings-page">
+    <PageHeading />
+    <div className="settings-layout skeleton-settings"><main>
+      {workspaceList ? <ListSkeleton rows={3} /> : billing ? <>
+        <section className="settings-card skeleton-settings-card"><Bone className="skeleton-title" /><Bone className="skeleton-line long" /><Bone className="skeleton-input" /></section>
+        <section className="skeleton-plan-options">{[1, 2, 3].map((item) => <div className="settings-card skeleton-settings-card" key={item}><Bone className="skeleton-line medium" /><Bone className="skeleton-title" /><Bone className="skeleton-line long" /><Bone className="skeleton-action" /></div>)}</section>
+      </> : <section className="settings-group">
+        <header className="settings-group-header"><Bone className="skeleton-line medium" /><Bone className="skeleton-line long" /></header>
+        <div className="settings-card">
+          {profile ? <div className="settings-row"><Bone className="skeleton-line short" /><Bone className="skeleton-avatar" /></div> : null}
+          {[1, 2, 3].map((item) => <div className="settings-row" key={item}><div className="settings-row-copy"><Bone className="skeleton-line short" /></div><Bone className="skeleton-input" /></div>)}
+        </div>
+      </section>}
+    </main></div>
+  </div>;
+}
+
+function FormSkeleton() {
+  return <div className="page narrow skeleton-page"><PageHeading />
+    <div className="modal-create-form">{[1, 2, 3, 4].map((item) => <div className="skeleton-field" key={item}><Bone className="skeleton-line short" /><Bone className="skeleton-input" /></div>)}<Bone className="skeleton-action" /></div>
+  </div>;
 }
 
 function DetailSkeleton() {
-  return (
-    <div className="skeleton-page">
-      <div className="workspace-head skeleton-workspace-head">
-        <Bone className="skeleton-line short" />
-        <Bone className="skeleton-title" />
-        <Bone className="skeleton-subtitle" />
-        <div className="skeleton-tabs">
-          {[1, 2, 3, 4].map((item) => (
-            <Bone className="skeleton-line short" key={item} />
-          ))}
-        </div>
-      </div>
-      <div className="workspace-grid">
-        <main className="workspace-main">
-          <Bone className="skeleton-kicker" />
-          {[1, 2, 3, 4].map((item) => (
-            <div className="skeleton-detail-row" key={item}>
-              <Bone className="skeleton-line short" />
-              <Bone className="skeleton-line long" />
-            </div>
-          ))}
-        </main>
-        <aside className="context-panel">
-          <Bone className="skeleton-kicker" />
-          <Bone className="skeleton-line medium" />
-          <Bone className="skeleton-line long" />
-          <Bone className="skeleton-input" />
-        </aside>
-      </div>
+  return <div className="opportunity-workspace linear-ticket skeleton-page skeleton-detail-page">
+    <div className="workspace-grid">
+      <main className="workspace-main opportunity-tab-panel">
+        <div className="skeleton-dossier-heading"><Bone className="skeleton-line short" /><Bone className="skeleton-title" /><Bone className="skeleton-subtitle" /></div>
+        <div className="pill-tabs ticket-view-tabs">{[1, 2, 3, 4, 5].map((item) => <Bone className="skeleton-pipeline-tab" key={item} />)}</div>
+        {[1, 2, 3].map((item) => <section className="ticket-section" key={item}><Bone className="skeleton-kicker" /><Bone className="skeleton-line long" /><Bone className="skeleton-input" /></section>)}
+      </main>
+      <aside className="context-panel"><Bone className="skeleton-kicker" /><Bone className="skeleton-input" /></aside>
     </div>
-  );
+  </div>;
+}
+
+function DocumentSkeleton() {
+  return <div className="page document-editor-page skeleton-page">
+    <PageHeading />
+    <div className="document-editor">
+      <aside>{[1, 2, 3].map((item) => <div className="skeleton-field" key={item}><Bone className="skeleton-line short" /><Bone className="skeleton-input" /></div>)}</aside>
+      <main><Bone className="skeleton-line short" /><Bone className="document-body skeleton-input" /></main>
+    </div>
+  </div>;
+}
+
+function InterviewDetailSkeleton() {
+  return <div className="page interview-workspace-page skeleton-page">
+    <PageHeading />
+    <div className="interview-workspace-form">
+      <aside>{[1, 2, 3, 4].map((item) => <div className="skeleton-field" key={item}><Bone className="skeleton-line short" /><Bone className="skeleton-input" /></div>)}</aside>
+      <main>{[1, 2, 3].map((item) => <section className="interview-writing-section" key={item}><Bone className="skeleton-line medium" /><Bone className="skeleton-panel" /></section>)}</main>
+    </div>
+  </div>;
 }
 
 function AgentSkeleton() {
@@ -512,16 +496,13 @@ function AgentSkeleton() {
       </header>
       <main className="agent-native-workplane">
         <div className="agent-empty-state skeleton-agent-empty">
+          <Bone className="agent-waypoint-watermark" />
           <div className="agent-empty-copy">
             <Bone className="skeleton-agent-title" />
             <Bone className="skeleton-line long" />
             <Bone className="skeleton-line medium" />
           </div>
-          <div className="agent-prompt-examples">
-            {[148, 196, 184].map((width) => (
-              <Bone className="skeleton-agent-prompt" key={width} />
-            ))}
-          </div>
+          <div className="agent-prompt-examples"><Bone className="skeleton-line long" /></div>
         </div>
         <section className="agent-native-composer skeleton-agent-composer">
           <div className="skeleton-agent-input">
@@ -544,18 +525,9 @@ function AgentSkeleton() {
 function ContactsSkeleton() {
   return (
     <div className="workspace-page workspace-index-page contacts-page skeleton-page skeleton-contacts-page">
-      <header className="workspace-page-header">
-        <div className="workspace-page-heading">
-          <div>
-            <Bone className="skeleton-title" />
-            <Bone className="skeleton-home-count" />
-          </div>
-          <Bone className="skeleton-subtitle" />
-        </div>
-        <Bone className="skeleton-action" />
-      </header>
+      <CollectionHeading />
       <div className="workspace-view-toolbar">
-        <div className="workspace-view-primary skeleton-contacts-tabs">
+        <div className="workspace-view-primary pill-tabs skeleton-contacts-tabs">
           <Bone className="skeleton-pipeline-tab" />
           <Bone className="skeleton-pipeline-tab" />
         </div>
@@ -627,19 +599,10 @@ function ContactsSkeleton() {
 function InterviewsSkeleton() {
   return (
     <div className="workspace-page workspace-index-page interview-index-page skeleton-page skeleton-interviews-page">
-      <header className="workspace-page-header">
-        <div className="workspace-page-heading">
-          <div>
-            <Bone className="skeleton-title" />
-            <Bone className="skeleton-home-count" />
-          </div>
-          <Bone className="skeleton-subtitle" />
-        </div>
-        <Bone className="skeleton-action" />
-      </header>
+      <CollectionHeading />
       <div className="workspace-view-toolbar interview-view-toolbar">
-        <div className="workspace-view-primary skeleton-interview-tabs">
-          {Array.from({ length: 3 }, (_, tab) => (
+        <div className="workspace-view-primary pill-tabs skeleton-interview-tabs">
+          {Array.from({ length: 4 }, (_, tab) => (
             <Bone className="skeleton-pipeline-tab" key={tab} />
           ))}
         </div>
@@ -738,18 +701,9 @@ function InterviewsSkeleton() {
 function DocumentsSkeleton() {
   return (
     <div className="workspace-page workspace-index-page documents-index-page skeleton-page skeleton-documents-page">
-      <header className="workspace-page-header">
-        <div className="workspace-page-heading">
-          <div>
-            <Bone className="skeleton-title" />
-            <Bone className="skeleton-home-count" />
-          </div>
-          <Bone className="skeleton-subtitle" />
-        </div>
-        <Bone className="skeleton-action" />
-      </header>
+      <CollectionHeading />
       <div className="workspace-view-toolbar documents-view-toolbar">
-        <div className="workspace-view-primary skeleton-document-tabs">
+        <div className="workspace-view-primary pill-tabs skeleton-document-tabs">
           <Bone className="skeleton-pipeline-tab" />
           <Bone className="skeleton-pipeline-tab" />
         </div>
@@ -961,8 +915,7 @@ function GenericListSkeleton() {
   );
 }
 
-export function WorkspaceLoading() {
-  const pathname = usePathname();
+export function WorkspaceSkeleton({ pathname }: { pathname: string }) {
   let content;
   if (pathname === "/home") content = <HomeSkeleton />;
   else if (pathname === "/inbox") content = <InboxSkeleton />;
@@ -970,13 +923,15 @@ export function WorkspaceLoading() {
   else if (pathname === "/interview") content = <InterviewsSkeleton />;
   else if (pathname === "/contacts") content = <ContactsSkeleton />;
   else if (pathname === "/documents") content = <DocumentsSkeleton />;
+  else if (pathname.endsWith("/new")) content = <FormSkeleton />;
   else if (
-    /^\/opportunities\/[^/]+$/.test(pathname) ||
-    /^\/documents\/[^/]+$/.test(pathname)
+    /^\/opportunities\/[^/]+$/.test(pathname)
   )
     content = <DetailSkeleton />;
+  else if (/^\/documents\/[^/]+$/.test(pathname)) content = <DocumentSkeleton />;
+  else if (/^\/interview\/[^/]+$/.test(pathname)) content = <InterviewDetailSkeleton />;
   else if (pathname.startsWith("/settings") || pathname === "/admin")
-    content = <SettingsSkeleton />;
+    content = <SettingsSkeleton pathname={pathname} />;
   else if (pathname === "/agent") content = <AgentSkeleton />;
   else if (pathname === "/insights") content = <InsightsSkeleton />;
   else if (pathname === "/notifications") content = <NotificationsSkeleton />;
@@ -988,6 +943,10 @@ export function WorkspaceLoading() {
       {content}
     </div>
   );
+}
+
+export function WorkspaceLoading() {
+  return <WorkspaceSkeleton pathname={usePathname()} />;
 }
 
 export function GenericLoadingScreen() {
