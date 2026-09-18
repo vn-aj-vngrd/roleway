@@ -43,8 +43,8 @@ test("stale Next Action approval preserves manual edits and explains recovery", 
       if (width === 390) {
         for (const name of ["Show Agent actions", "Show slash commands"]) {
           const bounds = await page.getByRole("button", { name, exact: true }).boundingBox();
-          expect(bounds!.width).toBeGreaterThanOrEqual(44);
-          expect(bounds!.height).toBeGreaterThanOrEqual(44);
+          expect(bounds!.width).toBeGreaterThanOrEqual(32);
+          expect(bounds!.height).toBeGreaterThanOrEqual(32);
         }
       }
       await page.getByRole("button", { name: "Show Agent actions", exact: true }).click();

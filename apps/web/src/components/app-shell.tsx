@@ -922,7 +922,6 @@ export function AppShell({
     { href: "/interview", label: "Interviews", icon: CalendarClock },
     { href: "/contacts", label: "Contacts", icon: UserRound },
     { href: "/documents", label: "Documents", icon: FileText },
-    { href: "/agent", label: "Agent", icon: Navigation },
     { href: "/insights", label: "Insights", icon: ChartNoAxesColumnIncreasing },
     { href: "/notifications", label: "Notifications", icon: Bell },
     { href: "/settings/profile", label: "Settings", icon: Settings },
@@ -1144,6 +1143,7 @@ export function AppShell({
           {mobileNav.map((item) => (
             <NavItem key={item.href} item={item} pathname={pathname} />
           ))}
+          <NavItem item={{ href: "/agent", label: "Agent", icon: Navigation }} pathname={pathname} />
           <button
             className={`nav-link mobile-more ${mobileMoreActive ? "active" : ""}`}
             data-tour="more"
@@ -1154,15 +1154,6 @@ export function AppShell({
           >
             <MoreHorizontal aria-hidden="true" />
             <span>More</span>
-          </button>
-          <button
-            className="nav-link mobile-search"
-            data-tour="commands"
-            aria-label="Search Roleway"
-            onClick={() => setSearchOpen(true)}
-          >
-            <Search aria-hidden="true" />
-            <span>Search</span>
           </button>
         </nav>
         {mobileMoreOpen ? (
@@ -1197,6 +1188,14 @@ export function AppShell({
                 </button>
               </header>
               <nav aria-label="More workspace destinations">
+                <button
+                  type="button"
+                  data-tour="commands"
+                  onClick={() => { setMobileMoreOpen(false); setSearchOpen(true); }}
+                >
+                  <Search aria-hidden="true" />
+                  <span>Search Roleway</span>
+                </button>
                 {mobileMoreEntries.map((item) => {
                   const Icon = item.icon;
                   const active =

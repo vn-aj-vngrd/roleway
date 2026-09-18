@@ -20,7 +20,7 @@ test("plans, manual review, focused admin and public help", async ({
     await expect(page.locator("#pricing")).not.toContainText("Unlimited");
     await page.goto("/help");
     await expect(
-      page.getByRole("heading", { name: "How can we help?" }),
+      page.getByRole("heading", { name: "Your guide to Roleway" }),
     ).toBeVisible();
     await page
       .getByRole("textbox", { name: "Search help articles" })

@@ -1567,12 +1567,19 @@
 }
 .app-shell .pill-tabs {
   min-width: 0;
+  max-width: 100%;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
   display: flex;
   align-items: center;
   gap: 6px;
 }
 .app-shell .pill-tab {
+  white-space: nowrap;
+  position: relative;
   min-height: 30px;
+  height: 30px;
   padding: 0 10px;
   border: 1px solid var(--line);
   border-radius: 999px;
@@ -1997,6 +2004,7 @@
   padding: 0;
 }
 .app-shell .board-page .pipeline-controls {
+  flex-wrap: nowrap;
   width: 100%;
   height: 44px;
   min-height: 44px;
@@ -2010,6 +2018,8 @@
   background: var(--canvas);
 }
 .app-shell .pipeline-filters {
+  order: 1;
+  flex: 1 1 auto;
   min-width: 0;
   height: 44px;
   gap: 6px;
@@ -2020,6 +2030,7 @@
   display: none;
 }
 .app-shell .pipeline-tools-row {
+  order: 2;
   height: 30px;
   margin-left: auto;
   display: flex;
@@ -3759,8 +3770,8 @@
   .app-shell .linear-ticket .ticket-view-tabs {
     width: 100%;
     margin-inline: 0;
-    flex-wrap: wrap;
-    overflow: visible;
+    flex-wrap: nowrap;
+    overflow-x: auto;
   }
   .app-shell
     .ticket-body[data-active-tab="overview"]
@@ -4695,9 +4706,6 @@
     min-height: 58px;
     padding-inline: 14px;
   }
-  .app-shell .interview-index-page .pill-tab {
-    min-height: 44px;
-  }
   .app-shell .interview-notices {
     width: calc(100% - 32px);
     margin-top: 12px;
@@ -5478,11 +5486,6 @@
   .app-shell .contacts-index-page .pill-tabs {
     width: 100%;
   }
-  .app-shell .contacts-index-page .pill-tab {
-    min-height: 44px;
-    flex: 1;
-    justify-content: center;
-  }
   .app-shell .contacts-index-page .workspace-view-actions {
     width: 100%;
     min-width: 0;
@@ -6142,9 +6145,6 @@
   .app-shell .documents-index-page > .documents-view-toolbar {
     min-height: 58px;
     padding-inline: 14px;
-  }
-  .app-shell .documents-index-page .pill-tab {
-    min-height: 44px;
   }
   .app-shell .documents-index-page .workspace-toolbar-note {
     display: none;
@@ -7598,3 +7598,23 @@
 .capacity-notice a { font-weight:600; text-decoration:underline; }
 .settings-shell-main .billing-content { width:min(100%,760px); margin-inline:auto; }
 .management-table td small { font-size:13px; line-height:1.5; }
+
+/* Keep capsule geometry consistent; surrounding space supplies the touch target. */
+@media (max-width: 760px) {
+  .app-shell .pill-tab { margin-block: 7px; }
+  .app-shell .pill-tab::after { content: ""; position: absolute; inset: -7px 0; border-radius: inherit; }
+}
+
+/* Scrollable tabs keep their compact row without visible scrollbar chrome. */
+.pill-tabs::-webkit-scrollbar,
+.workspace-view-primary::-webkit-scrollbar,
+.pipeline-filters::-webkit-scrollbar { display: none; }
+
+@media (max-width: 760px) {
+  .app-shell .home-v2-page > .home-v2-header {
+    min-height: 60px;
+    padding: 8px 16px;
+    align-items: center;
+    border-bottom: 1px solid var(--line);
+  }
+}

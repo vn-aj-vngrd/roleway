@@ -118,7 +118,6 @@ test.describe.serial("critical product journey", () => {
       "Interviews",
       "Contacts",
       "Documents",
-      "Agent",
       "Insights",
       "Notifications",
     ]) {
@@ -126,6 +125,7 @@ test.describe.serial("critical product journey", () => {
         page.getByRole("img", { name: `${pageName} page preview` }),
       ).toBeVisible();
     }
+    await expect(page.getByRole("figure", { name: "Agent sample conversation" })).toBeVisible();
     expect(
       await page.evaluate(
         () =>

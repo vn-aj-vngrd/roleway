@@ -111,7 +111,7 @@ Treat the design system as code, not inspiration:
 1. **Reuse before adding.** Base controls, feedback, overlays, tables, and form fields come from the source-owned shadcn/Base UI layer in `apps/web/src/components/ui`. Operational Workspace collections use `WorkspaceHeader` and `ViewToolbar`; editorial and dossier routes use `PageHeader`; all routes reuse the appropriate shared empty and section patterns. Domain wrappers such as `SelectField`, `DateTimeField`, `TimezoneField`, and `SubmitButton` compose those controls. Extend the shared layer when a repeated need appears; do not paste local lookalikes or bypass an installed shadcn primitive.
 2. **Tokens only.** Tailwind CSS 4 semantic utilities and component CSS map to the semantic variables in `globals.css` (`--canvas`, `--sidebar`, `--surface`, `--ink`, `--muted`, `--line`, `--primary`, spacing, radius, shadow, motion). Raw hex, RGB, or one-off OKLCH values belong only in the token definitions or a documented semantic exception.
 3. **One type floor.** Functional and descriptive UI text is at least 13px; controls default to 14px. Smaller type is not a solution for fitting content—truncate, wrap, simplify, or redesign the layout.
-4. **One geometry.** Buttons use compact 32px desktop heights and fully rounded ends; fields retain an 8px radius and 36px height. Compact operational icon controls may be 28px when they have accessible labels and are not used as mobile touch targets. Mobile interactive targets are at least 44px. Editors may use 6px, settings groups 10px, and the desktop work plane 12px.
+4. **One geometry.** Buttons use compact 32px desktop heights and fully rounded ends; fields retain an 8px radius and 36px height. Compact operational icon controls may be 28px when they have accessible labels and are not used as mobile touch targets. Mobile action buttons retain a compact 32px visible size with expanded hit areas; navigation and fields retain their larger touch geometry. Editors may use 6px, settings groups 10px, and the desktop work plane 12px.
 5. **One saturated voice.** Blue means action, focus, selection, or progress. Large blue slabs, colored chrome, decorative gradients, and arbitrary status colors are prohibited. Semantic feedback uses blue for information, green for success, amber for warnings, and red for danger/errors; these colors stay within status messages rather than decorative chrome.
 6. **Spacing over boxes.** Use 4/8/12/16px for local grouping and 24/32px for section separation. Do not create a card merely to separate content. Hairlines mark real boundaries; shadows mark elevation.
 7. **State completeness.** Every reusable pattern must account for default, hover, active, focus-visible, disabled, pending, error, empty, dark theme, reduced motion, keyboard, 1440px desktop, and 390px mobile states.
@@ -187,7 +187,7 @@ The Roleway mark follows the favicon everywhere: a Waypoint Blue rounded tile wi
 ## Components
 
 ### Buttons
-- **Shape:** Compact 32px-high pill with the shared action radius and horizontal padding; 28px icon-only operational controls may be circular on desktop and must expand to a 44px touch target on mobile.
+- **Shape:** Compact 32px-high pill with the shared action radius and horizontal padding; 28px icon-only operational controls may be circular on desktop; mobile action controls use a 32px visible size and expanded hit areas.
 - **Primary:** Solid Waypoint Blue with high-contrast text in both themes. No gradient or decorative shadow.
 - **Secondary:** Canvas background, muted gray hairline, and current foreground text; borders never approach the darkness of labels.
 - **Hover / Focus:** Blue fill shift plus a visible blue focus ring; no floating transform on routine controls.
@@ -217,7 +217,7 @@ The Roleway mark follows the favicon everywhere: a Waypoint Blue rounded tile wi
 - Agent and Insights remain utilities rather than Workspaces, operate against the active Workspace context, and stay in the unlabeled top navigation group.
 - Expanded destination and Workspace rows use a shared 28px operational row with 1–2px internal rhythm and 14px between major groups. Workspace children open and close with a restrained 160ms height-and-fade transition; the complete sidebar opens and closes with one coordinated 280ms slide while the work plane expands into the released space. Reduced-motion mode removes both. Hover and active states use neutral fills, while Workspace marks use restrained Waypoint Blue as standalone glyphs without filled icon tiles. Section labels are sentence case, untracked, and visually subordinate.
 - Menus, select lists, date pickers, filters, saved views, and account popovers reuse one borderless floating-panel treatment and minimal entrance motion; reduced-motion preferences remove the animation. Icon-only search, create, and sidebar controls expose tooltips. Tooltips use the current canvas with foreground text and a muted boundary rather than black inverse bubbles in light mode.
-- Mobile navigation uses labeled 48px targets in a fixed bottom bar with the same neutral active state. Secondary destinations open from one accessible More sheet instead of crowding the bar.
+- Mobile navigation uses icon-only 48px targets with screen-reader labels in a fixed bottom bar with the same neutral active state. Secondary destinations open from one accessible More sheet instead of crowding the bar.
 
 ### Settings Shell
 Settings replace the application rail with a dedicated shell: Back to app, a local settings search, and grouped Personal, Workspaces, Intelligence, and Account navigation. The main plane uses one simple page title and a narrow settings column. Quiet group headings sit above bordered row cards; each row pairs a title and optional explanation with its control. Settings inputs use only a neutral outline on the canvas—no filled field background or decorative shadow. The shell does not repeat an inner settings navigation.
@@ -228,7 +228,7 @@ The content plane is the application’s dominant structural region. It owns the
 ### Roleway Agent
 Agent is a first-class work surface and product highlight, not a dashboard card or generic support chatbot. The dedicated route uses a 44px chat switcher bar, quiet open work plane, centered prompt composer, Create/Explore discovery through + and /, and explicit provider/context disclosure. Messages use restrained rounded bubbles, local timestamps above them, and Copy beneath them.
 
-Desktop keeps the composer near the visual center in an empty conversation and moves it to the bottom of the transcript once messages exist. Mobile removes the sidebar and frame decoration, retains route/chat identity, and gives the composer safe horizontal and bottom margins. History, Skills, provider setup, and approvals use shared menus, settings groups, and floating surfaces.
+Desktop keeps the composer near the visual center in an empty conversation and moves it to the bottom of the transcript once messages exist. Mobile removes the sidebar and frame decoration, retains route/chat identity, and anchors the composer above bottom navigation within one viewport. Only the transcript scrolls as messages grow; the empty view fits without page scrolling. History, Skills, provider setup, and approvals use shared menus, settings groups, and floating surfaces.
 
 Every agent action displays its scope and state. Read steps may run after the user submits; drafts remain reviewable; internal mutations render an exact Approval card with Approve and Reject/Edit actions. Progress is a stable ordered step list, never a decorative thinking animation. Errors preserve the conversation and provide retry or recovery. External actions are not offered.
 
@@ -261,7 +261,7 @@ Marketing uses the application itself as evidence. Measured graphite headlines l
 
 ### Public entry and feedback consistency
 
-Authentication uses one centered 384px form, 28px heading, visible labels, 44px fields and pill actions, and the shared appearance picker. Login, signup, recovery, and verification compose the same Field, Input, Button, and Alert primitives. Alerts pair one 16px outline icon with wrapping copy; error color remains readable in both themes. Toasts use an opaque canvas and the shared floating shadow. Interface icons share a 1.75 stroke; large illustrative watermark marks retain their own weight. Public display typography may scale from 32px section titles to a 72px hero; operational text retains the 13px floor.
+Authentication uses one centered 384px form, 28px heading, visible labels, 44px fields and compact pill actions, and the shared appearance picker. Login, signup, recovery, and verification compose the same Field, Input, Button, and Alert primitives. Alerts pair one 16px outline icon with wrapping copy; error color remains readable in both themes. Toasts use an opaque canvas and the shared floating shadow. Interface icons share a 1.75 stroke; large illustrative watermark marks retain their own weight. Public display typography may scale from 32px section titles to a 72px hero; operational text retains the 13px floor.
 
 ### Alert status variants
 
@@ -282,3 +282,11 @@ Management tables retain real column headers, tabular numbers, wrapping identifi
 Plan comparison uses one shared component on landing and billing. Present options within one rounded, divided surface, with columns on wide screens and a vertical stack on narrower screens. Capacity, pricing, and availability come from the catalog; unavailable plans retain an explicit status and disabled action. Billing puts current capacity before payment instructions and plan selection. Usage meters pair their fill with readable used/limit values. Manual payment instructions show an exact amount, request reference, beneficiary, and review state without implying automatic activation; long references wrap within the work plane.
 
 Help uses a readable single column with a simple branded header, search, and linked article titles and summaries separated by rules. Article text remains plain and spacious, with a visible route back to the guide list and a subordinate support section. Empty search results and unavailable content explain the next step in text.
+
+### Compact filter capsules
+
+Shared PillTabs keep a 30px visible capsule with 10px horizontal padding on every screen. On mobile, 7px of space above and below extends each hit area to 44px without inflating the pill. Do not add page-specific chip heights or stretch chips to fill a row. Tab chips always stay on one horizontally scrollable line with hidden scrollbars. Landing previews disable individual sample actions while keeping their tab rows scrollable, and grow with content on mobile; the hero Next Action follows the preview instead of covering records.
+
+Mobile action buttons share 32px minimum visible height, 13px text, and compact horizontal padding across public pages, authentication, settings, and Workspace controls. Invisible vertical hit extensions preserve tap space without enlarging the painted control. Multiline actions may grow with their labels; fields and navigation keep their existing sizing.
+
+Mobile navigation uses Home, Inbox, Opportunities, Agent, and More in that order, with matching plain icons. Search lives in More; the floating Agent launcher is reserved for desktop and Settings.

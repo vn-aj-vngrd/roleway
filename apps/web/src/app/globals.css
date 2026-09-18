@@ -2200,7 +2200,7 @@ h3 {
   justify-content: center;
   flex: 0 0 18px;
   font:
-    400 10px/1 var(--font-geist),
+    400 11px/1 var(--font-geist),
     sans-serif;
   font-variant-numeric: tabular-nums;
   text-align: center;
@@ -10213,18 +10213,23 @@ html:has(.app-shell) {
     background: var(--canvas);
     display: block;
   }
-  .mobile-project-bar .search-project-switcher {
-    width: min(100%, 360px);
-    margin: 0 auto;
+  .app-shell .mobile-project-bar .search-project-switcher {
+    width: fit-content;
+    max-width: 100%;
+    margin: 0;
   }
-  .mobile-project-bar .search-project-trigger {
-    min-height: 41px;
+  .app-shell .mobile-project-bar .search-project-trigger {
+    width: auto;
+    max-width: 100%;
+    min-height: 32px;
+    grid-template-columns: 18px minmax(0, 1fr) 14px;
   }
   .mobile-project-bar .search-project-menu {
-    position: fixed;
-    top: 48px;
-    left: 12px;
-    width: calc(100vw - 24px);
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    width: max(100%, 280px);
+    max-width: calc(100vw - 24px);
     max-height: calc(100dvh - 132px);
   }
   .capture-url-form {
@@ -11296,7 +11301,7 @@ html:has(.app-shell) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 4px;
   }
-  .mobile-more-sheet nav a {
+  .mobile-more-sheet nav :is(a, button) {
     min-height: 52px;
     padding: 0 11px;
     border-radius: 7px;
@@ -11306,7 +11311,7 @@ html:has(.app-shell) {
     gap: 9px;
     font-size: 13px;
   }
-  .mobile-more-sheet nav a:hover,
+  .mobile-more-sheet nav :is(a, button):hover,
   .mobile-more-sheet nav a.active {
     color: var(--ink);
     background: var(--surface-2);
@@ -11966,7 +11971,7 @@ html:has(.app-shell) {
   font-size: 13px;
   font-weight: 600;
 }
-.pipeline-list-group > header span {
+.pipeline-list-group > header span:not(.count-badge) {
   font-size: 13px;
 }
 .pipeline-list-row {
@@ -16103,8 +16108,8 @@ body [data-tooltip]::after {
 .onboarding-feature-preview svg { width: 20px; height: 20px; }
 .onboarding-content > [data-slot="alert"] { margin-bottom: 32px; }
 @media (max-width: 760px) {
-  [data-slot="button"], .button, .icon-button, .rw-theme-picker button { min-height: 44px; }
-  [data-slot="button"]:has(> svg:only-child), .icon-button { min-width: 44px; }
+  [data-slot="button"], .button, .icon-button, .rw-theme-picker button { min-height: 32px; }
+  [data-slot="button"][data-size^="icon"], .icon-button { min-width: 32px; }
 }
 
 .onboarding-form [data-slot="input"], .onboarding-form [data-slot="select-trigger"] { min-height: 40px; }
@@ -16117,4 +16122,64 @@ body [data-tooltip]::after {
   .onboarding-form [data-slot="input"], .onboarding-form [data-slot="select-trigger"] { min-height: 44px; }
   .wizard-actions { align-items: stretch; }
   .wizard-actions > [data-slot="button"] { white-space: normal; height: auto; padding-block: 10px; }
+}
+
+/* One compact mobile action size across public, authenticated, and legacy surfaces. */
+@media (max-width: 760px) {
+  :root body :is([data-slot="button"], .button, .icon-button, .rw-button, .rw-theme-picker button) {
+    min-height: 32px;
+    height: auto;
+    padding: 6px 12px;
+    font-size: 13px;
+    line-height: 18px;
+  }
+  :root body :is([data-slot="button"][data-size^="icon"], .icon-button) {
+    width: 32px;
+    min-width: 32px;
+    height: 32px;
+    padding: 0;
+  }
+  :root body :is([data-slot="button"], .button, .icon-button, .rw-button, .rw-theme-picker button):not([data-tooltip])::before {
+    content: "";
+    position: absolute;
+    inset: -6px 0;
+    border-radius: inherit;
+  }
+}
+
+@layer base {
+  :where([data-slot="button"], .button, .icon-button, .rw-button, .rw-theme-picker button) { position: relative; }
+}
+
+/* Mobile Agent owns one viewport; only the transcript grows into a scroller. */
+@media (max-width: 760px) {
+  .app-shell .main-content-scroll:has(.agent-native-page) { overflow: hidden; display: flex; flex-direction: column; }
+  .agent-native-page { min-height: 0; height: 100%; padding-bottom: 0; flex: 1; overflow: hidden; }
+  .agent-native-routebar { flex: 0 0 auto; }
+  .agent-native-routebar .agent-history-menu { flex: 1; }
+  .agent-history-menu > summary { max-width: 100%; }
+  .agent-native-workplane { min-height: 0; overflow: hidden; }
+  .agent-empty-state { min-height: 0; padding: 24px 18px; overflow-y: auto; }
+  .agent-waypoint-watermark { position: static; width: 40px; height: 40px; margin-bottom: 20px; transform: none; color: var(--muted); }
+  .agent-waypoint-watermark svg { stroke-width: 1; }
+  .agent-prompt-examples { margin-top: 16px; font-size: 13px; }
+  .agent-transcript { min-height: 0; flex: 1; overflow-y: auto; padding: 20px 16px; overscroll-behavior: contain; }
+  .agent-native-composer,
+  .agent-native-page.has-conversation .agent-native-composer,
+  .agent-native-page.is-empty .agent-native-composer { position: relative; inset: auto; flex: 0 0 auto; width: calc(100% - 24px); margin: 0 12px 12px; }
+  .agent-native-composer > textarea { min-height: 64px; max-height: min(160px, 25dvh); }
+  .mobile-nav .nav-link > span { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+  .mobile-nav .nav-link svg { width: 20px; height: 20px; }
+}
+
+@media (max-width: 760px) {
+  .app-shell .document-editor { grid-template-columns: minmax(0, 1fr); }
+  .document-editor > aside { border-right: 0; border-bottom: 1px solid var(--line); padding: 0 0 20px; }
+  .document-editor > main { min-width: 0; padding: 20px 0 0; }
+  .document-body { min-width: 0; width: 100%; min-height: 320px; }
+}
+
+@media (max-width: 760px) {
+  .app-shell .global-agent-launch { display: none; }
+  .mobile-more-sheet nav button { border: 0; background: transparent; text-align: left; font-family: inherit; cursor: pointer; }
 }

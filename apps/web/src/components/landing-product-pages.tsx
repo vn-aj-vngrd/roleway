@@ -1,3 +1,5 @@
+import { LandingProductNavigation } from "@/components/landing-product-navigation";
+import { LandingPreviewContent } from "@/components/landing-preview-content";
 import {
   AlertCircle,
   ArrowRight,
@@ -239,13 +241,7 @@ export function LandingProductPages() {
           same components used inside Roleway.
         </p>
       </header>
-      <nav className="rw-product-page-index" aria-label="Product pages">
-        {productPages.map((page) => (
-          <a href={`#${page.id}`} key={page.id}>
-            {page.label}
-          </a>
-        ))}
-      </nav>
+      <LandingProductNavigation items={productPages} />
 
       <ProductProof page={productPages[0]}>
         <HomeSurface />
@@ -299,9 +295,7 @@ function ProductProof({
         role="img"
         aria-label={`${page.label} page preview`}
       >
-        <div aria-hidden="true" inert>
-          {children}
-        </div>
+        <LandingPreviewContent>{children}</LandingPreviewContent>
       </div>
     </article>
   );
@@ -939,7 +933,7 @@ function PreparationCheck({
 
 function ContactSurface() {
   return (
-    <div className="workspace-page workspace-index-page contacts-page">
+    <div className="workspace-page workspace-index-page contacts-page contacts-index-page">
       <WorkspaceHeader
         title="Contacts"
         count={4}

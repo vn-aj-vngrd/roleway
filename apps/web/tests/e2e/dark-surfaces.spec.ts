@@ -57,6 +57,20 @@ test("workspace structure stays neutral and header matches its canvas", async ({
         );
         await page.goto("/opportunities");
         await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
+        if (width === 390) {
+          await page.getByRole("button", { name: "Display options", exact: true }).click();
+          await page.getByRole("button", { name: "List", exact: true }).click();
+          await page.keyboard.press("Escape");
+          const geometry = await page.locator(".pipeline-controls").evaluate((bar) => {
+            const bounds = bar.getBoundingClientRect();
+            return Array.from(bar.querySelectorAll("button"), (button) => {
+              const rect = button.getBoundingClientRect();
+              return rect.top >= bounds.top && rect.bottom <= bounds.bottom + 1;
+            });
+          });
+          expect(geometry.every(Boolean)).toBe(true);
+          await expect(page.locator(".pipeline-list-group .count-badge").first()).toHaveCSS("font-size", "11px");
+        }
         await page
           .getByRole("button", { name: "Display options", exact: true })
           .click();
@@ -141,6 +155,23 @@ test("workspace structure stays neutral and header matches its canvas", async ({
         });
       }
     }
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/home");
+    await expect(page.locator(".home-v2-header:not(.skeleton-home-page-header)")).toHaveCSS("border-bottom-width", "1px");
+    const mobileNavigation = page.getByRole("navigation", { name: "Mobile navigation" });
+    await expect(mobileNavigation.locator(".nav-link")).toHaveText(["Home", "Inbox", "Opportunities", "Agent", "More"]);
+    await expect(mobileNavigation.getByRole("link", { name: "Agent", exact: true })).toHaveCSS("border-width", "0px");
+    await mobileNavigation.getByRole("button", { name: "More destinations" }).click();
+    await page.getByRole("button", { name: "Search Roleway", exact: true }).click();
+    await expect(page.getByRole("dialog", { name: "Search Roleway" })).toBeVisible();
+    await page.getByRole("button", { name: "Close search" }).click();
+    await mobileNavigation.getByRole("link", { name: "Agent", exact: true }).click();
+    await expect(page.getByLabel("Message Roleway Agent", { exact: true })).toBeVisible();
+    expect(await page.locator(".main-content-scroll").evaluate((element) => element.scrollHeight - element.clientHeight)).toBeLessThanOrEqual(1);
+    const composer = await page.locator(".agent-native-composer").boundingBox();
+    const nav = await page.getByRole("navigation", { name: "Mobile navigation" }).boundingBox();
+    expect(composer!.y + composer!.height).toBeLessThanOrEqual(nav!.y);
+    expect(nav!.y - composer!.y - composer!.height).toBeLessThanOrEqual(14);
   } finally {
     if (userId) {
       const { error } = await admin.auth.admin.deleteUser(userId);

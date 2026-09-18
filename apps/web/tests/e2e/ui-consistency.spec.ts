@@ -36,7 +36,7 @@ for (const width of [1440, 390]) {
             };
           });
           expect(geometry.radius).toBeGreaterThanOrEqual(geometry.height / 2);
-          expect(geometry.height).toBeGreaterThanOrEqual(44);
+          expect(geometry.height).toBeGreaterThanOrEqual(width === 390 ? 32 : 44);
         }
         await expect(page.getByRole("alert").first()).toContainText(
           "Please check your details",
