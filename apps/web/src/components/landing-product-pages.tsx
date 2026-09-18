@@ -1,3 +1,4 @@
+import { LandingAgentShowcase } from "@/components/landing-agent-showcase";
 import { LandingProductNavigation } from "@/components/landing-product-navigation";
 import { LandingPreviewContent } from "@/components/landing-preview-content";
 import {
@@ -188,6 +189,13 @@ const productPages = [
     variant: "offset",
   },
   {
+    id: "agent-proof",
+    label: "Agent",
+    title: "Agent works across your search. You approve every change.",
+    copy: "Bring your own provider. Agent reads permitted context, prepares grounded work, and cannot take external action.",
+    variant: "spotlight",
+  },
+  {
     id: "contacts-proof",
     label: "Contacts",
     title: "Contacts keep people and follow-ups in context.",
@@ -200,13 +208,6 @@ const productPages = [
     title: "Documents make every draft and approval state explicit.",
     copy: "Resumes, messages, answers, and research notes support list and gallery views without losing review state.",
     variant: "portrait",
-  },
-  {
-    id: "agent-proof",
-    label: "Agent",
-    title: "Agent works across your search. You approve every change.",
-    copy: "Bring your own provider. Agent reads permitted context, prepares grounded work, and cannot take external action.",
-    variant: "spotlight",
   },
   {
     id: "insights-proof",
@@ -255,11 +256,12 @@ export function LandingProductPages() {
       <ProductProof page={productPages[3]}>
         <InterviewSurface />
       </ProductProof>
+      <LandingAgentShowcase />
       <div className="rw-product-proof-pair">
-        <ProductProof page={productPages[4]}>
+        <ProductProof page={productPages[5]}>
           <ContactSurface />
         </ProductProof>
-        <ProductProof page={productPages[5]}>
+        <ProductProof page={productPages[6]}>
           <DocumentSurface />
         </ProductProof>
       </div>

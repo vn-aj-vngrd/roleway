@@ -5,7 +5,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { LandingProductPages } from "@/components/landing-product-pages";
 import { LandingWorkspacePreview } from "@/components/landing-workspace-preview";
-import { LandingAgentShowcase } from "@/components/landing-agent-showcase";
 import { LandingMotion } from "@/components/landing-motion";
 import { LogoMark } from "@/components/logo";
 import { ThemePicker } from "@/components/theme-picker";
@@ -111,7 +110,6 @@ export default async function HomePage() {
           </div>
         </section>
 
-        <LandingAgentShowcase />
         <LandingProductPages />
 
         <section className="rw-problem">
