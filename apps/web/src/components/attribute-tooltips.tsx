@@ -9,10 +9,13 @@ export function AttributeTooltips() {
   const id = useId();
 
   useEffect(() => {
-    let timer: ReturnType<typeof setTimeout> | undefined;
+    let showTimer: ReturnType<typeof setTimeout> | undefined;
+    let hideTimer: ReturnType<typeof setTimeout> | undefined;
+    let visibleTarget: HTMLElement | null = null;
     let target: HTMLElement | null = null;
-    const clear = () => clearTimeout(timer);
-    const close = () => { clear(); target = null; setAnchor(null); };
+    const clearShow = () => { clearTimeout(showTimer); showTimer = undefined; };
+    const clearHide = () => { clearTimeout(hideTimer); hideTimer = undefined; };
+    const close = () => { clearShow(); clearHide(); target = null; visibleTarget = null; setAnchor(null); };
     const eligible = (element: HTMLElement) => {
       if (!element.isConnected || element.matches(':disabled, [aria-disabled="true"], [aria-expanded="true"]')) return false;
       // Expanded navigation already has visible labels.
@@ -24,16 +27,26 @@ export function AttributeTooltips() {
       const element = event.target instanceof Element ? event.target.closest<HTMLElement>("[data-tooltip]") : null;
       if (!element || !eligible(element)) return;
       if (event.type === "focusin" && !element.matches(":focus-visible")) return;
-      if (element === target) { clear(); return; }
-      close();
-      target = element;
-      timer = setTimeout(() => { if (eligible(element)) setAnchor(element); }, 350);
+      clearHide();
+      if (element !== target) {
+        close();
+        target = element;
+      }
+      // Moving between an icon and its button must not cancel the reveal timer.
+      if (showTimer !== undefined || visibleTarget === element) return;
+      showTimer = setTimeout(() => {
+        showTimer = undefined;
+        if (eligible(element)) { visibleTarget = element; setAnchor(element); }
+      }, 350);
     };
     const leave = (event: Event) => {
       const next = (event as FocusEvent | PointerEvent).relatedTarget;
       if (next instanceof Node && (target?.contains(next) || document.getElementById(id)?.contains(next))) return;
-      clear();
-      timer = setTimeout(close, 100);
+      const source = event.target;
+      if (!(source instanceof Node) || !(target?.contains(source) || document.getElementById(id)?.contains(source))) return;
+      clearShow();
+      clearHide();
+      hideTimer = setTimeout(close, 100);
     };
     const key = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
@@ -41,7 +54,7 @@ export function AttributeTooltips() {
       close();
     };
     const keep = (event: PointerEvent) => {
-      if (event.target instanceof Element && event.target.closest(`#${CSS.escape(id)}`)) clear();
+      if (event.target instanceof Element && event.target.closest(`#${CSS.escape(id)}`)) clearHide();
     };
     document.addEventListener("pointerover", show);
     document.addEventListener("pointerover", keep);
@@ -53,7 +66,8 @@ export function AttributeTooltips() {
     document.addEventListener("scroll", close, true);
     window.addEventListener("resize", close);
     return () => {
-      clear();
+      clearShow();
+      clearHide();
       document.removeEventListener("pointerover", show);
       document.removeEventListener("pointerover", keep);
       document.removeEventListener("pointerout", leave);

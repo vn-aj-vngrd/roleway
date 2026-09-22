@@ -83,6 +83,26 @@ test("Mobile collection actions, feedback, avatar and Agent loading stay compact
     await expect(page.getByRole("tooltip", { name: "New workspace" })).toBeVisible();
     await options.hover();
     await expect(page.getByRole("tooltip", { name: "Workspace options" })).toBeVisible();
+    // Move from button padding into the SVG before the reveal delay finishes.
+    for (const [control, label] of [
+      [page.locator(".sidebar-search-project-create"), "New workspace"],
+      [options, "Workspace options"],
+    ] as const) {
+      await page.mouse.move(600, 100);
+      await expect(page.getByRole("tooltip")).toHaveCount(0);
+      const box = (await control.boundingBox())!;
+      await page.mouse.move(box.x + 2, box.y + 2);
+      await page.waitForTimeout(100);
+      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+      await expect(page.getByRole("tooltip", { name: label })).toBeVisible();
+      await page.mouse.move(600, 100);
+      await expect(page.getByRole("tooltip")).toHaveCount(0);
+      await control.press("Tab");
+      await page.keyboard.press("Shift+Tab");
+      await expect(page.getByRole("tooltip", { name: label })).toBeVisible();
+      await page.keyboard.press("Escape");
+      await expect(page.getByRole("tooltip")).toHaveCount(0);
+    }
     await options.click();
     const menu = page.getByRole("menu", { name: /options$/ });
     await expect(menu).toBeVisible();
