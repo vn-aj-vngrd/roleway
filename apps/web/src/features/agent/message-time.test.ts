@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatMessageTimestamp } from "./message-time";
+import { formatConversationAge, formatMessageTimestamp } from "./message-time";
 import { matchingCapabilities } from "./capabilities";
 
 describe("chat dates", () => {
@@ -16,5 +16,22 @@ describe("action discovery", () => {
     expect(matchingCapabilities("CREATE task").map(item => item.label)).toEqual(["Task"]);
     expect(matchingCapabilities("explore")).toHaveLength(9);
     expect(matchingCapabilities("nonexistent")).toEqual([]);
+  });
+});
+
+describe("conversation ages", () => {
+  const now = new Date("2026-09-22T12:00:00Z");
+  it.each([
+    [0, "Just now"], [59, "Just now"], [60, "1 minute ago"],
+    [120, "2 minutes ago"], [3600, "1 hour ago"], [7200, "2 hours ago"],
+    [86400, "1 day ago"], [259200, "3 days ago"],
+    [604800, "1 week ago"], [1209600, "2 weeks ago"],
+    [2592000, "1 month ago"], [31536000, "1 year ago"],
+  ])("formats an age of %i seconds", (seconds, expected) => {
+    expect(formatConversationAge(new Date(now.getTime() - seconds * 1000).toISOString(), now)).toBe(expected);
+  });
+  it("handles clock skew and invalid dates", () => {
+    expect(formatConversationAge("2026-09-23T12:00:00Z", now)).toBe("Just now");
+    expect(formatConversationAge("invalid", now)).toBe("");
   });
 });

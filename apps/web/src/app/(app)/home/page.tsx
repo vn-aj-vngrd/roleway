@@ -1,3 +1,4 @@
+import { EmptyState } from "@/components/ui-primitives";
 import { formatOpportunityTicket } from "@roleway/core";
 import { ArrowRight, CalendarClock, CheckCircle2, Circle, Inbox, Plus, Target, UserRound } from "lucide-react";
 import Link from "next/link";
@@ -7,7 +8,6 @@ import { HomeWorkspaceDetails, HomeWorkspaceOverview } from "@/components/home-w
 import { CountBadge, WorkspaceHeader, WorkspaceListGroup } from "@/components/ui-primitives";
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { requireSearchContext } from "@/features/projects/context";
 import { toggleTask } from "@/features/workspace/actions";
 
@@ -55,7 +55,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
     <WorkspaceHeader
       title="Home"
       context={<><span>{new Intl.DateTimeFormat(undefined, { weekday: "long", month: "long", day: "numeric" }).format(now)}</span><span aria-hidden="true"> · </span><span>{context.project.name}</span></>}
-      actions={<CreateJobButton variant="ghost" size="sm"><Plus data-icon="inline-start" aria-hidden="true" />Add job</CreateJobButton>}
+      actions={<CreateJobButton size="sm"><Plus data-icon="inline-start" aria-hidden="true" />Add job</CreateJobButton>}
       className="home-v2-header"
     />
 
@@ -71,7 +71,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
       <main className="home-focus-panel">
         <HomeWorkspaceOverview project={context.project} />
         <header className="home-section-header" id="next-up"><div><h2>{taskFocus ? "Due tasks" : "Next up"}</h2><CountBadge value={attention.length} /><span>{attention.length === 1 ? "item" : "items"}</span>{taskFocus ? <Link className="home-section-clear" href="/home#next-up">View all</Link> : null}</div><p>{taskFocus ? "Open tasks due by tomorrow, ordered by date." : "Actions, follow-ups, and interviews that can move this Workspace forward."}</p></header>
-        {attention.length === 0 ? <Empty className="home-clear-state"><EmptyHeader><EmptyMedia className="home-empty-media"><CheckCircle2 aria-hidden="true" /></EmptyMedia><EmptyTitle>{taskFocus ? "No tasks are due" : "Nothing needs attention"}</EmptyTitle><EmptyDescription>{taskFocus ? "No open tasks are due by tomorrow." : "Your follow-ups, preparation, interviews, and Inbox are clear."}</EmptyDescription></EmptyHeader><EmptyContent>{taskFocus ? <Link className="button secondary" href="/home#next-up">View all next up</Link> : <CreateJobButton variant="outline">Add a job</CreateJobButton>}</EmptyContent></Empty> : <div className="home-action-groups" aria-label={taskFocus ? "Due tasks" : "Items needing attention"}>{attentionGroups.map((group) => <WorkspaceListGroup title={group.label} count={group.items.length} className={`home-group home-group-${group.label.toLowerCase()}`} key={group.label}><div className="home-action-list">{group.items.map((item) => <AttentionRow item={item} group={group.label} key={`${item.kind}-${item.id}`} />)}</div></WorkspaceListGroup>)}</div>}
+        {attention.length === 0 ? <EmptyState className="home-clear-state" icon={<CheckCircle2 aria-hidden="true" />} title={taskFocus ? "No tasks are due" : "Nothing needs attention"} description={taskFocus ? "No open tasks are due by tomorrow." : "Your follow-ups, preparation, interviews, and Inbox are clear."} actions={taskFocus ? <Link className="button secondary" href="/home#next-up">View all next up</Link> : <CreateJobButton><Plus aria-hidden="true" />Add a job</CreateJobButton>} /> : <div className="home-action-groups" aria-label={taskFocus ? "Due tasks" : "Items needing attention"}>{attentionGroups.map((group) => <WorkspaceListGroup title={group.label} count={group.items.length} className={`home-group home-group-${group.label.toLowerCase()}`} key={group.label}><div className="home-action-list">{group.items.map((item) => <AttentionRow item={item} group={group.label} key={`${item.kind}-${item.id}`} />)}</div></WorkspaceListGroup>)}</div>}
       </main>
 
       <aside className="home-context-rail">
@@ -89,7 +89,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
         <section className="home-active-opportunities" aria-labelledby="active-opportunities-heading">
           <div className="home-rail-heading"><h2 id="active-opportunities-heading">Active opportunities</h2><Link href="/opportunities">View all</Link></div>
           <div className="home-opportunity-list">{opportunities.slice(0, 5).map((opportunity) => <Link href={`/opportunities/${opportunity.id}`} key={opportunity.id}><span className="status-dot" /><span><strong>{opportunity.jobs?.title ?? "Untitled role"}</strong><small>{opportunity.jobs?.company ?? "Unknown company"} · {stageLabel(opportunity.stage)}</small></span><ArrowRight aria-hidden="true" /></Link>)}</div>
-          {opportunities.length === 0 ? <p className="empty-inline">Track a Job to create this Workspace’s first Opportunity.</p> : null}
+          {opportunities.length === 0 ? <EmptyState className="compact" icon={<Target />} title="No opportunities yet" description="Track a Job from the Inbox to start working on an Opportunity." /> : null}
         </section>
       </aside>
     </div>

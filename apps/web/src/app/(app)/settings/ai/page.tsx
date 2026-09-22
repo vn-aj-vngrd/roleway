@@ -1,17 +1,12 @@
 // OpenRouter free models may queue for minutes; leave time for bounded calls and persistence.
 export const maxDuration = 300;
 
-import {
-  CheckCircle2,
-  PlugZap,
-  ShieldCheck,
-  Trash2,
-  TriangleAlert,
-} from "lucide-react";
+import { Cpu, KeyRound, PlugZap, Trash2 } from "lucide-react";
 import { AiConnectionDialog } from "@/components/ai-connection-dialog";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
 import { SubmitButton } from "@/components/submit-button";
-import { PageHeader } from "@/components/ui-primitives";
+import { Textarea } from "@/components/ui/textarea";
+import { EmptyState, PageHeader } from "@/components/ui-primitives";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireUser } from "@/lib/supabase/server";
 import {
@@ -22,6 +17,7 @@ import {
 
 type AiQuery = {
   saved?: string;
+  updated?: string;
   tested?: string;
   deleted?: string;
   guidanceSaved?: string;
@@ -39,7 +35,7 @@ export default async function AiSettingsPage(props: {
     admin
       .from("ai_connections")
       .select(
-        "id, provider, label, model, base_url, key_hint, status, last_error, last_tested_at",
+        "id, provider, label, model, base_url, key_hint, status, last_error, last_tested_at, updated_at",
       )
       .eq("user_id", auth.user.id)
       .order("updated_at", { ascending: false }),
@@ -63,6 +59,7 @@ export default async function AiSettingsPage(props: {
             Connection saved. Test it before using Agent.
           </div>
         ) : null}
+        {query.updated ? <div className="form-alert success" role="status">Connection updated.</div> : null}
         {query.tested ? (
           <div className="form-alert success" role="status">
             Connection verified and ready.
@@ -93,86 +90,81 @@ export default async function AiSettingsPage(props: {
                 before storage.
               </p>
             </div>
-            <AiConnectionDialog />
+            <AiConnectionDialog key={connections.map(connection => `${connection.id}:${connection.updated_at}`).join("|")} />
           </header>
           <div className="settings-card ai-provider-card">
-            <div className="ai-safety-note">
-              <ShieldCheck aria-hidden="true" />
-              <p>
-                <strong>You approve every internal change.</strong> Agent reads
-                context from your Workspaces only after you send a request. It cannot
-                submit applications or contact employers.
-              </p>
-            </div>
             {connections.length ? (
               <div className="connection-list">
                 {connections.map((connection) => (
-                  <article className="connection-row" key={connection.id}>
-                    <span
-                      className={`connection-status ${connection.status}`}
-                      aria-hidden="true"
-                    >
-                      {connection.status === "connected" ? (
-                        <CheckCircle2 />
-                      ) : connection.status === "error" ? (
-                        <TriangleAlert />
-                      ) : (
-                        <PlugZap />
-                      )}
-                    </span>
+                  <article className="connection-row" key={`${connection.id}:${connection.updated_at}`}>
+                    <span className="connection-provider-mark" aria-hidden="true"><Cpu /></span>
                     <div className="connection-copy">
-                      <strong>{connection.label}</strong>
-                      <span>
-                        {providerLabel(connection.provider)} ·{" "}
-                        <span className="mono">{connection.model}</span> ·{" "}
-                        {connection.key_hint}
-                      </span>
+                      <div className="connection-heading">
+                        <strong>{connection.label}</strong>
+                        <span className="connection-provider">{providerLabel(connection.provider)}</span>
+                      </div>
+                      <p className="connection-model">{connection.model}</p>
+                      <span className="connection-key"><KeyRound aria-hidden="true" /><span className="sr-only">API key </span>{connection.key_hint}</span>
                       {connection.last_error ? (
                         <small>{connection.last_error}</small>
+                      ) : connection.status !== "connected" ? (
+                        <small className="connection-help">
+                          Test this connection before using Agent.
+                        </small>
                       ) : null}
                     </div>
-                    <span
-                      className={`status-label ${connection.status === "connected" ? "success" : "neutral"}`}
-                    >
-                      <i />
-                      {connection.status}
-                    </span>
-                    <form action={testAiConnection}>
-                      <input
-                        type="hidden"
-                        name="connectionId"
-                        value={connection.id}
-                      />
-                      <SubmitButton
-                        className="button secondary"
-                        pendingLabel="Testing…"
+                    <div className="connection-controls">
+                      <span
+                        className={`status-label ${connection.status === "connected" ? "success" : connection.status === "error" ? "error" : "neutral"}`}
                       >
-                        Test
-                      </SubmitButton>
-                    </form>
-                    <ConfirmationDialog
-                      title={`Delete ${connection.label}?`}
-                      description="This removes the saved provider configuration and encrypted API key from Roleway."
-                      action={deleteAiConnection}
-                      confirmLabel="Delete connection"
-                      pendingLabel="Deleting…"
-                      trigger={<Trash2 aria-hidden="true" />}
-                      triggerClassName="icon-button"
-                      triggerAriaLabel={`Delete ${connection.label}`}
-                      triggerTooltip="Delete connection"
-                      hiddenFields={{ connectionId: connection.id }}
-                      destructive
-                    />
+                        <i aria-hidden="true" />
+                        {connection.status === "connected"
+                          ? "Connected"
+                          : connection.status === "error"
+                            ? "Connection failed"
+                            : "Not tested"}
+                      </span>
+                      <div className="connection-actions">
+                        <form action={testAiConnection}>
+                          <input
+                            type="hidden"
+                            name="connectionId"
+                            value={connection.id}
+                          />
+                          <SubmitButton
+                            variant="ghost"
+                            size="icon-sm"
+                            ariaLabel={`Test ${connection.label}`}
+                            tooltip="Test connection"
+                            pendingLabel="Testing connection…"
+                          >
+                            <PlugZap aria-hidden="true" />
+                          </SubmitButton>
+                        </form>
+                        <AiConnectionDialog connection={{ id: connection.id, provider: connection.provider, label: connection.label, model: connection.model, baseUrl: connection.base_url ?? "" }} />
+                        <ConfirmationDialog
+                          title={`Delete ${connection.label}?`}
+                          description="This removes the saved provider configuration and encrypted API key from Roleway."
+                          action={deleteAiConnection}
+                          confirmLabel="Delete connection"
+                          pendingLabel="Deleting…"
+                          trigger={<Trash2 aria-hidden="true" />}
+                          triggerClassName="icon-button"
+                          triggerAriaLabel={`Delete ${connection.label}`}
+                          triggerTooltip="Delete connection"
+                          hiddenFields={{ connectionId: connection.id }}
+                          destructive
+                        />
+                      </div>
+                    </div>
                   </article>
                 ))}
               </div>
             ) : (
-              <div className="empty-inline">
-                No provider connected yet. Add one below; the rest of Roleway
-                works without AI.
-              </div>
+              <EmptyState className="compact" icon={<Cpu />} title="No provider connected" description="Add a connection to use Agent. Roleway works without AI." />
             )}
           </div>
+
         </section>
 
         <section className="settings-group agent-guidance-section">
@@ -184,18 +176,19 @@ export default async function AiSettingsPage(props: {
             </p>
           </header>
           <form action={updateAgentGuidance} className="settings-card">
-            <label className="sr-only" htmlFor="agent-guidance">
-              Personal Agent guidance
-            </label>
-            <textarea
+            <label htmlFor="agent-guidance">Response preferences</label>
+            <Textarea
               id="agent-guidance"
               name="guidance"
+              aria-describedby="agent-guidance-hint"
               maxLength={6000}
               defaultValue={preferenceResult.data?.guidance ?? ""}
               placeholder="Stay concise. Separate stored facts from inference. Prefer one concrete next step…"
             />
             <footer>
-              <span>Applied to future conversations</span>
+              <span id="agent-guidance-hint">
+                Used for your next Agent request
+              </span>
               <SubmitButton pendingLabel="Saving guidance…">
                 Save guidance
               </SubmitButton>

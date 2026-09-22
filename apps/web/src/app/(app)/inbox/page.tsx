@@ -1,3 +1,4 @@
+import { CircleAlert } from "lucide-react";
 import { Clock3, Inbox, Plus } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -240,6 +241,7 @@ export default async function JobsPage(props: {
             ) : null}
             {error ? (
               <EmptyState
+                icon={<CircleAlert />}
                 title="Jobs could not be loaded"
                 description="Check your connection and refresh this page."
               />

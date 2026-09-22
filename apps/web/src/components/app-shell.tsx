@@ -6,7 +6,7 @@ import {
   NotebookPen,
   CalendarClock,
   ChartNoAxesColumnIncreasing,
-  ChevronDown,
+  EllipsisVertical,
   FileText,
   Inbox,
   LayoutDashboard,
@@ -667,7 +667,7 @@ function AccountMenu({
   user,
   isAdmin,
 }: {
-  user: { name: string; email: string };
+  user: { name: string; email: string; plan?: string };
   isAdmin: boolean;
 }) {
   const pathname = usePathname();
@@ -743,10 +743,10 @@ function AccountMenu({
         <span className="avatar">{initials}</span>
         <span className="user-copy">
           <span className="user-name">{user.name}</span>
-          <span className="user-state">{user.email}</span>
+          <span className="user-state">{user.plan ?? "Plan unavailable"}</span>
         </span>
-        <ChevronDown
-          className={`account-chevron ${open ? "open" : ""}`}
+        <EllipsisVertical
+          className="account-chevron"
           aria-hidden="true"
         />
       </button>
@@ -765,7 +765,7 @@ export function AppShell({
   agentConnection,
 }: {
   children: ReactNode;
-  user: { name: string; email: string };
+  user: { name: string; email: string; plan?: string };
   projects: SearchProject[];
   activeProject: SearchProject;
   showTour: boolean;
@@ -950,6 +950,7 @@ export function AppShell({
             <AgentPopoverLauncher
               pathname={pathname}
               projectName={activeProject.name}
+              projectId={activeProject.id}
               breadcrumbs={breadcrumbs}
               connection={agentConnection}
             />
@@ -1131,14 +1132,13 @@ export function AppShell({
           </header>
           <div className="main-content-scroll">{children}</div>
         </main>
-        {pathname !== "/agent" ? (
-          <AgentPopoverLauncher
+        <AgentPopoverLauncher
             pathname={pathname}
             projectName={activeProject.name}
+            projectId={activeProject.id}
             breadcrumbs={breadcrumbs}
             connection={agentConnection}
           />
-        ) : null}
         <nav className="mobile-nav" aria-label="Mobile navigation">
           {mobileNav.map((item) => (
             <NavItem key={item.href} item={item} pathname={pathname} />

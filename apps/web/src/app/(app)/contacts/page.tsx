@@ -1,3 +1,5 @@
+import { CircleAlert } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { formatOpportunityTicket } from "@roleway/core";
 import {
   ArrowRight,
@@ -220,10 +222,10 @@ export default async function ContactsPage(props: {
         }
         context={<>People, relationships, and follow-ups for {project.name}.</>}
         actions={
-          <Link className="button primary" href="/contacts?create=true">
+          <Button nativeButton={false} render={<Link href="/contacts?create=true" />}>
             <Plus aria-hidden="true" />
             Add contact
-          </Link>
+          </Button>
         }
       />
 
@@ -357,6 +359,7 @@ export default async function ContactsPage(props: {
           {contactsResult.error ? (
             <EmptyState
               className="contacts-empty-state"
+              icon={<CircleAlert />}
               title="Contacts could not be loaded"
               description="Refresh this page to recover the directory. Your saved contacts have not been changed."
             />

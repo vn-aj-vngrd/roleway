@@ -1,3 +1,5 @@
+import { CircleAlert } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { formatOpportunityTicket } from "@roleway/core";
 import {
   ArrowRight,
@@ -199,10 +201,10 @@ export default async function PreparationPage(props: {
         }
         actions={
           opportunities.length ? (
-            <Link className="button primary" href="/interview?create=true">
+            <Button nativeButton={false} render={<Link href="/interview?create=true" />}>
               <Plus aria-hidden="true" />
               Add interview
-            </Link>
+            </Button>
           ) : null
         }
       />
@@ -341,6 +343,7 @@ export default async function PreparationPage(props: {
           {interviewsResult.error ? (
             <EmptyState
               className="interview-empty-state"
+              icon={<CircleAlert />}
               title="Interviews could not be loaded"
               description="Refresh this page to recover the schedule. Your saved interview records have not been changed."
             />

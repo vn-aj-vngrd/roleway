@@ -34,6 +34,7 @@ test("stale Next Action approval preserves manual edits and explains recovery", 
     await page.goto(`/agent?conversation=${conversation.data.id}`);
     await expect(page.locator(".agent-message-timestamp")).toContainText("Today");
     await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+    await page.locator(".agent-message.agent").hover();
     await page.getByRole("button", { name: "Copy message", exact: true }).click();
     await expect(page.getByText("Message copied", { exact: true })).toBeVisible();
     expect(await page.evaluate(() => navigator.clipboard.readText())).toBe("Review this proposed Next Action.");
@@ -41,7 +42,7 @@ test("stale Next Action approval preserves manual edits and explains recovery", 
     for (const width of [1440, 390]) {
       await page.setViewportSize({ width, height: 900 });
       if (width === 390) {
-        for (const name of ["Show Agent actions", "Show slash commands"]) {
+        for (const name of ["Show Agent actions", "Context and permissions"]) {
           const bounds = await page.getByRole("button", { name, exact: true }).boundingBox();
           expect(bounds!.width).toBeGreaterThanOrEqual(32);
           expect(bounds!.height).toBeGreaterThanOrEqual(32);
@@ -58,7 +59,7 @@ test("stale Next Action approval preserves manual edits and explains recovery", 
       await page.screenshot({ path: `/tmp/roleway-agent-${width}.png`, animations: "disabled" });
       await input.press("Escape");
       await expect(page.getByRole("listbox", { name: "Agent actions" })).toBeHidden();
-      await page.getByRole("button", { name: "Show slash commands", exact: true }).click();
+      await input.fill("/");
       await expect(page.getByRole("listbox", { name: "Agent actions" }).getByRole("option")).toHaveCount(13);
       await input.fill("/create task");
       await expect(page.getByRole("listbox", { name: "Agent actions" }).getByRole("option")).toHaveCount(1);
@@ -147,7 +148,11 @@ test("all four Create actions save once, show progress and open their results", 
       }
       await expect(card.getByText(entry.success, { exact: true })).toBeVisible();
       await page.unroute("**/agent?**");
+      await page.getByRole("button", { name: "Dismiss notification", exact: true }).click();
+      await expect(page.locator(".agent-inline-state")).toHaveCount(0);
+      await expect(page).not.toHaveURL(/decision=/);
       await page.reload();
+      await expect(page.locator(".agent-inline-state")).toHaveCount(0);
       await expect(card.getByText(entry.success, { exact: true })).toBeVisible();
       expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
       await expect(card).toBeInViewport();

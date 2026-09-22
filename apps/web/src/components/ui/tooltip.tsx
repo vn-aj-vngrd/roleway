@@ -32,25 +32,29 @@ function TooltipContent({
   align = "center",
   alignOffset = 0,
   children,
+  anchor,
   ...props
 }: TooltipPrimitive.Popup.Props &
   Pick<
     TooltipPrimitive.Positioner.Props,
-    "align" | "alignOffset" | "side" | "sideOffset"
+    "align" | "alignOffset" | "side" | "sideOffset" | "anchor"
   >) {
   return (
-    <TooltipPrimitive.Portal>
+    <TooltipPrimitive.Portal container={typeof document !== "undefined" ? Array.from(document.querySelectorAll<HTMLDialogElement>("dialog[open]")).at(-1) : undefined}>
       <TooltipPrimitive.Positioner
+        anchor={anchor}
+        positionMethod="fixed"
+        collisionPadding={8}
         align={align}
         alignOffset={alignOffset}
         side={side}
         sideOffset={sideOffset}
-        className="isolate z-50"
+        className="isolate z-[calc(var(--z-modal)+10)]"
       >
         <TooltipPrimitive.Popup
           data-slot="tooltip-content"
           className={cn(
-            "z-50 inline-flex w-fit max-w-xs items-center gap-2 rounded-lg bg-popover px-2 py-1.5 text-xs font-medium text-popover-foreground shadow-md ring-1 ring-border data-[state=delayed-open]:animate-in data-[state=delayed-open]:fade-in-0 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
+            "z-50 inline-flex w-fit max-w-[min(20rem,calc(100vw-16px))] break-words items-center gap-2 rounded-lg bg-popover px-2 py-1.5 text-xs font-medium text-popover-foreground shadow-md ring-1 ring-border data-[state=delayed-open]:animate-in data-[state=delayed-open]:fade-in-0 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
             className
           )}
           {...props}
