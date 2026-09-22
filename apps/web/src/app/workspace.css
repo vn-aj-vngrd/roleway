@@ -7652,3 +7652,13 @@
 .app-shell .empty-state-actions { width:auto; }
 
 .app-shell .empty-state.home-clear-state { padding-inline:0; }
+
+/* Keep the first Opportunity action close to its explanation. */
+.app-shell .empty-state.opportunities-empty-state {
+  min-height:0;
+  justify-content:flex-start;
+  padding-block:40px;
+}
+.app-shell .opportunities-empty-state .empty-icon { margin-bottom:8px; }
+.app-shell .opportunities-empty-state h2,
+.app-shell .opportunities-empty-state p { margin:0; }
