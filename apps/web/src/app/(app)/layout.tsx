@@ -1,3 +1,4 @@
+import "./agent/agent-chat.css";
 import { CapacityNotice } from "@/components/capacity-notice";
 import type { PlanSummary } from "@/features/billing/types";
 import type { Metadata } from "next";
@@ -32,6 +33,7 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
       user={{
         name: context.profile.full_name || context.user.email?.split("@")[0] || "Roleway user",
         email: context.user.email || "",
+        plan: (planResult.data as PlanSummary | null)?.plan.name ?? "Plan unavailable",
       }}
       projects={context.projects}
       activeProject={context.project}

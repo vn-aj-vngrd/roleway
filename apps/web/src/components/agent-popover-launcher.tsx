@@ -1,10 +1,15 @@
 "use client";
 
-import { ArrowRight, Navigation, Route, ShieldCheck, X } from "lucide-react";
+import { ArrowUp, Maximize2, Navigation, Route, ShieldCheck, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { sendAgentMessage } from "@/app/(app)/agent/actions";
-import { SubmitButton } from "@/components/submit-button";
+import { useChat } from "@ai-sdk/react";
+import { DefaultChatTransport } from "ai";
+import { AgentMarkdown } from "@/features/agent/markdown";
+import { RunTimeline } from "@/features/agent/run-timeline";
+import type { AgentUIMessage } from "@/features/agent/stream-types";
+
+const transport = new DefaultChatTransport<AgentUIMessage>({ api: "/api/agent/chat" });
 import { Button } from "@/components/ui/button";
 
 type AgentBreadcrumb = { label: string; href?: string };
@@ -17,6 +22,39 @@ export function OpenAgentButton({ children, className = "" }: { children: ReactN
 export function AgentPopoverLauncher({ pathname, projectName, breadcrumbs, connection }: { pathname: string; projectName: string; breadcrumbs: AgentBreadcrumb[]; connection: AgentConnection }) {
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState("");
+  const conversationId = useRef("");
+  const [conversationHref, setConversationHref] = useState("");
+  const [startedAt, setStartedAt] = useState("");
+  const [endedAt, setEndedAt] = useState<string>();
+  const [failed, setFailed] = useState(false);
+  const receivedResult = useRef(false);
+  const busy = useRef(false);
+  const transcriptRef = useRef<HTMLDivElement>(null);
+  const { messages, sendMessage, status, error } = useChat<AgentUIMessage>({
+    transport,
+    onData(part) {
+      if (part.type === "data-started") {
+        conversationId.current = part.data.conversationId;
+        setConversationHref(`/agent?conversation=${part.data.conversationId}`);
+      }
+      if (part.type === "data-result") {
+        receivedResult.current = true;
+        setConversationHref(part.data.href);
+        setFailed(part.data.href.includes("error="));
+      }
+    },
+    onFinish() {
+      busy.current = false;
+      setEndedAt(new Date().toISOString());
+      if (!receivedResult.current) setFailed(true);
+    },
+    onError() { busy.current = false; setFailed(true); setEndedAt(new Date().toISOString()); },
+  });
+  const pending = status === "submitted" || status === "streaming";
+  useEffect(() => {
+    const el = transcriptRef.current;
+    if (el && el.scrollHeight - el.scrollTop - el.clientHeight < 180) el.scrollTop = el.scrollHeight;
+  }, [messages]);
   const launcherRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const opportunityId = pathname.match(/^\/opportunities\/([0-9a-f-]{36})/)?.[1] ?? "";
@@ -54,27 +92,55 @@ export function AgentPopoverLauncher({ pathname, projectName, breadcrumbs, conne
   return <div className="global-agent-entry">
     {open ? <div className="global-agent-popover floating-panel" id="global-agent-popover" ref={panelRef} role="dialog" aria-label="Roleway Agent">
       <header>
-        <span><Navigation aria-hidden="true" /><strong>Agent</strong></span>
-        <Button variant="ghost" size="icon-sm" type="button" aria-label="Close Agent" onClick={() => { setOpen(false); requestAnimationFrame(() => launcherRef.current?.focus()); }}><X aria-hidden="true" /></Button>
-      </header>
-      <div className="global-agent-context">
-        <span><Route aria-hidden="true" />Current context</span>
-        <strong>{contextLabel}</strong>
-        <small>{projectName}{opportunityId ? " · Focused Opportunity" : " · Account context available"}</small>
-      </div>
-      <form action={sendAgentMessage}>
-        <input type="hidden" name="conversationId" value="" />
-        <input type="hidden" name="connectionId" value={connection?.id ?? ""} />
-        <input type="hidden" name="opportunityId" value={opportunityId} />
-        <label className="sr-only" htmlFor="global-agent-message">Ask Roleway Agent</label>
-        <textarea id="global-agent-message" name="message" required maxLength={4000} disabled={!connection} value={message} onChange={(event) => setMessage(event.target.value)} placeholder={connection ? "Ask a question or request a change…" : "Connect an AI provider to use Agent…"} />
-        <div className="global-agent-suggestions" aria-label="Suggested Agent requests">
-          {suggestions.map((suggestion) => <Button variant="ghost" size="sm" type="button" disabled={!connection} onClick={() => setMessage(suggestion)} key={suggestion}>{suggestion}</Button>)}
+        <strong>Agent</strong>
+        <div className="global-agent-header-actions">
+          <Button variant="ghost" size="icon-sm" nativeButton={false} render={<Link href={conversationHref || (opportunityId ? `/agent?opportunity=${opportunityId}` : "/agent")} />} aria-label="Open full Agent" data-tooltip="Open full Agent"><Maximize2 aria-hidden="true" /></Button>
+          <Button variant="ghost" size="icon-sm" type="button" aria-label="Close Agent" data-tooltip="Close Agent" onClick={() => { setOpen(false); requestAnimationFrame(() => launcherRef.current?.focus()); }}><X aria-hidden="true" /></Button>
         </div>
-        <div className="global-agent-confirmation"><ShieldCheck aria-hidden="true" /><span><strong>You approve every change</strong><small>Agent may read permitted context after you send. It cannot take external actions.</small></span></div>
+      </header>
+      <div className="global-agent-context"><Route aria-hidden="true" /><span>{projectName} · {contextLabel}</span></div>
+      <div className="global-agent-transcript" ref={transcriptRef} aria-label="Agent conversation">
+        {!messages.length ? <div className="global-agent-welcome">
+          <h2>What can I help with?</h2>
+          <p>Ask about your search or prepare your next step.</p>
+          <div className="global-agent-suggestions" aria-label="Suggested Agent requests">
+            {suggestions.slice(0, 2).map(suggestion => <Button variant="ghost" size="sm" type="button" disabled={!connection} onClick={() => { setMessage(suggestion); panelRef.current?.querySelector("textarea")?.focus(); }} key={suggestion}>{suggestion}</Button>)}
+          </div>
+        </div> : messages.map(item => {
+          const answer = item.parts.find(part => part.type === "data-answer");
+          return <article className={`agent-message ${item.role === "user" ? "user" : "agent"}`} key={item.id}>
+            {item.role === "user" ? <div className="agent-message-content"><p>{item.parts.flatMap(part => part.type === "text" ? [part.text] : []).join("")}</p></div> : <>
+              {item.id === messages.at(-1)?.id ? <RunTimeline startedAt={startedAt} endedAt={endedAt} pending={pending} failed={failed || Boolean(error)} steps={item.parts.flatMap(part => part.type === "data-progress" ? [part.data] : [])} /> : null}
+              {answer?.type === "data-answer" ? <div className="agent-message-content"><AgentMarkdown content={answer.data.text} idPrefix={`mini-${item.id}`} /></div> : null}
+            </>}
+          </article>;
+        })}
+        {pending && messages.at(-1)?.role === "user" ? <p role="status" className="muted">Working…</p> : null}
+        {failed || error ? <p role="alert">The request could not finish. {conversationHref ? <Link href={conversationHref}>Open the conversation to recover.</Link> : "Try again."}</p> : null}
+        {conversationHref && !pending && !failed && !error ? <Link className="global-agent-review" href={conversationHref}>Open full conversation</Link> : null}
+      </div>
+      <form onSubmit={event => {
+        event.preventDefault();
+        if (!connection || !message.trim() || pending || busy.current) return;
+        busy.current = true;
+        receivedResult.current = false;
+        setFailed(false);
+        setStartedAt(new Date().toISOString());
+        setEndedAt(undefined);
+        const text = message.trim();
+        setMessage("");
+        void sendMessage({ text }, { body: { message: text, conversationId: conversationId.current, connectionId: connection.id, opportunityId } }).catch(() => { busy.current = false; });
+      }}>
+        <label className="sr-only" htmlFor="global-agent-message">Ask Roleway Agent</label>
+        <textarea id="global-agent-message" required maxLength={4000} disabled={!connection || pending} value={message} onChange={event => setMessage(event.target.value)} onKeyDown={event => {
+          if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); event.currentTarget.form?.requestSubmit(); }
+        }} placeholder={connection ? "Ask anything about your search…" : "Connect a provider to start chatting…"} />
         <footer>
-          <Link href={opportunityId ? `/agent?opportunity=${opportunityId}` : "/agent"}>Open full Agent</Link>
-          {connection ? <SubmitButton disabled={!message.trim()} pendingLabel="Agent is working…">Send to Agent<ArrowRight aria-hidden="true" /></SubmitButton> : <Link className="global-agent-setup" href="/settings/ai">Set up provider<ArrowRight aria-hidden="true" /></Link>}
+          <span className="global-agent-model">{connection?.label || "No provider connected"}</span>
+          <span className="global-agent-compose-actions">
+            <Button variant="ghost" size="icon-sm" type="button" aria-label="You approve every change" data-tooltip="You approve every change. Agent cannot take external actions."><ShieldCheck aria-hidden="true" /></Button>
+            {connection ? <Button size="icon-sm" type="submit" disabled={!message.trim() || pending} aria-label={pending ? "Agent is working" : "Send message"} data-tooltip="Send message"><ArrowUp aria-hidden="true" /></Button> : <Button size="sm" nativeButton={false} render={<Link href="/settings/ai" />}>Connect provider</Button>}
+          </span>
         </footer>
       </form>
     </div> : null}

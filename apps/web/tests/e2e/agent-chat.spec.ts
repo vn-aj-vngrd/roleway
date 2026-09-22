@@ -283,6 +283,39 @@ test("Agent formats Markdown and keeps composer controls usable across sizes and
       server.closeAllConnections();
       await new Promise<void>(resolve => server.close(() => resolve()));
     }
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await page.goto("/home");
+    await expect(page.locator(".sidebar-profile .user-state")).toHaveText("Free");
+    await page.getByRole("button", { name: "Open Roleway Agent", exact: true }).press("Enter");
+    const mini = page.getByRole("dialog", { name: "Roleway Agent", exact: true });
+    await expect(mini.getByRole("heading", { name: "What can I help with?" })).toBeVisible();
+    await page.screenshot({ path: "/tmp/roleway-mini-agent-empty.png", animations: "disabled" });
+    await page.route("**/api/agent/chat", route => route.fulfill({
+      contentType: "text/event-stream",
+      headers: { "x-vercel-ai-ui-message-stream": "v1" },
+      body: [
+        { type: "start", messageId: "mini-fixture" },
+        { type: "data-started", data: { conversationId: conversation.data.id, runId: "fixture" }, transient: true },
+        { type: "data-progress", id: "read", data: { id: "read", label: "Read Workspace context", status: "completed" } },
+        { type: "data-answer", id: "answer", data: { text: "## Your next step\n\nPrepare **one example** before the interview." } },
+        { type: "data-result", data: { href: `/agent?conversation=${conversation.data.id}` }, transient: true },
+        { type: "finish" },
+      ].map(chunk => `data: ${JSON.stringify(chunk)}\n\n`).join("") + "data: [DONE]\n\n",
+    }));
+    try {
+      await mini.getByRole("textbox", { name: "Ask Roleway Agent" }).fill("Help me prepare");
+      await mini.getByRole("button", { name: "Send message", exact: true }).click();
+      await expect(mini.getByRole("heading", { name: "Your next step" })).toBeVisible();
+      await expect(mini.locator(".agent-message.agent strong")).toHaveText("one example");
+      await expect(mini.getByText(/^Worked for/)).toBeVisible();
+      await expect(mini.locator(".agent-work-timeline > summary")).toHaveCSS("display", "flex");
+      await expect(mini.getByRole("link", { name: "Open full conversation" })).toHaveAttribute("href", `/agent?conversation=${conversation.data.id}`);
+      expect(new URL(page.url()).pathname).toBe("/home");
+      expect(await mini.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
+      await page.screenshot({ path: "/tmp/roleway-mini-agent-answer.png", animations: "disabled" });
+    } finally { await page.unroute("**/api/agent/chat"); }
+    await mini.getByRole("button", { name: "Close Agent", exact: true }).click();
+    await page.goto(`/agent?conversation=${conversation.data.id}`);
     // The real authenticated stream route must persist failures without exposing provider details.
     await input.fill("Check the saved connection safely");
     await page.getByRole("button", { name: "Send to Agent", exact: true }).click();

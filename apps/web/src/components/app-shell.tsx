@@ -667,7 +667,7 @@ function AccountMenu({
   user,
   isAdmin,
 }: {
-  user: { name: string; email: string };
+  user: { name: string; email: string; plan?: string };
   isAdmin: boolean;
 }) {
   const pathname = usePathname();
@@ -743,7 +743,7 @@ function AccountMenu({
         <span className="avatar">{initials}</span>
         <span className="user-copy">
           <span className="user-name">{user.name}</span>
-          <span className="user-state">{user.email}</span>
+          <span className="user-state">{user.plan ?? "Plan unavailable"}</span>
         </span>
         <EllipsisVertical
           className="account-chevron"
@@ -765,7 +765,7 @@ export function AppShell({
   agentConnection,
 }: {
   children: ReactNode;
-  user: { name: string; email: string };
+  user: { name: string; email: string; plan?: string };
   projects: SearchProject[];
   activeProject: SearchProject;
   showTour: boolean;
@@ -948,6 +948,7 @@ export function AppShell({
           </main>
           {pathname !== "/settings/ai" ? (
             <AgentPopoverLauncher
+              key={`${pathname}:${activeProject.id}`}
               pathname={pathname}
               projectName={activeProject.name}
               breadcrumbs={breadcrumbs}
@@ -1133,6 +1134,7 @@ export function AppShell({
         </main>
         {pathname !== "/agent" ? (
           <AgentPopoverLauncher
+              key={`${pathname}:${activeProject.id}`}
             pathname={pathname}
             projectName={activeProject.name}
             breadcrumbs={breadcrumbs}

@@ -1,7 +1,6 @@
 // OpenRouter free models may queue for minutes; leave time for bounded calls and persistence.
 export const maxDuration = 300;
 
-import "./agent-chat.css";
 import { formatConversationAge } from "@/features/agent/message-time";
 import { AgentLiveProvider, AgentStreamForm, AgentTranscript } from "@/features/agent/live-chat";
 import { RunTimeline } from "@/features/agent/run-timeline";

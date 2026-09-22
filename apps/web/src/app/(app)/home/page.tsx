@@ -90,7 +90,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
         <section className="home-active-opportunities" aria-labelledby="active-opportunities-heading">
           <div className="home-rail-heading"><h2 id="active-opportunities-heading">Active opportunities</h2><Link href="/opportunities">View all</Link></div>
           <div className="home-opportunity-list">{opportunities.slice(0, 5).map((opportunity) => <Link href={`/opportunities/${opportunity.id}`} key={opportunity.id}><span className="status-dot" /><span><strong>{opportunity.jobs?.title ?? "Untitled role"}</strong><small>{opportunity.jobs?.company ?? "Unknown company"} · {stageLabel(opportunity.stage)}</small></span><ArrowRight aria-hidden="true" /></Link>)}</div>
-          {opportunities.length === 0 ? <EmptyState className="compact" title="No opportunities yet" description="Track a Job from the Inbox to start working on an Opportunity." /> : null}
+          {opportunities.length === 0 ? <EmptyState className="compact" icon={<Target />} title="No opportunities yet" description="Track a Job from the Inbox to start working on an Opportunity." /> : null}
         </section>
       </aside>
     </div>
