@@ -17,7 +17,7 @@ vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("@/lib/ai/providers", () => ({ generateAgentResponse: fixtures.generate }));
 vi.mock("@/lib/ai/secrets", () => ({ decryptSecret: () => "fixture-key" }));
 vi.mock("@/lib/observability", () => ({ recordSystemEvent: fixtures.recordEvent }));
-vi.mock("@/features/projects/context", () => ({ requireSearchContext: async () => ({ user: { id: owner }, project: { id: workspace }, projects: [{ id: workspace,name: "Search" }],supabase: client }) }));
+vi.mock("@/features/projects/context", () => ({ requireSearchContext: async () => ({ user: { id: owner }, project: { id: workspace }, projects: [{ id: workspace,name: "Search" }, { id: "44444444-4444-4444-8444-444444444444", name: "Other search" }],supabase: client }) }));
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => client }));
 
 const client = {
@@ -129,7 +129,7 @@ describe("Explore context delivery", () => {
     await expect(request("Asia/Manila", capability.prompt)).rejects.toThrow(`redirect:/agent?conversation=${record}`);
     const prompt = fixtures.generate.mock.calls[0]?.[2] as string;
     for (const text of [capability.prompt, "Fixture candidate", "Product Engineer", "Prepare portfolio", "Inbox fixture", "Technical", "Fixture recruiter", "Resume inventory", "Follow up", "Search"]) expect(prompt).toContain(text);
-    for (const table of ["opportunities", "tasks", "jobs", "interviews", "contacts", "documents"]) expect(fixtures.filters).toContainEqual([table, "project_id", [workspace]]);
+    for (const table of ["opportunities", "tasks", "jobs", "interviews", "contacts", "documents"]) expect(fixtures.filters).toContainEqual([table, "project_id", [workspace, "44444444-4444-4444-8444-444444444444"]]);
     expect(fixtures.filters).toContainEqual(["tasks", "status", ["todo", "doing"]]);
     expect(fixtures.filters).toContainEqual(["interviews", "status", "scheduled"]);
     expect(fixtures.orders.filter(([table]) => table === "contacts")).toEqual([["contacts", "follow_up_at", { ascending: true, nullsFirst: false }], ["contacts", "updated_at", { ascending: false }]]);
@@ -198,5 +198,42 @@ describe("streamed Agent runs", () => {
     expect(JSON.stringify(events)).not.toContain("private-provider");
     expect(events.at(-1)).toMatchObject({ type: "progress", data: { status: "failed" } });
     expect(fixtures.rpc).not.toHaveBeenCalled();
+  });
+});
+
+
+describe("Agent Workspace scope", () => {
+  const otherWorkspace = "44444444-4444-4444-8444-444444444444";
+  function scopedRequest(values: Record<string, string>) {
+    const data = new FormData();
+    for (const [key, value] of Object.entries({ connectionId: record, message: "What needs attention here?", ...values })) data.set(key, value);
+    return sendAgentMessage(data);
+  }
+  it("limits every record query and the model Workspace list to the selected Workspace", async () => {
+    await expect(scopedRequest({ workspaceId: workspace, contextPage: "home" })).rejects.toThrow(`redirect:/agent?conversation=${record}`);
+    for (const table of ["opportunities", "tasks", "jobs", "interviews", "contacts", "documents"]) {
+      expect(fixtures.filters).toContainEqual([table, "project_id", [workspace]]);
+    }
+    const prompt = fixtures.generate.mock.calls[0]![2] as string;
+    expect(prompt).toContain('"page":"Home"');
+    expect(prompt).not.toContain("Other search");
+  });
+  it("preserves saved scope when the client sends a different Workspace and page", async () => {
+    fixtures.contextRows.agent_conversations = { id: record, project_id: workspace, opportunity_id: null, scope_mode: "workspace", context_page: "documents" };
+    await expect(scopedRequest({ conversationId: record, workspaceId: otherWorkspace, contextPage: "home" })).rejects.toThrow(`redirect:/agent?conversation=${record}`);
+    expect(fixtures.filters).toContainEqual(["documents", "project_id", [workspace]]);
+    const prompt = fixtures.generate.mock.calls[0]![2] as string;
+    expect(prompt).toContain('"page":"Documents"');
+    expect(prompt).not.toContain("Other search");
+  });
+  it("rejects an unowned Workspace before reading its records or calling a model", async () => {
+    await expect(scopedRequest({ workspaceId: "99999999-9999-4999-8999-999999999999" })).rejects.toThrow("selected%20Workspace%20is%20not%20available");
+    expect(fixtures.generate).not.toHaveBeenCalled();
+    expect(fixtures.filters.some(([table]) => table === "tasks")).toBe(false);
+  });
+  it("keeps direct, account-wide conversations explicitly account-wide", async () => {
+    await expect(scopedRequest({})).rejects.toThrow(`redirect:/agent?conversation=${record}`);
+    expect(fixtures.filters).toContainEqual(["tasks", "project_id", [workspace, otherWorkspace]]);
+    expect(fixtures.generate.mock.calls[0]![2]).toContain('"mode":"account"');
   });
 });

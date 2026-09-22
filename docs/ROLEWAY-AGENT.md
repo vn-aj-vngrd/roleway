@@ -5,7 +5,7 @@ This is the implementation contract and audit for the current Agent version. Rea
 ## User journey
 
 1. Connect and test a supported API provider in Settings → Agent. Without a connection, show a direct setup action.
-2. Open Agent, optionally focused on an Opportunity, and start or resume a conversation.
+2. Open Agent, optionally focused on a Workspace or Opportunity, and start or resume a conversation. Opening the floating Agent on a Workspace page retains that Workspace and starting page when expanded. Saved conversation scope remains fixed; start a new conversation to change scope. Direct Agent starts account-wide.
 3. Use `+`, the `/` button, or type `/` at the start of the composer to discover Create and Explore. Both buttons open the same composer-width popover above the input. Typing filters commands; arrows and Enter select; Escape dismisses. Selection fills a prompt for review; Send starts the conversation.
 4. For Create, ask one missing question at a time. Reuse supplied information, clarify ambiguous targets and dates, and show an exact proposal once the required details are present.
 5. Approve or reject the proposal. Only successful database application means a record was created. Continuing the conversation is not approval.
@@ -16,7 +16,7 @@ This is the implementation contract and audit for the current Agent version. Rea
 
 ## Help Center
 
-The public guide at `/help/agent-create` explains setup, all four Create flows, approval, corrections and recovery. Agent links to it as **Creation guide**. The forward migration `20260917051125_agent_creation_help.sql` inserts it into the existing admin-editable Help Center; deploy that migration with the Agent interface. Existing editorial content is preserved if the slug already exists.
+The public guide at `/help/agent-create` explains setup, all four Create flows, approval, corrections and recovery. It remains accessible through Help & support. The forward migration `20260917051125_agent_creation_help.sql` inserts it into the existing admin-editable Help Center; deploy that migration with the Agent interface. Existing editorial content is preserved if the slug already exists.
 
 ## Current capability boundary
 

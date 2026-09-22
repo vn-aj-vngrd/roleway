@@ -9,11 +9,14 @@ import { requireSearchContext } from "@/features/projects/context";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { recordSystemEvent } from "@/lib/observability";
 import { richTextToPlainText, sanitizeRichText } from "@/lib/rich-text";
+import { agentContextPage, agentContextPages } from "./scope";
 import type { AgentStreamEvent } from "./stream-types";
 
 const sendSchema = z.object({
   conversationId: z.union([z.literal(""), z.string().uuid()]).default(""),
   connectionId: z.string().uuid(),
+  workspaceId: z.union([z.literal(""), z.string().uuid()]).default(""),
+  contextPage: z.enum(["agent", "home", "inbox", "opportunities", "interview", "contacts", "documents", "insights"]).default("agent"),
   opportunityId: z.union([z.literal(""), z.string().uuid()]).default(""),
   timeZone: z.string().max(100).refine(value => { try { new Intl.DateTimeFormat("en", { timeZone: value }); return true; } catch { return false; } }, "Choose a valid timezone.").default("UTC"),
   message: z.string().trim().min(1, "Write a question or request.").max(4000),
@@ -46,17 +49,23 @@ export async function runAgentRequest(formData: FormData, emit?: (event: AgentSt
 
   let conversationId = parsed.data.conversationId;
   let focusOpportunityId = parsed.data.opportunityId || null;
-  let conversationProjectId = auth.project.id;
+  let conversationProjectId = parsed.data.workspaceId || auth.project.id;
+  let scopeMode = parsed.data.workspaceId || focusOpportunityId ? "workspace" : "account";
+  let contextPage = parsed.data.contextPage;
   if (conversationId) {
     const { data: conversation } = await auth.supabase.from("agent_conversations")
-      .select("id, project_id, opportunity_id").eq("id", conversationId).eq("user_id", auth.user.id).eq("status", "active").maybeSingle();
+      .select("*").eq("id", conversationId).eq("user_id", auth.user.id).eq("status", "active").maybeSingle();
     if (!conversation) return "/agent?error=That%20conversation%20is%20not%20available.";
     focusOpportunityId = conversation.opportunity_id;
     conversationProjectId = conversation.project_id;
+    scopeMode = conversation.scope_mode ?? "account";
+    contextPage = agentContextPage(conversation.context_page);
   } else {
+    if (parsed.data.workspaceId && !auth.projects.some(project => project.id === parsed.data.workspaceId)) return "/agent?error=The%20selected%20Workspace%20is%20not%20available.";
     if (focusOpportunityId) {
       const { data: opportunity } = await auth.supabase.from("opportunities").select("id, project_id").eq("id", focusOpportunityId).eq("user_id", auth.user.id).in("project_id", auth.projects.map((workspace) => workspace.id)).maybeSingle();
       if (!opportunity) return "/agent?error=The%20focused%20Opportunity%20is%20not%20available.";
+      if (parsed.data.workspaceId && opportunity.project_id !== parsed.data.workspaceId) return "/agent?error=The%20Opportunity%20does%20not%20belong%20to%20the%20selected%20Workspace.";
       conversationProjectId = opportunity.project_id;
     }
     const { data: conversation, error } = await auth.supabase.from("agent_conversations").insert({
@@ -64,10 +73,17 @@ export async function runAgentRequest(formData: FormData, emit?: (event: AgentSt
       project_id: conversationProjectId,
       opportunity_id: focusOpportunityId,
       title: conversationTitle(parsed.data.message),
+      ...(scopeMode === "workspace" || contextPage !== "agent" ? { scope_mode: scopeMode, context_page: contextPage } : {}),
     }).select("id").single();
-    if (error || !conversation) return "/agent?error=The%20conversation%20could%20not%20be%20started.";
+    if (error || !conversation) return error?.code === "PGRST204" || error?.code === "42703"
+      ? "/agent?error=Workspace%20context%20is%20waiting%20for%20the%20database%20update.%20No%20request%20was%20sent%20to%20the%20model."
+      : "/agent?error=The%20conversation%20could%20not%20be%20started.";
     conversationId = conversation.id;
   }
+
+  const scopeProjects = scopeMode === "workspace" ? auth.projects.filter(project => project.id === conversationProjectId) : auth.projects;
+  if (!scopeProjects.length) return `/agent?conversation=${conversationId}&error=The%20conversation%20Workspace%20is%20not%20available.`;
+  const scopeProjectIds = scopeProjects.map(project => project.id);
 
   const { data: userMessage, error: userMessageError } = await auth.supabase.from("agent_messages").insert({
     user_id: auth.user.id,
@@ -106,12 +122,12 @@ export async function runAgentRequest(formData: FormData, emit?: (event: AgentSt
     const [profileResult, preferencesResult, opportunitiesResult, tasksResult, jobsResult, interviewsResult, contactsResult, documentsResult, historyResult, guidanceResult, proposalHistoryResult] = await Promise.all([
       auth.supabase.from("profiles").select("full_name, headline, summary").eq("user_id", auth.user.id).maybeSingle(),
       auth.supabase.from("career_preferences").select("target_titles, preferred_technologies, allowed_locations, remote_preference, minimum_compensation, currency, excluded_criteria").eq("user_id", auth.user.id).maybeSingle(),
-      auth.supabase.from("opportunities").select("id, project_id, reference_number, stage, priority, next_action, next_action_due_at, updated_at, jobs(company, title, description, location, compensation, remote_policy)").eq("user_id", auth.user.id).in("project_id", auth.projects.map((workspace) => workspace.id)).neq("stage", "closed").order("updated_at", { ascending: false }).limit(100),
-      auth.supabase.from("tasks").select("id, project_id, opportunity_id, title, status, priority, due_at").eq("user_id", auth.user.id).in("project_id", auth.projects.map((workspace) => workspace.id)).in("status", ["todo", "doing"]).order("due_at", { ascending: true, nullsFirst: false }).limit(100),
-      auth.supabase.from("jobs").select("id, project_id, company, title, location, inbox_state, inbox_review_at, imported_at").eq("user_id", auth.user.id).in("project_id", auth.projects.map((workspace) => workspace.id)).neq("inbox_state", "tracked").order("imported_at", { ascending: false }).limit(60),
-      auth.supabase.from("interviews").select("id, project_id, opportunity_id, interview_type, starts_at, status, interviewers").eq("user_id", auth.user.id).in("project_id", auth.projects.map((workspace) => workspace.id)).eq("status", "scheduled").order("starts_at", { ascending: true }).limit(60),
-      auth.supabase.from("contacts").select("id, project_id, opportunity_id, name, role, company, relationship, follow_up_at").eq("user_id", auth.user.id).in("project_id", auth.projects.map((workspace) => workspace.id)).order("follow_up_at", { ascending: true, nullsFirst: false }).order("updated_at", { ascending: false }).limit(60),
-      auth.supabase.from("documents").select("id, project_id, opportunity_id, title, kind, status, updated_at").eq("user_id", auth.user.id).in("project_id", auth.projects.map((workspace) => workspace.id)).order("updated_at", { ascending: false }).limit(60),
+      auth.supabase.from("opportunities").select("id, project_id, reference_number, stage, priority, next_action, next_action_due_at, updated_at, jobs(company, title, description, location, compensation, remote_policy)").eq("user_id", auth.user.id).in("project_id", scopeProjectIds).neq("stage", "closed").order("updated_at", { ascending: false }).limit(100),
+      auth.supabase.from("tasks").select("id, project_id, opportunity_id, title, status, priority, due_at").eq("user_id", auth.user.id).in("project_id", scopeProjectIds).in("status", ["todo", "doing"]).order("due_at", { ascending: true, nullsFirst: false }).limit(100),
+      auth.supabase.from("jobs").select("id, project_id, company, title, location, inbox_state, inbox_review_at, imported_at").eq("user_id", auth.user.id).in("project_id", scopeProjectIds).neq("inbox_state", "tracked").order("imported_at", { ascending: false }).limit(60),
+      auth.supabase.from("interviews").select("id, project_id, opportunity_id, interview_type, starts_at, status, interviewers").eq("user_id", auth.user.id).in("project_id", scopeProjectIds).eq("status", "scheduled").order("starts_at", { ascending: true }).limit(60),
+      auth.supabase.from("contacts").select("id, project_id, opportunity_id, name, role, company, relationship, follow_up_at").eq("user_id", auth.user.id).in("project_id", scopeProjectIds).order("follow_up_at", { ascending: true, nullsFirst: false }).order("updated_at", { ascending: false }).limit(60),
+      auth.supabase.from("documents").select("id, project_id, opportunity_id, title, kind, status, updated_at").eq("user_id", auth.user.id).in("project_id", scopeProjectIds).order("updated_at", { ascending: false }).limit(60),
       auth.supabase.from("agent_messages").select("role, content, created_at").eq("conversation_id", conversationId).order("created_at", { ascending: false }).limit(12),
       auth.supabase.from("agent_preferences").select("guidance").eq("user_id", auth.user.id).maybeSingle(),
       auth.supabase.from("agent_proposals").select("tool_name, target_id, destination_project_id, summary, status, arguments").eq("conversation_id", conversationId).eq("user_id", auth.user.id).order("created_at", { ascending: false }).limit(20),
@@ -142,12 +158,13 @@ export async function runAgentRequest(formData: FormData, emit?: (event: AgentSt
     const contextPayload = {
       currentTime: new Date().toISOString(),
       timeZone: parsed.data.timeZone,
+      scope: { mode: scopeMode, workspaceId: scopeMode === "workspace" ? conversationProjectId : null, page: agentContextPages[contextPage] },
       contextLimits: "Bounded snapshots: 100 active Opportunities/outstanding tasks, 60 Inbox Jobs/scheduled interviews/contacts/documents, 12 recent messages. Archived Workspaces and completed tasks/interviews are excluded. Exact fields are included for the four latest valid proposals; ask for clarification when older proposal details are absent. Document bodies, activity history and full career evidence are not included. Only the focused Opportunity includes a Job description.",
       recentProposals: (proposalHistoryResult.data ?? []).map(({ arguments: args, ...summary }, index) => {
         const details = index < 4 ? agentProposalSchema.safeParse(args) : null;
         return { ...summary, details: details?.success ? { ...details.data, body: details.data.body ? sanitizeRichText(details.data.body) : null } : null };
       }),
-      workspaces: auth.projects.map((workspace) => ({
+      workspaces: scopeProjects.map((workspace) => ({
         id: workspace.id,
         name: workspace.name,
         ticketKey: workspace.ticket_key,

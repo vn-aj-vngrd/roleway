@@ -8,10 +8,11 @@ import { AgentMarkdown } from "./markdown";
 import { RunTimeline } from "./run-timeline";
 import type { AgentUIMessage, RunProgress } from "./stream-types";
 
-const transport = new DefaultChatTransport<AgentUIMessage>({ api: "/api/agent/chat" });
+const transport = new DefaultChatTransport<AgentUIMessage>({ api: "/api/agent/chat", prepareSendMessagesRequest: ({ body }) => ({ body: body ?? {} }) });
 const LiveContext = createContext<{
   pending: boolean;
   submit: (data: FormData) => void;
+  submission: number;
   messages: AgentUIMessage[];
   startedAt: string;
   error: string | undefined;
@@ -20,15 +21,16 @@ const LiveContext = createContext<{
 
 export function useAgentLive() { return useContext(LiveContext); }
 
-export function AgentLiveProvider({ children, initialPending = false }: { children: ReactNode; initialPending?: boolean }) {
+export function AgentLiveProvider({ children, initialPending = false, persistedMessageId, conversationId }: { children: ReactNode; initialPending?: boolean; persistedMessageId: string; conversationId: string }) {
   const router = useRouter();
+  const [submission, setSubmission] = useState(0);
   const [startedAt, setStartedAt] = useState("");
   const [endedAt, setEndedAt] = useState<string>();
   const href = useRef<string | null>(null);
   const savedConversationId = useRef<string | null>(null);
   const [incomplete, setIncomplete] = useState(false);
   const busy = useRef(false);
-  const { messages, sendMessage, setMessages, status, error } = useChat<AgentUIMessage>({
+  const { messages, sendMessage, setMessages, clearError, status, error } = useChat<AgentUIMessage>({
     transport,
     onData(part) {
       if (part.type === "data-result") href.current = part.data.href;
@@ -41,19 +43,31 @@ export function AgentLiveProvider({ children, initialPending = false }: { childr
     onFinish() {
       setEndedAt(new Date().toISOString());
       if (href.current) {
-        router.replace(href.current, { scroll: false });
-        router.refresh();
+        if (window.location.pathname + window.location.search === href.current) router.refresh();
+        else router.replace(href.current, { scroll: false });
       } else setIncomplete(true);
       busy.current = false;
     },
     onError() { busy.current = false; setEndedAt(new Date().toISOString()); },
   });
+  useEffect(() => { setMessages([]); }, [persistedMessageId, setMessages]);
+  const previousConversationId = useRef(conversationId);
+  useEffect(() => {
+    if (previousConversationId.current === conversationId) return;
+    previousConversationId.current = conversationId;
+    if (savedConversationId.current === conversationId) return;
+    savedConversationId.current = null;
+    setMessages([]);
+    clearError();
+    setIncomplete(false);
+  }, [conversationId, setMessages, clearError]);
   const pending = initialPending || status === "submitted" || status === "streaming";
   function submit(data: FormData) {
     if (busy.current || initialPending) return;
     const text = String(data.get("message") ?? "").trim();
     if (!text) return;
     busy.current = true;
+    setSubmission(value => value + 1);
     href.current = null;
     setStartedAt(new Date().toISOString());
     setEndedAt(undefined);
@@ -61,7 +75,7 @@ export function AgentLiveProvider({ children, initialPending = false }: { childr
     setMessages([]);
     void sendMessage({ text }, { body: { ...Object.fromEntries(data), ...(savedConversationId.current ? { conversationId: savedConversationId.current } : {}) } }).catch(() => { busy.current = false; });
   }
-  return <LiveContext.Provider value={{ pending, submit, messages, startedAt, endedAt, error: error || incomplete ? "The connection was interrupted. Reload this conversation to check whether the answer was saved." : undefined }}>{children}</LiveContext.Provider>;
+  return <LiveContext.Provider value={{ pending, submit, submission, messages, startedAt, endedAt, error: error || incomplete ? "The connection was interrupted. Reload this conversation to check whether the answer was saved." : undefined }}>{children}</LiveContext.Provider>;
 }
 
 export function AgentStreamForm({ children, action, conversationId }: { children: ReactNode; action: (data: FormData) => void; conversationId: string }) {
@@ -82,7 +96,7 @@ export function AgentTranscript({ children, emptyState, hasConversation }: { chi
   const stickToBottom = useRef(true);
   useEffect(() => {
     if (root.current && stickToBottom.current) root.current.scrollTop = root.current.scrollHeight;
-  }, [live?.messages]);
+  }, [live?.messages, children]);
   if (!hasConversation && !live?.messages.length) return emptyState;
   const assistant = live?.messages.filter(message => message.role === "assistant").at(-1);
   const answer = assistant?.parts.find(part => part.type === "data-answer");

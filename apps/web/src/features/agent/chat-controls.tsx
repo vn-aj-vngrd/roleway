@@ -29,12 +29,17 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useAgentLive } from "./live-chat";
+import { type AgentContextPage } from "./scope";
 import { matchingCapabilities } from "./capabilities";
 import { formatMessageTimestamp } from "./message-time";
 
 type ComposerProps = {
   connections: Array<{ id: string; label: string; model: string }>;
-  opportunities: Array<{ id: string; label: string }>;
+  opportunities: Array<{ id: string; label: string; workspaceId: string }>;
+  workspaces: Array<{ id: string; label: string }>;
+  workspaceId: string;
+  contextPage: AgentContextPage;
+  draftKey?: string | undefined;
   focusedOpportunityId: string;
   fixedFocus: boolean;
 };
@@ -64,14 +69,30 @@ export function AgentMessageInput({
   opportunities,
   focusedOpportunityId,
   fixedFocus,
+  workspaces,
+  workspaceId,
+  contextPage,
+  draftKey,
 }: ComposerProps) {
   const [connectionId, setConnectionId] = useState(connections[0]?.id ?? "");
+  const [scopeId, setScopeId] = useState(workspaceId);
   const [focusId, setFocusId] = useState(focusedOpportunityId);
   const connection = connections.find((item) => item.id === connectionId);
   const focusLabel =
     opportunities.find((item) => item.id === focusId)?.label ??
-    "All workspaces";
+    workspaces.find(item => item.id === scopeId)?.label ?? "All workspaces";
   const [message, setMessage] = useState("");
+  useEffect(() => {
+    if (!draftKey) return;
+    try {
+      const raw = sessionStorage.getItem(`roleway-agent-draft:${draftKey}`);
+      if (raw) {
+        const draft: unknown = JSON.parse(raw);
+        if (draft && typeof draft === "object" && "message" in draft && typeof draft.message === "string") setMessage(draft.message.slice(0, 4000));
+        sessionStorage.removeItem(`roleway-agent-draft:${draftKey}`);
+      }
+    } catch { /* Storage may be disabled; the conversation link still works. */ }
+  }, [draftKey]);
   const [open, setOpen] = useState(false);
   const [picker, setPicker] = useState<"focus" | "model" | null>(null);
   const focusOpen = picker === "focus";
@@ -85,6 +106,9 @@ export function AgentMessageInput({
   const { pending: formPending } = useFormStatus();
   const live = useAgentLive();
   const pending = formPending || Boolean(live?.pending);
+  useEffect(() => {
+    if (live?.submission) { setMessage(""); setOpen(false); setPicker(null); }
+  }, [live?.submission]);
   const timeZone = useSyncExternalStore(
     subscribe,
     () => Intl.DateTimeFormat().resolvedOptions().timeZone,
@@ -190,12 +214,16 @@ export function AgentMessageInput({
         </ComposerPanel>
       ) : null}
       {focusOpen && !pending ? (
-        <ComposerPanel title="Conversation focus" description="Use all Workspace context, or focus on an Opportunity." onClose={() => { setPicker(null); input.current?.focus(); }}>
+        <ComposerPanel title="Conversation focus" description="Choose all Workspaces, one Workspace, or an Opportunity." onClose={() => { setPicker(null); input.current?.focus(); }}>
           <div ref={focusList} id={`${id}-focus`} className="agent-capability-list agent-focus-list" aria-label="Conversation focus options">
-            {[{ id: "", label: "All workspaces" }, ...opportunities].map((item) => (
-              <button type="button" key={item.id} aria-pressed={focusId === item.id} onClick={() => { setFocusId(item.id); setPicker(null); input.current?.focus(); }}>
-                <span>{item.label}</span>
-                {focusId === item.id ? <Check aria-hidden="true" /> : null}
+            {[{ id: "", label: "All workspaces" }, ...workspaces].map(item => (
+              <button type="button" key={`workspace-${item.id}`} aria-pressed={!focusId && scopeId === item.id} onClick={() => { setScopeId(item.id); setFocusId(""); setPicker(null); input.current?.focus(); }}>
+                <span>{item.label}</span>{!focusId && scopeId === item.id ? <Check aria-hidden="true" /> : null}
+              </button>
+            ))}
+            {opportunities.filter(item => !scopeId || item.workspaceId === scopeId).map(item => (
+              <button type="button" key={item.id} aria-pressed={focusId === item.id} onClick={() => { setScopeId(item.workspaceId); setFocusId(item.id); setPicker(null); input.current?.focus(); }}>
+                <span>{item.label}</span>{focusId === item.id ? <Check aria-hidden="true" /> : null}
               </button>
             ))}
           </div>
@@ -215,6 +243,8 @@ export function AgentMessageInput({
       ) : null}
       <input type="hidden" name="connectionId" value={connectionId} />
       <input type="hidden" name="opportunityId" value={focusId} />
+      <input type="hidden" name="workspaceId" value={scopeId} />
+      <input type="hidden" name="contextPage" value={contextPage} />
       <input type="hidden" name="timeZone" value={timeZone} />
       <label className="sr-only" htmlFor="agent-message">
         Message Roleway Agent
@@ -307,8 +337,7 @@ export function AgentMessageInput({
             >
               <PopoverTitle>Context and permissions</PopoverTitle>
               <p>
-                Agent reads your Career Profile and context across your
-                Workspaces after you send a request.
+                Agent reads your Career Profile and {scopeId ? "the selected Workspace" : "your Workspaces"} after you send a request.
               </p>
               <p>
                 You approve every internal change. Agent cannot submit

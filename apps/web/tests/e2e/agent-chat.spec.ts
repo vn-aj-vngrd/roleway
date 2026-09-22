@@ -204,6 +204,7 @@ test("Agent formats Markdown and keeps composer controls usable across sizes and
         const afterError = await composer.boundingBox();
         expect(Math.abs(afterError!.y - beforeError!.y)).toBeLessThan(2);
         expect(await page.locator(".agent-transcript").evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
+        expect(await page.locator(".agent-transcript").evaluate(el => Math.abs(el.getBoundingClientRect().right - el.parentElement!.getBoundingClientRect().right))).toBeLessThan(2);
         const footer = page.locator(".agent-message.user .agent-message-actions");
         await expect(footer.locator("time")).toContainText(/\d{1,2}:\d{2}/);
         const copyControl = footer.getByRole("button", { name: "Copy message" });
@@ -248,6 +249,7 @@ test("Agent formats Markdown and keeps composer controls usable across sizes and
       await input.fill("Help me prepare my next step");
       await page.getByRole("button", { name: "Send to Agent", exact: true }).click();
       await requestArrived;
+      await expect(input).toHaveValue("");
       await expect(page.getByText("Help me prepare my next step", { exact: true })).toBeVisible();
       await expect(page.getByText(/^Working for/)).toBeVisible();
       await expect(page.getByRole("button", { name: "Agent is working", exact: true })).toBeDisabled();
@@ -264,6 +266,7 @@ test("Agent formats Markdown and keeps composer controls usable across sizes and
       write({ type: "data-answer", id: "answer", data: { text: "## Start here\n\nPrepare **one concrete example**." } });
       await expect(page.locator(".agent-streaming-answer strong")).toHaveText("one concrete example");
       await page.screenshot({ path: "/tmp/roleway-working-mobile.png" });
+      const transcriptNode = await page.locator(".agent-transcript").elementHandle();
       const run = await admin.from("ai_runs").insert({ ...ownership, conversation_id: conversation.data.id, connection_id: connection.data.id, provider: "openai", model: "fixture", task_type: "conversation", status: "generating" }).select("id").single();
       if (run.error) throw run.error;
       const complete = await admin.rpc("complete_agent_run", { input_run_id: run.data.id, input_output: { message: "## Start here\n\nPrepare **one concrete example**.", proposals: [] }, input_tokens: 10, output_tokens: 20 });
@@ -276,6 +279,9 @@ test("Agent formats Markdown and keeps composer controls usable across sizes and
       await expect(page.locator(".agent-message-author")).toHaveCount(0);
       await page.locator(".agent-work-timeline").last().locator("summary").click();
       await expect(page.locator(".agent-work-steps").last()).toContainText("fixture");
+      expect(await transcriptNode!.evaluate(el => el.isConnected)).toBe(true);
+      await expect(input).toHaveValue("");
+      await expect(page.getByRole("heading", { name: "Start here" })).toHaveCount(1);
       await page.screenshot({ path: "/tmp/roleway-worked-mobile.png" });
     } finally {
       response?.end();
@@ -297,6 +303,14 @@ test("Agent formats Markdown and keeps composer controls usable across sizes and
     await page.getByRole("button", { name: "Open Roleway Agent", exact: true }).press("Enter");
     const mini = page.getByRole("dialog", { name: "Roleway Agent", exact: true });
     await expect(mini.getByRole("heading", { name: "What can I help with?" })).toBeVisible();
+    await expect(mini.getByRole("link", { name: "Open full Agent" })).toHaveAttribute("href", `/agent?workspace=${ownership.project_id}&page=home`);
+    await mini.getByRole("textbox", { name: "Ask Roleway Agent" }).fill("Keep my contextual draft");
+    await mini.getByRole("link", { name: "Open full Agent" }).click();
+    await expect(input).toHaveValue("Keep my contextual draft");
+    await expect(page.locator('input[name="workspaceId"]')).toHaveValue(ownership.project_id);
+    await expect(page.locator('input[name="contextPage"]')).toHaveValue("home");
+    await page.goto("/home");
+    await page.getByRole("button", { name: "Open Roleway Agent", exact: true }).press("Enter");
     await page.screenshot({ path: "/tmp/roleway-mini-agent-empty.png", animations: "disabled" });
     await page.route("**/api/agent/chat", route => route.fulfill({
       contentType: "text/event-stream",
@@ -317,21 +331,71 @@ test("Agent formats Markdown and keeps composer controls usable across sizes and
       await expect(mini.locator(".agent-message.agent strong")).toHaveText("one example");
       await expect(mini.getByText(/^Worked for/)).toBeVisible();
       await expect(mini.locator(".agent-work-timeline > summary")).toHaveCSS("display", "flex");
-      await expect(mini.getByRole("link", { name: "Open full conversation" })).toHaveAttribute("href", `/agent?conversation=${conversation.data.id}`);
+      await expect(mini.getByRole("link", { name: "Open full Agent" })).toHaveAttribute("href", `/agent?conversation=${conversation.data.id}`);
       expect(new URL(page.url()).pathname).toBe("/home");
       expect(await mini.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
       await page.screenshot({ path: "/tmp/roleway-mini-agent-answer.png", animations: "disabled" });
     } finally { await page.unroute("**/api/agent/chat"); }
     await mini.getByRole("button", { name: "Close Agent", exact: true }).click();
-    await page.goto(`/agent?conversation=${conversation.data.id}`);
+    // Expanding an active mini chat keeps its transport mounted until persistence completes.
+    const handoff = await admin.from("agent_conversations").insert({ ...ownership, title: "Streaming handoff", scope_mode: "workspace", context_page: "documents" }).select("id").single();
+    if (handoff.error) throw handoff.error;
+    const handoffRun = await admin.from("ai_runs").insert({ ...ownership, conversation_id: handoff.data.id, connection_id: connection.data.id, provider: "openai", model: "fixture", task_type: "conversation", status: "generating" }).select("id").single();
+    if (handoffRun.error) throw handoffRun.error;
+    const handoffMessage = await admin.from("agent_messages").insert({ ...ownership, conversation_id: handoff.data.id, run_id: handoffRun.data.id, role: "user", content: "Review my documents" });
+    if (handoffMessage.error) throw handoffMessage.error;
+    let handoffResponse: ServerResponse | undefined;
+    const handoffServer = createServer((request, res) => {
+      request.resume();
+      handoffResponse = res;
+      res.writeHead(200, { "Content-Type": "text/event-stream", "x-vercel-ai-ui-message-stream": "v1", "Access-Control-Allow-Origin": new URL(page.url()).origin, "Access-Control-Allow-Credentials": "true" });
+      for (const chunk of [{ type: "start", messageId: "handoff" }, { type: "data-started", data: { conversationId: handoff.data.id, runId: handoffRun.data.id }, transient: true }]) res.write(`data: ${JSON.stringify(chunk)}\n\n`);
+    });
+    await new Promise<void>(resolve => handoffServer.listen(0, "127.0.0.1", resolve));
+    const handoffAddress = handoffServer.address();
+    if (!handoffAddress || typeof handoffAddress === "string") throw new Error("Handoff server unavailable");
+    try {
+      await page.goto("/documents");
+      await page.getByRole("button", { name: "Open Roleway Agent", exact: true }).press("Enter");
+      await page.route("**/api/agent/chat", route => {
+        expect(route.request().postDataJSON()).toMatchObject({ workspaceId: ownership.project_id, contextPage: "documents" });
+        return route.continue({ url: `http://127.0.0.1:${handoffAddress.port}/stream` });
+      });
+      await mini.getByRole("textbox", { name: "Ask Roleway Agent" }).fill("Review my documents");
+      await mini.getByRole("button", { name: "Send message", exact: true }).click();
+      await expect(mini.getByRole("link", { name: "Open full Agent" })).toHaveAttribute("href", `/agent?conversation=${handoff.data.id}`);
+      await mini.getByRole("link", { name: "Open full Agent" }).click();
+      await expect(page.getByText("Review my documents", { exact: true })).toBeVisible();
+      await expect(page.locator(".agent-native-scope")).toContainText("Documents");
+      const handoffComplete = await admin.rpc("complete_agent_run", { input_run_id: handoffRun.data.id, input_output: { message: "## Documents reviewed\n\n- Prepare your next draft.", proposals: [] }, input_tokens: 10, output_tokens: 20 });
+      if (handoffComplete.error) throw handoffComplete.error;
+      expect(handoffResponse?.destroyed).toBe(false);
+      for (const chunk of [{ type: "data-result", data: { href: `/agent?conversation=${handoff.data.id}` }, transient: true }, { type: "finish" }]) handoffResponse!.write(`data: ${JSON.stringify(chunk)}\n\n`);
+      handoffResponse!.end("data: [DONE]\n\n");
+      await expect(page.getByRole("heading", { name: "Documents reviewed" })).toBeVisible();
+      await expect(input).toBeEditable();
+    } finally {
+      handoffResponse?.end();
+      await page.unroute("**/api/agent/chat");
+      handoffServer.closeAllConnections();
+      await new Promise<void>(resolve => handoffServer.close(() => resolve()));
+    }
+    await page.goto(`/agent?workspace=${ownership.project_id}&page=home`);
     // The real authenticated stream route must persist failures without exposing provider details.
     await input.fill("Check the saved connection safely");
     await page.getByRole("button", { name: "Send to Agent", exact: true }).click();
     await expect(page.locator(".agent-inline-state[role=alert]")).toContainText("Agent could not complete");
-    await expect(page.getByText("Check the saved connection safely", { exact: true })).toBeVisible();
+    await expect(page.locator(".agent-transcript").getByText("Check the saved connection safely", { exact: true })).toBeVisible();
     await expect(page.locator(".agent-work-failed").last()).toBeVisible();
     await expect(page.getByText(/^Working for/)).toHaveCount(0);
     await expect(input).toBeEditable();
+    await expect(input).toHaveValue("");
+    const savedContextId = new URL(page.url()).searchParams.get("conversation");
+    expect(savedContextId).toBeTruthy();
+    const scoped = await admin.from("agent_conversations").select("scope_mode,context_page,project_id").eq("id", savedContextId!).single();
+    expect(scoped.data).toEqual({scope_mode:"workspace",context_page:"home",project_id:ownership.project_id});
+    const changedScope = await admin.from("agent_conversations").update({scope_mode:"account"}).eq("id", savedContextId!);
+    expect(changedScope.error?.message).toContain("Start a new conversation");
     await page.goto("/settings/ai");
     await expect(page.getByText("Changes stay in your control", { exact: true })).toHaveCount(0);
     for (const theme of ["light", "dark"]) {

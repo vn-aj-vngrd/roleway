@@ -1,3 +1,4 @@
+import { agentContextPage, agentContextPages, type AgentContextPage } from "@/features/agent/scope";
 // OpenRouter free models may queue for minutes; leave time for bounded calls and persistence.
 export const maxDuration = 300;
 
@@ -17,13 +18,13 @@ import { archiveAgentConversation, decideAgentProposal, sendAgentMessage, openAg
 
 type Connection = { id: string; label: string; provider: string; model: string; status: string };
 type Opportunity = { id: string; project_id: string; reference_number: number; next_action: string | null; jobs: { company: string; title: string } | null };
-type Conversation = { id: string; project_id: string; title: string; opportunity_id: string | null; updated_at: string };
+type Conversation = { scope_mode: "account" | "workspace"; context_page: AgentContextPage; id: string; project_id: string; title: string; opportunity_id: string | null; updated_at: string };
 type Message = { id: string; role: "user" | "agent"; content: string; run_id: string | null; created_at: string };
 type Run = { id: string; provider: string; model: string; status: string; input_tokens: number | null; output_tokens: number | null; created_at: string };
 type Step = { id: string; run_id: string; label: string; status: "pending" | "active" | "completed" | "failed"; position: number; created_at: string };
 type Proposal = { id: string; run_id: string; tool_name: string; target_id: string | null; destination_project_id: string | null; summary: string; arguments: Record<string, unknown>; status: string; created_at: string };
 
-type AgentQuery = { conversation?: string; opportunity?: string; error?: string; decision?: string; record?: string; proposal?: string };
+type AgentQuery = { workspace?: string; page?: string; draft?: string; conversation?: string; opportunity?: string; error?: string; decision?: string; record?: string; proposal?: string };
 
 export default async function AgentPage(props: { searchParams: Promise<AgentQuery> }) {
   const searchParams = await props.searchParams;
@@ -34,14 +35,14 @@ export default async function AgentPage(props: { searchParams: Promise<AgentQuer
   const [connectionsResult, opportunitiesResult, conversationsResult] = await Promise.all([
     admin.from("ai_connections").select("id, label, provider, model, status").eq("user_id", context.user.id).order("updated_at", { ascending: false }),
     context.supabase.from("opportunities").select("id, project_id, reference_number, next_action, jobs(company, title)").eq("user_id", context.user.id).in("project_id", context.projects.map((workspace) => workspace.id)).neq("stage", "closed").order("updated_at", { ascending: false }),
-    context.supabase.from("agent_conversations").select("id, project_id, title, opportunity_id, updated_at").eq("user_id", context.user.id).eq("status", "active").order("updated_at", { ascending: false }).limit(40),
+    context.supabase.from("agent_conversations").select("*").eq("user_id", context.user.id).eq("status", "active").order("updated_at", { ascending: false }).limit(40),
   ]);
   const connections = (connectionsResult.data ?? []) as Connection[];
   const readyConnections = connections.filter((connection) => connection.status === "connected");
   const opportunities = (opportunitiesResult.data ?? []) as unknown as Opportunity[];
   const conversations = (conversationsResult.data ?? []) as Conversation[];
   const { data: selectedConversation } = query.conversation
-    ? await context.supabase.from("agent_conversations").select("id, project_id, title, opportunity_id, updated_at").eq("id", query.conversation).eq("user_id", context.user.id).eq("status", "active").maybeSingle()
+    ? await context.supabase.from("agent_conversations").select("*").eq("id", query.conversation).eq("user_id", context.user.id).eq("status", "active").maybeSingle()
     : { data: null };
   const activeConversation = selectedConversation as Conversation | null;
   if (query.conversation && !activeConversation) redirect("/agent?error=That%20conversation%20is%20not%20available.");
@@ -67,11 +68,17 @@ export default async function AgentPage(props: { searchParams: Promise<AgentQuer
   const projectMap = new Map(context.projects.map((item) => [item.id, { name: item.name, ticketKey: item.ticket_key }]));
   const queryFocus = opportunities.some((opportunity) => opportunity.id === query.opportunity) ? query.opportunity : "";
   const focusedOpportunityId = activeConversation?.opportunity_id ?? queryFocus ?? "";
+  const queryWorkspace = context.projects.some(project => project.id === query.workspace) ? query.workspace! : "";
+  const focusedWorkspaceId = activeConversation
+    ? activeConversation.scope_mode === "workspace" ? activeConversation.project_id : ""
+    : (queryFocus ? opportunityMap.get(queryFocus)?.project_id : queryWorkspace) ?? "";
+  const contextPage = activeConversation ? agentContextPage(activeConversation.context_page) : agentContextPage(query.page);
+  const scopeLabel = focusedWorkspaceId ? projectMap.get(focusedWorkspaceId)?.name ?? "Workspace unavailable" : "All workspaces";
 
   const pendingRun = runs.find(run => ["queued", "gathering_context", "generating"].includes(run.status) && Date.now() - Date.parse(run.created_at) < 300_000);
 
   return (
-    <AgentLiveProvider initialPending={Boolean(pendingRun)} key={`${pendingRun?.id ?? "idle"}:${activeConversation?.id ?? "new"}:${messages.at(-1)?.id ?? "empty"}:${query.error ?? ""}`}><div className={`agent-native-page ${activeConversation ? "has-conversation" : "is-empty"}`}>
+    <AgentLiveProvider conversationId={activeConversation?.id ?? ""} initialPending={Boolean(pendingRun)} persistedMessageId={messages.at(-1)?.id ?? "empty"}><div className={`agent-native-page ${activeConversation ? "has-conversation" : "is-empty"}`}>
       <header className="agent-native-routebar">
         <details className="agent-history-menu">
           <summary aria-label="Open Agent conversation history"><History aria-hidden="true" /><span>{activeConversation?.title ?? "New conversation"}</span><ChevronDown aria-hidden="true" /></summary>
@@ -81,7 +88,7 @@ export default async function AgentPage(props: { searchParams: Promise<AgentQuer
               {conversations.length ? conversations.map((conversation) => {
                 const active = conversation.id === activeConversation?.id;
                 const focus = conversation.opportunity_id ? opportunityMap.get(conversation.opportunity_id) : null;
-                const subtitle = focus?.jobs ? `${focus.jobs.company} · ${focus.jobs.title}` : projectMap.get(conversation.project_id)?.name ?? "All workspaces";
+                const subtitle = focus?.jobs ? `${focus.jobs.company} · ${focus.jobs.title}` : conversation.scope_mode === "workspace" ? projectMap.get(conversation.project_id)?.name ?? "Workspace" : "All workspaces";
                 return <div className={`agent-history-row ${active ? "active" : ""}`} key={conversation.id}>
                   <Link href={`/agent?conversation=${conversation.id}`} aria-current={active ? "page" : undefined}><span>{conversation.title}</span><small className="agent-history-meta"><span>{subtitle}</span><span aria-hidden="true">·</span><time dateTime={conversation.updated_at} title={new Date(conversation.updated_at).toUTCString()}>{formatConversationAge(conversation.updated_at)}</time></small></Link>
                   <form action={archiveAgentConversation}><input type="hidden" name="conversationId" value={conversation.id} /><button aria-label={`Archive ${conversation.title}`} data-tooltip="Archive conversation"><Archive aria-hidden="true" /></button></form>
@@ -90,7 +97,7 @@ export default async function AgentPage(props: { searchParams: Promise<AgentQuer
             </div>
           </div>
         </details>
-        <span className="agent-native-scope"><Route aria-hidden="true" />All workspaces</span>
+        <span className="agent-native-scope"><Route aria-hidden="true" />{scopeLabel}{contextPage !== "agent" ? ` · ${agentContextPages[contextPage]}` : ""}</span>
         <Link className="agent-new-chat" href="/agent"><Plus aria-hidden="true" /><span>New conversation</span></Link>
       </header>
 
@@ -103,7 +110,7 @@ export default async function AgentPage(props: { searchParams: Promise<AgentQuer
       <main className="agent-native-workplane">
         <AgentTranscript hasConversation={Boolean(activeConversation)} emptyState={<div className="agent-empty-state">
           <div className="agent-waypoint-watermark" aria-hidden="true"><Navigation /></div>
-          <div className="agent-empty-copy"><h1>Ask across your search.</h1><p>Agent can read context from all of your Workspaces. It answers questions, prepares drafts, and proposes Workspace-specific changes for your approval.</p></div>
+          <div className="agent-empty-copy"><h1>{focusedWorkspaceId ? `Ask about ${scopeLabel}.` : "Ask across your search."}</h1><p>{focusedWorkspaceId ? "Agent reads context from this Workspace and your Career Profile." : "Agent can read context from all of your Workspaces."} It answers questions, prepares drafts, and proposes Workspace-specific changes for your approval.</p></div>
           <p className="agent-prompt-examples">Use + or / below to create work or explore your search.</p>
         </div>}>
           {messages.map((message) => {
@@ -124,23 +131,26 @@ export default async function AgentPage(props: { searchParams: Promise<AgentQuer
         </AgentTranscript>
 
         <AgentComposer
-          messageKey={messages.at(-1)?.id ?? "new"}
           conversationId={activeConversation?.id ?? ""}
           connections={readyConnections}
           opportunities={opportunities}
           focusedOpportunityId={focusedOpportunityId}
           projects={projectMap}
+          workspaceId={focusedWorkspaceId}
+          contextPage={contextPage}
+          draftKey={query.draft}
         />
       </main>
     </div></AgentLiveProvider>
   );
 }
 
-function AgentComposer({ messageKey, conversationId, connections, opportunities, focusedOpportunityId, projects }: { messageKey: string; conversationId: string; connections: Connection[]; opportunities: Opportunity[]; focusedOpportunityId: string; projects: Map<string, { name: string; ticketKey: string }> }) {
+function AgentComposer({ conversationId, connections, opportunities, focusedOpportunityId, projects, workspaceId, contextPage, draftKey }: { workspaceId: string; contextPage: AgentContextPage; draftKey?: string | undefined; conversationId: string; connections: Connection[]; opportunities: Opportunity[]; focusedOpportunityId: string; projects: Map<string, { name: string; ticketKey: string }> }) {
   if (!connections.length) return <section className="agent-native-composer agent-composer-disabled" aria-label="Connect an AI provider to use Agent"><label className="sr-only" htmlFor="disabled-agent-message">Message Roleway Agent</label><textarea id="disabled-agent-message" disabled placeholder="Connect a provider to ask Agent…" /><footer><span className="agent-context-disclosure"><KeyRound aria-hidden="true" />Your API key is encrypted before storage</span><Link className="agent-setup-link" href="/settings/ai">Set up connection</Link></footer></section>;
   return <AgentStreamForm action={sendAgentMessage} conversationId={conversationId}>
-    <AgentMessageInput key={messageKey} connections={connections} focusedOpportunityId={focusedOpportunityId} fixedFocus={Boolean(conversationId)} opportunities={opportunities.map(opportunity => ({
+    <AgentMessageInput key={`${workspaceId}:${contextPage}`} workspaceId={workspaceId} contextPage={contextPage} draftKey={draftKey} workspaces={Array.from(projects, ([id, project]) => ({ id, label: project.name }))} connections={connections} focusedOpportunityId={focusedOpportunityId} fixedFocus={Boolean(conversationId)} opportunities={opportunities.map(opportunity => ({
       id: opportunity.id,
+      workspaceId: opportunity.project_id,
       label: `${projects.get(opportunity.project_id)?.name ?? "Workspace"} · ${formatOpportunityTicket(projects.get(opportunity.project_id)?.ticketKey ?? "RW", opportunity.reference_number)} · ${opportunity.jobs?.company} · ${opportunity.jobs?.title}`,
     }))} />
   </AgentStreamForm>;

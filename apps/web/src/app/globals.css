@@ -16175,3 +16175,20 @@ html:has(.app-shell) {
 .global-agent-popover textarea:disabled { background:transparent; }
 .global-agent-popover form > footer { margin-top:8px; gap:8px; }
 .global-agent-model { color:var(--muted); font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+.global-agent-transcript .agent-message.agent .agent-message-content {
+  background:transparent; padding:0; border-radius:0;
+}
+.global-agent-transcript .agent-markdown { line-height:1.65; }
+.global-agent-transcript .agent-markdown :is(h1,h2,h3,h4) { margin:18px 0 8px; font-size:15px; }
+.global-agent-transcript .agent-markdown > :first-child { margin-top:0; }
+.global-agent-transcript .agent-markdown :is(ul,ol) { padding-left:20px; margin:10px 0; }
+.global-agent-transcript .agent-markdown li + li { margin-top:6px; }
+.global-agent-transcript .agent-markdown p { white-space:normal; margin-bottom:12px; }
+
+/* Scroll at the work plane edge while keeping message lines comfortably narrow. */
+.agent-transcript { width: 100%; max-width: none; margin: 0; padding-inline: max(24px, calc((100% - 820px) / 2)); scrollbar-gutter: stable; }
+@media (max-width: 760px) {
+  .agent-transcript { width: 100%; padding-inline: 16px; }
+  .agent-message { min-width: 0; overflow-wrap: anywhere; }
+}

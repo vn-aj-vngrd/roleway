@@ -14,7 +14,7 @@ export async function POST(request: Request) {
   try { body = JSON.parse(raw); } catch { return new Response("Invalid request", { status: 400 }); }
   if (!body || typeof body !== "object" || Array.isArray(body)) return new Response("Invalid request", { status: 400 });
   const form = new FormData();
-  for (const key of ["conversationId", "connectionId", "opportunityId", "timeZone", "message"]) {
+  for (const key of ["conversationId", "connectionId", "opportunityId", "workspaceId", "contextPage", "timeZone", "message"]) {
     if (typeof body[key] === "string") form.set(key, body[key]);
   }
   const stream = createUIMessageStream<AgentUIMessage>({

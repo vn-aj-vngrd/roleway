@@ -948,9 +948,9 @@ export function AppShell({
           </main>
           {pathname !== "/settings/ai" ? (
             <AgentPopoverLauncher
-              key={`${pathname}:${activeProject.id}`}
               pathname={pathname}
               projectName={activeProject.name}
+              projectId={activeProject.id}
               breadcrumbs={breadcrumbs}
               connection={agentConnection}
             />
@@ -1132,15 +1132,13 @@ export function AppShell({
           </header>
           <div className="main-content-scroll">{children}</div>
         </main>
-        {pathname !== "/agent" ? (
-          <AgentPopoverLauncher
-              key={`${pathname}:${activeProject.id}`}
+        <AgentPopoverLauncher
             pathname={pathname}
             projectName={activeProject.name}
+            projectId={activeProject.id}
             breadcrumbs={breadcrumbs}
             connection={agentConnection}
           />
-        ) : null}
         <nav className="mobile-nav" aria-label="Mobile navigation">
           {mobileNav.map((item) => (
             <NavItem key={item.href} item={item} pathname={pathname} />
