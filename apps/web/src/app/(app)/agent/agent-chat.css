@@ -456,10 +456,13 @@
   justify-content: flex-end;
 }
 @media (hover: hover) and (pointer: fine) {
+  .agent-message-actions .agent-message-timestamp,
   .agent-message-actions [data-slot="button"] {
     opacity: 0;
     pointer-events: none;
   }
+  .agent-message:hover .agent-message-actions .agent-message-timestamp,
+  .agent-message:focus-within .agent-message-actions .agent-message-timestamp,
   .agent-message:hover .agent-message-actions [data-slot="button"],
   .agent-message:focus-within .agent-message-actions [data-slot="button"] {
     opacity: 1;

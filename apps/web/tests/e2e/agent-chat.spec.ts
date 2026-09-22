@@ -193,11 +193,14 @@ test("Agent formats Markdown and keeps composer controls usable across sizes and
         const copyControl = footer.getByRole("button", { name: "Copy message" });
         await page.locator(".agent-native-routebar").hover();
         await expect(copyControl).toHaveCSS("opacity", "0");
+        await expect(footer.locator("time")).toHaveCSS("opacity", "0");
         await page.locator(".agent-message.user").hover();
         await expect(copyControl).toHaveCSS("opacity", "1");
+        await expect(footer.locator("time")).toHaveCSS("opacity", "1");
         await copyControl.focus();
         await page.locator(".agent-native-routebar").hover();
         await expect(copyControl).toHaveCSS("opacity", "1");
+        await expect(footer.locator("time")).toHaveCSS("opacity", "1");
         await page.screenshot({ path: `/tmp/roleway-error-${theme}-${width}.png` });
         await page.goto(`/agent?conversation=${conversation.data.id}`);
         await expect(input).toBeVisible();
