@@ -13762,12 +13762,12 @@ html:has(.app-shell) {
   }
   .app-shell .sidebar {
     width: 244px;
-    transform: translateX(0);
+    /* Let text return to normal rasterization once the rail finishes opening. */
+    transform: none;
     opacity: 1;
     transition:
       transform 280ms var(--ease-out),
       opacity 170ms ease-out;
-    will-change: transform;
   }
   .app-shell > .main {
     transition: left 300ms var(--ease-out);
