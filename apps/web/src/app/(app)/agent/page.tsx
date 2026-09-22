@@ -2,9 +2,10 @@
 export const maxDuration = 300;
 
 import "./agent-chat.css";
+import { AgentMarkdown } from "@/features/agent/markdown";
 import { AgentMessageInput, MessageActions, MessageTimestamp, SavedResultFocus } from "@/features/agent/chat-controls";
 import { formatOpportunityTicket } from "@roleway/core";
-import { Archive, Check, ChevronDown, Circle, History, KeyRound, Navigation, Plus, Route, Send, X } from "lucide-react";
+import { Archive, Check, ChevronDown, Circle, History, KeyRound, Navigation, Plus, Route, X } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { SubmitButton } from "@/components/submit-button";
@@ -105,9 +106,9 @@ export default async function AgentPage(props: { searchParams: Promise<AgentQuer
             return (
               <article className={`agent-message ${message.role}`} key={message.id}>
                 <MessageTimestamp value={message.created_at} />
-                <header><span className="agent-message-author">{message.role === "agent" ? <><Navigation aria-hidden="true" />Roleway Agent</> : "You"}</span></header>
-                <div className="agent-message-content">{message.content.split(/\n{2,}/).map((paragraph, index) => <p key={index}>{paragraph}</p>)}</div>
-                <MessageActions content={message.content} />
+                <div className="agent-message-body"><header><span className="agent-message-author">{message.role === "agent" ? <><Navigation aria-hidden="true" />Roleway Agent</> : "You"}</span></header>
+                <div className="agent-message-content">{message.role === "agent" ? <AgentMarkdown content={message.content} idPrefix={message.id} /> : <p>{message.content}</p>}</div>
+                <MessageActions content={message.content} /></div>
                 {run && (message.role === "agent" || run.status === "failed") ? <AgentRunDetails run={run} steps={runSteps} /> : null}
                 {(message.role === "agent" ? runProposals : []).map((proposal) => <ApprovalCard createdWorkspaceId={query.proposal === proposal.id && query.decision === "applied" && projectMap.has(query.record ?? "") ? query.record : undefined} workspace={proposal.destination_project_id ? projectMap.get(proposal.destination_project_id)?.name ?? "Unavailable Workspace" : undefined} proposal={proposal} opportunity={proposal.target_id ? opportunityMap.get(proposal.target_id) : undefined} key={proposal.id} />)}
               </article>
@@ -136,15 +137,10 @@ function AgentComposer({ messageKey, conversationId, connections, opportunities,
   if (!connections.length) return <section className="agent-native-composer agent-composer-disabled" aria-label="Connect an AI provider to use Agent"><label className="sr-only" htmlFor="disabled-agent-message">Message Roleway Agent</label><textarea id="disabled-agent-message" disabled placeholder="Connect a provider to ask Agent…" /><footer><span className="agent-context-disclosure"><KeyRound aria-hidden="true" />Your API key is encrypted before storage</span><Link className="agent-setup-link" href="/settings/ai">Set up connection</Link></footer></section>;
   return <form action={sendAgentMessage} className="agent-native-composer" key={conversationId}>
     <input type="hidden" name="conversationId" value={conversationId} />
-    <AgentMessageInput key={messageKey} />
-    <footer>
-      <div className="agent-composer-context">
-        <label><span>Provider</span><select name="connectionId" aria-label="Agent provider" defaultValue={connections[0]?.id}>{connections.map((connection) => <option value={connection.id} key={connection.id}>{connection.label} · {connection.model}</option>)}</select></label>
-        <label><span>Focus</span><select name="opportunityId" aria-label="Agent Opportunity focus" defaultValue={focusedOpportunityId} disabled={Boolean(conversationId)}><option value="">All workspaces</option>{opportunities.map((opportunity) => <option value={opportunity.id} key={opportunity.id}>{projects.get(opportunity.project_id)?.name ?? "Workspace"} · {formatOpportunityTicket(projects.get(opportunity.project_id)?.ticketKey ?? "RW", opportunity.reference_number)} · {opportunity.jobs?.company} · {opportunity.jobs?.title}</option>)}</select></label>
-      </div>
-      <span className="agent-context-disclosure"><Route aria-hidden="true" />Career Profile and all Workspace context</span>
-      <SubmitButton className="agent-send" pendingLabel="Working…"><Send aria-hidden="true" /><span className="sr-only">Send to Agent</span></SubmitButton>
-    </footer>
+    <AgentMessageInput key={messageKey} connections={connections} focusedOpportunityId={focusedOpportunityId} fixedFocus={Boolean(conversationId)} opportunities={opportunities.map(opportunity => ({
+      id: opportunity.id,
+      label: `${projects.get(opportunity.project_id)?.name ?? "Workspace"} · ${formatOpportunityTicket(projects.get(opportunity.project_id)?.ticketKey ?? "RW", opportunity.reference_number)} · ${opportunity.jobs?.company} · ${opportunity.jobs?.title}`,
+    }))} />
   </form>;
 }
 

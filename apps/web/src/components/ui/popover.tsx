@@ -31,7 +31,7 @@ function PopoverContent({
     "align" | "alignOffset" | "side" | "sideOffset"
   >) {
   return (
-    <PopoverPrimitive.Portal container={topmostOpenDialog()}>
+    <PopoverPrimitive.Portal container={topmostOpenDialog() ?? undefined}>
       <PopoverPrimitive.Positioner
         align={align}
         alignOffset={alignOffset}

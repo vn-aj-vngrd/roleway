@@ -76,7 +76,7 @@ function SelectContent({
     "align" | "alignOffset" | "side" | "sideOffset" | "alignItemWithTrigger"
   >) {
   return (
-    <SelectPrimitive.Portal container={topmostOpenDialog()}>
+    <SelectPrimitive.Portal container={topmostOpenDialog() ?? undefined}>
       <SelectPrimitive.Positioner
         side={side}
         sideOffset={sideOffset}
