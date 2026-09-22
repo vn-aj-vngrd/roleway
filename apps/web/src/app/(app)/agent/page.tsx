@@ -122,9 +122,10 @@ export default async function AgentPage(props: { searchParams: Promise<AgentQuer
                 {run && message.role === "agent" ? <AgentRunDetails run={run} steps={runSteps} endedAt={message.created_at} /> : null}
                 <div className="agent-message-body">
                 <div className="agent-message-content">{message.role === "agent" ? <AgentMarkdown content={message.content} idPrefix={message.id} /> : <p>{message.content}</p>}</div>
-                </div><MessageActions content={message.content} timestamp={message.created_at} />
-                {run && (message.role === "user" && ["failed", "queued", "gathering_context", "generating"].includes(run.status)) ? <AgentRunDetails run={run} steps={runSteps} /> : null}
+                </div>
                 {(message.role === "agent" ? runProposals : []).map((proposal) => <ApprovalCard createdWorkspaceId={query.proposal === proposal.id && proposal.status === "applied" && projectMap.has(query.record ?? "") ? query.record : undefined} workspace={proposal.destination_project_id ? projectMap.get(proposal.destination_project_id)?.name ?? "Unavailable Workspace" : undefined} proposal={proposal} opportunity={proposal.target_id ? opportunityMap.get(proposal.target_id) : undefined} key={proposal.id} />)}
+                <MessageActions content={message.content} timestamp={message.created_at} />
+                {run && (message.role === "user" && ["failed", "queued", "gathering_context", "generating"].includes(run.status)) ? <AgentRunDetails run={run} steps={runSteps} /> : null}
               </article>
             );
           })}
