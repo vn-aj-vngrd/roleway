@@ -16,7 +16,7 @@ export function AttributeTooltips() {
     const eligible = (element: HTMLElement) => {
       if (!element.isConnected || element.matches(':disabled, [aria-disabled="true"], [aria-expanded="true"]')) return false;
       // Expanded navigation already has visible labels.
-      if (element.closest('.sidebar') && !element.closest('[data-sidebar="compact"]') && !element.matches('.sidebar-search, .sidebar-brand-row [data-tooltip]')) return false;
+      if (element.closest('.sidebar') && !element.closest('[data-sidebar="compact"]') && element.matches('.nav-link, .sidebar-search-project-button, .sidebar-profile')) return false;
       return Boolean(element.dataset.tooltip);
     };
     const show = (event: Event) => {

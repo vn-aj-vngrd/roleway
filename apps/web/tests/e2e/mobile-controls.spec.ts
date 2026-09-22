@@ -79,6 +79,10 @@ test("Mobile collection actions, feedback, avatar and Agent loading stay compact
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto("/home");
     const options = page.locator(".sidebar-search-project-more").first();
+    await page.locator(".sidebar-search-project-create").hover();
+    await expect(page.getByRole("tooltip", { name: "New workspace" })).toBeVisible();
+    await options.hover();
+    await expect(page.getByRole("tooltip", { name: "Workspace options" })).toBeVisible();
     await options.click();
     const menu = page.getByRole("menu", { name: /options$/ });
     await expect(menu).toBeVisible();
