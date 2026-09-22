@@ -7701,3 +7701,5 @@
 .app-shell .empty-state h2 { font-size:16px; font-weight:600; }
 .app-shell .empty-state p { max-width:42ch; margin:8px 0 0; font-size:14px; line-height:1.6; }
 .app-shell .empty-state-actions { width:auto; }
+
+.app-shell .empty-state.home-clear-state { padding-inline:0; }

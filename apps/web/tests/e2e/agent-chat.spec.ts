@@ -286,6 +286,14 @@ test("Agent formats Markdown and keeps composer controls usable across sizes and
     await page.setViewportSize({ width: 1440, height: 1000 });
     await page.goto("/home");
     await expect(page.locator(".sidebar-profile .user-state")).toHaveText("Free");
+    const homeEmpty = page.locator(".home-clear-state");
+    await expect(homeEmpty).toBeVisible();
+    expect(await homeEmpty.evaluate(el => {
+      const parent = el.parentElement!;
+      return Math.abs(el.getBoundingClientRect().left - parent.getBoundingClientRect().left) < 2;
+    })).toBe(true);
+    await expect(homeEmpty.getByRole("button", { name: "Add a job", exact: true })).toHaveAttribute("data-variant", "default");
+    await expect(homeEmpty.locator("button svg")).toBeVisible();
     await page.getByRole("button", { name: "Open Roleway Agent", exact: true }).press("Enter");
     const mini = page.getByRole("dialog", { name: "Roleway Agent", exact: true });
     await expect(mini.getByRole("heading", { name: "What can I help with?" })).toBeVisible();

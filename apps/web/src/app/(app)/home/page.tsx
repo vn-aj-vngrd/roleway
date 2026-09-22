@@ -8,7 +8,6 @@ import { HomeWorkspaceDetails, HomeWorkspaceOverview } from "@/components/home-w
 import { CountBadge, WorkspaceHeader, WorkspaceListGroup } from "@/components/ui-primitives";
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { requireSearchContext } from "@/features/projects/context";
 import { toggleTask } from "@/features/workspace/actions";
 
@@ -72,7 +71,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
       <main className="home-focus-panel">
         <HomeWorkspaceOverview project={context.project} />
         <header className="home-section-header" id="next-up"><div><h2>{taskFocus ? "Due tasks" : "Next up"}</h2><CountBadge value={attention.length} /><span>{attention.length === 1 ? "item" : "items"}</span>{taskFocus ? <Link className="home-section-clear" href="/home#next-up">View all</Link> : null}</div><p>{taskFocus ? "Open tasks due by tomorrow, ordered by date." : "Actions, follow-ups, and interviews that can move this Workspace forward."}</p></header>
-        {attention.length === 0 ? <Empty className="home-clear-state"><EmptyHeader><EmptyMedia className="home-empty-media"><CheckCircle2 aria-hidden="true" /></EmptyMedia><EmptyTitle>{taskFocus ? "No tasks are due" : "Nothing needs attention"}</EmptyTitle><EmptyDescription>{taskFocus ? "No open tasks are due by tomorrow." : "Your follow-ups, preparation, interviews, and Inbox are clear."}</EmptyDescription></EmptyHeader><EmptyContent>{taskFocus ? <Link className="button secondary" href="/home#next-up">View all next up</Link> : <CreateJobButton variant="outline">Add a job</CreateJobButton>}</EmptyContent></Empty> : <div className="home-action-groups" aria-label={taskFocus ? "Due tasks" : "Items needing attention"}>{attentionGroups.map((group) => <WorkspaceListGroup title={group.label} count={group.items.length} className={`home-group home-group-${group.label.toLowerCase()}`} key={group.label}><div className="home-action-list">{group.items.map((item) => <AttentionRow item={item} group={group.label} key={`${item.kind}-${item.id}`} />)}</div></WorkspaceListGroup>)}</div>}
+        {attention.length === 0 ? <EmptyState className="home-clear-state" icon={<CheckCircle2 aria-hidden="true" />} title={taskFocus ? "No tasks are due" : "Nothing needs attention"} description={taskFocus ? "No open tasks are due by tomorrow." : "Your follow-ups, preparation, interviews, and Inbox are clear."} actions={taskFocus ? <Link className="button secondary" href="/home#next-up">View all next up</Link> : <CreateJobButton><Plus aria-hidden="true" />Add a job</CreateJobButton>} /> : <div className="home-action-groups" aria-label={taskFocus ? "Due tasks" : "Items needing attention"}>{attentionGroups.map((group) => <WorkspaceListGroup title={group.label} count={group.items.length} className={`home-group home-group-${group.label.toLowerCase()}`} key={group.label}><div className="home-action-list">{group.items.map((item) => <AttentionRow item={item} group={group.label} key={`${item.kind}-${item.id}`} />)}</div></WorkspaceListGroup>)}</div>}
       </main>
 
       <aside className="home-context-rail">

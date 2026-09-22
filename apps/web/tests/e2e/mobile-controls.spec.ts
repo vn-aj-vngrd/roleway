@@ -129,7 +129,7 @@ test("Mobile collection actions, feedback, avatar and Agent loading stay compact
     await expect(avatar).toHaveCSS("padding", "7px");
     await page.locator(".sidebar > .account-area").screenshot({ path: "/tmp/roleway-account-spacing.png", animations: "disabled" });
     await page.goto("/agent");
-    await expect(page.locator(".agent-native-page")).toBeVisible();
+    await expect(page.locator(".agent-native-page:not(.skeleton-page)")).toBeVisible();
     // Inspect the real streamed route fallback using the app's loaded stylesheet.
     const html = await (await page.request.get("/agent")).text();
     const loading = await page.evaluate(html => {
