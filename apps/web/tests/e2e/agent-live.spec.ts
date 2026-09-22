@@ -36,7 +36,7 @@ test("live OpenRouter answer → approval → persisted task", async ({page}) =>
     await expect(page.getByText("Live audit provider", {exact:true})).toBeVisible();
     console.info("Live Agent: connection saved");
     await page.getByRole("button",{name:"Test",exact:true}).click();
-    await expect(page.locator(".connection-row .status-label")).toHaveText("connected", {timeout:260_000});
+    await expect(page.locator(".connection-row .status-label")).toHaveText("Connected", {timeout:260_000});
     console.info("Live Agent: provider verified");
     await page.goto(`/agent?opportunity=${opportunity.id}`);
     await page.getByLabel("Message Roleway Agent",{exact:true}).fill("Propose exactly one create_task for the focused Audit Fixture Product Engineer Opportunity, titled 'Prepare TypeScript examples', with no due date. Do not apply it. Ask for my approval.");

@@ -15219,14 +15219,6 @@ body [data-tooltip]::after {
   width: min(100%, 760px);
   margin-inline: auto;
 }
-.settings-shell-main .ai-provider-card .ai-safety-note {
-  margin: 0;
-  padding: 13px 16px;
-  border: 0;
-  border-bottom: 1px solid var(--line);
-  border-radius: 0;
-  background: var(--surface);
-}
 .settings-shell-main .ai-provider-card .empty-inline {
   margin: 0;
   padding: 18px 16px;
@@ -15235,6 +15227,7 @@ body [data-tooltip]::after {
   line-height: 1.5;
 }
 .settings-shell-main .ai-provider-card .connection-list {
+  border-top: 0;
   padding: 0;
   gap: 0;
 }
@@ -15247,6 +15240,87 @@ body [data-tooltip]::after {
 }
 .settings-shell-main .ai-provider-card .connection-row:last-child {
   border-bottom: 0;
+}
+.ai-provider-card .connection-heading,
+.ai-provider-card .connection-metadata,
+.ai-provider-card .connection-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.ai-provider-card .connection-heading {
+  flex-wrap: wrap;
+  gap: 6px 12px;
+}
+.ai-provider-card .connection-heading strong {
+  overflow-wrap: anywhere;
+}
+.ai-provider-card .connection-metadata {
+  flex-wrap: wrap;
+  gap: 2px 12px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.ai-provider-card .connection-metadata .mono {
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.ai-provider-card .connection-key {
+  white-space: nowrap;
+}
+.ai-provider-card .connection-actions {
+  flex-shrink: 0;
+  gap: 8px;
+}
+.ai-provider-card .status-label {
+  white-space: nowrap;
+  font-size: 12px;
+}
+.ai-provider-card .status-label.error {
+  color: var(--danger);
+}
+.ai-provider-card .status-label.error i {
+  background: currentColor;
+}
+.ai-provider-card .connection-copy {
+  gap: 6px;
+}
+.ai-provider-card .connection-copy small {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.ai-provider-card .connection-copy .connection-help {
+  color: var(--muted);
+}
+.agent-permissions-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 14px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.agent-permissions-note > svg {
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+}
+.agent-permissions-note strong {
+  color: var(--ink);
+  font-weight: 550;
+}
+.agent-permissions-note p {
+  margin: 3px 0 0;
+  max-width: 70ch;
+}
+.agent-guidance-section form > label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 550;
 }
 .agent-guidance-section > form {
   padding: 16px;
@@ -15457,10 +15531,11 @@ body [data-tooltip]::after {
     flex-wrap: wrap;
   }
   .settings-shell-main .ai-provider-card .connection-copy {
-    flex-basis: calc(100% - 44px);
+    flex-basis: 100%;
   }
-  .settings-shell-main .ai-provider-card .status-label {
-    margin-left: 40px;
+  .ai-provider-card .connection-actions {
+    width: 100%;
+    justify-content: flex-end;
   }
   .agent-guidance-section form footer {
     align-items: flex-end;
