@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import { Archive, Check, Info, Trash2, X } from "lucide-react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -39,6 +40,7 @@ function queryMessages(pathname: string): Record<string, ToastInput> {
     saved: pathname.startsWith("/documents/") ? { title: "Document saved" } : pathname.startsWith("/interview/") ? { title: "Interview saved" } : pathname === "/settings/profile" ? { title: "Profile saved" } : pathname.includes("/workspaces/") ? { title: "Workspace saved" } : { title: "Changes saved" },
     deleted: pathname === "/documents" ? { title: "Document deleted", tone: "removed" } : pathname === "/contacts" ? { title: "Contact removed", tone: "removed" } : pathname === "/interview" ? { title: "Interview deleted", tone: "removed" } : { title: "Connection removed", tone: "removed" },
     tested: { title: "Connection verified" },
+    updated: { title: pathname === "/settings/ai" ? "Connection updated" : "Changes saved" },
     guidanceSaved: { title: "Agent guidance saved" },
   };
 }
@@ -83,8 +85,7 @@ export function ToastViewport() {
     {items.map((item) => <article className="app-toast" data-tone={item.tone} key={item.id}>
       <span className="app-toast-icon"><ToastIcon tone={item.tone} title={item.title} /></span>
       <span className="app-toast-copy"><strong>{item.title}</strong>{item.description ? <small>{item.description}</small> : null}</span>
-      <button type="button" aria-label={`Dismiss ${item.title}`} onClick={() => dismiss(item.id)}><X aria-hidden="true" /></button>
-      <span className="app-toast-progress" style={{ animationDuration: `${item.duration}ms` }} aria-hidden="true" />
+      <Button type="button" variant="ghost" size="icon-sm" aria-label={`Dismiss ${item.title}`} onClick={() => dismiss(item.id)}><X aria-hidden="true" /></Button>
     </article>)}
   </section>;
 }

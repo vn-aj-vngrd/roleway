@@ -1,5 +1,6 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { saveAiConnection } from "@/app/(app)/settings/ai/actions";
 import { SelectField } from "@/components/form-controls";
@@ -30,14 +31,20 @@ const providers = {
   },
 } as const;
 
-type Provider = keyof typeof providers;
+export type Provider = keyof typeof providers;
 
-export function AiConnectionForm({ onCancel }: { onCancel: () => void }) {
-  const [provider, setProvider] = useState<Provider>("openai");
+export type EditableAiConnection = { id: string; provider: Provider; label: string; model: string; baseUrl: string };
+
+export function AiConnectionForm({ onCancel, connection }: { onCancel: () => void; connection?: EditableAiConnection | undefined }) {
+  const error = useSearchParams().get("error");
+  const [provider, setProvider] = useState<Provider>(connection?.provider ?? "openai");
+  const needsKey = !connection || provider !== connection.provider;
   const preset = providers[provider];
 
   return (
     <form action={saveAiConnection} className="ai-connection-form">
+      {error ? <div className="form-alert error" role="alert">{error}</div> : null}
+      <input type="hidden" name="connectionId" value={connection?.id ?? ""} />
       <div className="field-grid">
         <div className="field">
           <label htmlFor="provider">Provider</label>
@@ -58,7 +65,8 @@ export function AiConnectionForm({ onCancel }: { onCancel: () => void }) {
             className="input"
             id="connectionLabel"
             name="label"
-            defaultValue="Personal API"
+            defaultValue={connection?.label ?? "Personal API"}
+            maxLength={80}
             required
           />
         </div>
@@ -70,13 +78,13 @@ export function AiConnectionForm({ onCancel }: { onCancel: () => void }) {
           className="input mono"
           id="model"
           name="model"
-          defaultValue={preset.model}
+          defaultValue={connection && provider === connection.provider ? connection.model : preset.model}
+          maxLength={160}
           placeholder="Provider model ID"
           required
         />
         <span className="field-hint">
-          Use a model enabled for your provider account. You can change this
-          connection later by replacing it.
+          Use a model enabled for your provider account. Test the connection after changing its model or key.
         </span>
       </div>
       {provider === "openai-compatible" ? (
@@ -86,6 +94,8 @@ export function AiConnectionForm({ onCancel }: { onCancel: () => void }) {
             className="input mono"
             id="baseUrl"
             name="baseUrl"
+            defaultValue={connection?.baseUrl ?? ""}
+            maxLength={500}
             type="url"
             placeholder="https://api.example.com/v1"
             required
@@ -102,12 +112,15 @@ export function AiConnectionForm({ onCancel }: { onCancel: () => void }) {
         <label htmlFor="apiKey">API key</label>
         <input
           className="input mono"
+          key={provider}
           id="apiKey"
           name="apiKey"
           type="password"
           autoComplete="off"
-          placeholder={preset.key}
-          required
+          placeholder={needsKey ? preset.key : "Keep saved key"}
+          minLength={8}
+          maxLength={500}
+          required={needsKey}
         />
         <span className="field-hint">
           Encrypted before storage. Roleway never returns the key to your
@@ -124,7 +137,7 @@ export function AiConnectionForm({ onCancel }: { onCancel: () => void }) {
           Cancel
         </Button>
         <SubmitButton pendingLabel="Encrypting and saving…">
-          Save connection
+          {connection ? "Save changes" : "Save connection"}
         </SubmitButton>
       </footer>
     </form>

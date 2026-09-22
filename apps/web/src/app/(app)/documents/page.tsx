@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { formatOpportunityTicket } from "@roleway/core";
 import {
   Archive,
@@ -154,10 +155,10 @@ export default async function DocumentsPage(props: {
           </>
         }
         actions={
-          <Link className="button primary" href="/documents?create=true">
+          <Button nativeButton={false} render={<Link href="/documents?create=true" />}>
             <Plus aria-hidden="true" />
             Create document
-          </Link>
+          </Button>
         }
       />
 

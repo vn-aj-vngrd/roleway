@@ -34,6 +34,7 @@ test("stale Next Action approval preserves manual edits and explains recovery", 
     await page.goto(`/agent?conversation=${conversation.data.id}`);
     await expect(page.locator(".agent-message-timestamp")).toContainText("Today");
     await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+    await page.locator(".agent-message.agent").hover();
     await page.getByRole("button", { name: "Copy message", exact: true }).click();
     await expect(page.getByText("Message copied", { exact: true })).toBeVisible();
     expect(await page.evaluate(() => navigator.clipboard.readText())).toBe("Review this proposed Next Action.");

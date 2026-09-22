@@ -4091,60 +4091,6 @@ html[data-theme="dark"] .button.secondary {
   .workspace-sidebar-toggle[data-tooltip] {
     position: relative;
   }
-  .sidebar [data-tooltip]::after,
-  .workspace-sidebar-toggle[data-tooltip]::after {
-    content: attr(data-tooltip);
-    position: absolute;
-    z-index: calc(var(--z-modal) + 2);
-    padding: 6px 8px;
-    border: 1px solid color-mix(in oklch, var(--ink) 84%, var(--line));
-    border-radius: 6px;
-    color: var(--canvas);
-    background: var(--ink);
-    box-shadow: 0 8px 24px oklch(0 0 0 / 0.16);
-    font-size: 13px;
-    font-weight: 520;
-    line-height: 1.2;
-    white-space: nowrap;
-    pointer-events: none;
-    opacity: 0;
-    visibility: hidden;
-    transition:
-      opacity 130ms ease-out,
-      transform 180ms cubic-bezier(0.16, 1, 0.3, 1),
-      visibility 0s 180ms;
-  }
-  .app-shell[data-sidebar="compact"] .sidebar [data-tooltip]::after {
-    top: 50%;
-    left: calc(100% + 10px);
-    transform: translate(-4px, -50%);
-  }
-  .app-shell[data-sidebar="compact"] .sidebar [data-tooltip]:hover::after,
-  .app-shell[data-sidebar="compact"]
-    .sidebar
-    [data-tooltip]:focus-visible::after {
-    opacity: 1;
-    visibility: visible;
-    transform: translate(0, -50%);
-    transition-delay: 360ms, 360ms, 0s;
-  }
-  .app-shell[data-sidebar="compact"]
-    .sidebar
-    [data-tooltip][aria-expanded="true"]::after {
-    display: none;
-  }
-  .workspace-sidebar-toggle[data-tooltip]::after {
-    top: calc(100% + 8px);
-    left: 0;
-    transform: translateY(-4px);
-  }
-  .workspace-sidebar-toggle[data-tooltip]:hover::after,
-  .workspace-sidebar-toggle[data-tooltip]:focus-visible::after {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
-    transition-delay: 360ms, 360ms, 0s;
-  }
   .workspace-sidebar-toggle svg {
     transition: transform 300ms cubic-bezier(0.16, 1, 0.3, 1);
   }
@@ -5289,66 +5235,6 @@ select {
 @media (hover: hover) and (pointer: fine) {
   body [data-tooltip] {
     position: relative;
-  }
-  body [data-tooltip]::after {
-    content: attr(data-tooltip);
-    position: absolute;
-    z-index: calc(var(--z-modal) + 5);
-    top: calc(100% + 8px);
-    left: 50%;
-    padding: 6px 8px;
-    border: 1px solid color-mix(in oklch, var(--ink) 78%, var(--line));
-    border-radius: 6px;
-    color: var(--canvas);
-    background: var(--ink);
-    box-shadow: 0 7px 20px oklch(0.16 0.01 255 / 0.16);
-    font-size: 13px;
-    font-weight: 540;
-    line-height: 1.2;
-    white-space: nowrap;
-    pointer-events: none;
-    opacity: 0;
-    visibility: hidden;
-    transform: translate(-50%, -3px);
-    transition:
-      opacity 120ms ease-out,
-      transform 160ms cubic-bezier(0.16, 1, 0.3, 1),
-      visibility 0s 160ms;
-  }
-  body [data-tooltip]:hover::after,
-  body [data-tooltip]:focus-visible::after {
-    opacity: 1;
-    visibility: visible;
-    transform: translate(-50%, 0);
-    transition-delay: 420ms, 420ms, 0s;
-  }
-  body [data-tooltip][aria-expanded="true"]::after,
-  body [data-tooltip]:disabled::after {
-    display: none;
-  }
-  .app-shell .sidebar [data-tooltip]::after {
-    top: 50%;
-    right: auto;
-    left: calc(100% + 10px);
-    transform: translate(-3px, -50%);
-  }
-  .app-shell .sidebar [data-tooltip]:hover::after,
-  .app-shell .sidebar [data-tooltip]:focus-visible::after {
-    transform: translate(0, -50%);
-  }
-  .app-shell:not([data-sidebar="compact"])
-    .sidebar
-    [data-tooltip]:not(.sidebar-search)::after {
-    display: none;
-  }
-  .connection-row .icon-button[data-tooltip]::after {
-    right: 0;
-    left: auto;
-    transform: translateY(-3px);
-  }
-  .connection-row .icon-button[data-tooltip]:hover::after,
-  .connection-row .icon-button[data-tooltip]:focus-visible::after {
-    transform: translateY(0);
   }
 }
 
@@ -6954,7 +6840,7 @@ select {
     width: 100vw;
     height: 100dvh;
   }
-  .create-modal-window-actions .icon-button:first-child {
+  .create-modal-window-actions .icon-button[aria-pressed] {
     display: none;
   }
   .create-modal-panel {
@@ -10197,9 +10083,6 @@ html:has(.app-shell) {
   }
 }
 @media (max-width: 760px) {
-  .app-shell [data-tooltip]::after {
-    display: none !important;
-  }
   .mobile-nav {
     background: var(--canvas);
   }
@@ -13912,18 +13795,6 @@ html:has(.app-shell) {
   .app-shell[data-sidebar="hidden"] .workspace-sidebar-toggle svg {
     transform: rotateY(180deg);
   }
-
-  /* Keep the toggle tooltip inside the work plane and away from the closing rail. */
-  .workspace-sidebar-toggle[data-tooltip]::after {
-    top: 50%;
-    right: auto;
-    left: calc(100% + 9px);
-    transform: translate(-4px, -50%);
-  }
-  .workspace-sidebar-toggle[data-tooltip]:hover::after,
-  .workspace-sidebar-toggle[data-tooltip]:focus-visible::after {
-    transform: translate(0, -50%);
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -13932,24 +13803,6 @@ html:has(.app-shell) {
   .app-shell .workspace-sidebar-toggle svg {
     transition: none;
   }
-}
-
-/* The sidebar toggle uses aria-expanded for panel state, not for an open popover. */
-@media (hover: hover) and (pointer: fine) {
-  .app-shell .workspace-sidebar-toggle[data-tooltip][aria-expanded]::after {
-    display: block;
-  }
-}
-
-/* Tooltips use a quiet floating surface in light mode instead of inverse black. */
-body [data-tooltip]::after {
-  color: var(--ink);
-  background: var(--canvas);
-  border-color: var(--line);
-  box-shadow: var(--floating-shadow);
-}
-.app-shell .sidebar .sidebar-create[data-tooltip]::after {
-  display: block !important;
 }
 
 /* Workspace options open outside the rail, below and to the right of the trigger. */
@@ -13964,30 +13817,6 @@ body [data-tooltip]::after {
     left: 0;
     width: auto;
     transform-origin: top center;
-  }
-}
-
-/* Top shell controls place their tooltips below the icon, never beside navigation. */
-@media (hover: hover) and (pointer: fine) {
-  .app-shell .sidebar .sidebar-brand-row [data-tooltip]::after {
-    top: calc(100% + 8px);
-    right: auto;
-    left: 50%;
-    transform: translate(-50%, -3px);
-  }
-  .app-shell .sidebar .sidebar-brand-row [data-tooltip]:hover::after,
-  .app-shell .sidebar .sidebar-brand-row [data-tooltip]:focus-visible::after {
-    transform: translate(-50%, 0);
-  }
-  .app-shell .workspace-sidebar-toggle[data-tooltip]::after {
-    top: calc(100% + 8px);
-    right: auto;
-    left: 0;
-    transform: translateY(-3px);
-  }
-  .app-shell .workspace-sidebar-toggle[data-tooltip]:hover::after,
-  .app-shell .workspace-sidebar-toggle[data-tooltip]:focus-visible::after {
-    transform: translateY(0);
   }
 }
 
@@ -14477,13 +14306,6 @@ body [data-tooltip]::after {
 .agent-history-row:hover form button,
 .agent-history-row form button:focus-visible {
   opacity: 1;
-}
-/* Keep the archive tooltip inside the scrollable row. */
-.agent-history-row form button[data-tooltip]::after {
-  top: 50%;
-  right: calc(100% + 8px);
-  left: auto;
-  transform: translateY(-50%);
 }
 @media (hover: none) {
   .agent-history-row {
@@ -15333,29 +15155,6 @@ body [data-tooltip]::after {
 }
 .ai-provider-card .connection-copy .connection-help {
   color: var(--muted);
-}
-.agent-permissions-note {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  margin-top: 14px;
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 1.5;
-}
-.agent-permissions-note > svg {
-  flex: 0 0 16px;
-  width: 16px;
-  height: 16px;
-  margin-top: 2px;
-}
-.agent-permissions-note strong {
-  color: var(--ink);
-  font-weight: 550;
-}
-.agent-permissions-note p {
-  margin: 3px 0 0;
-  max-width: 70ch;
 }
 .agent-guidance-section form > label {
   display: block;
@@ -16324,4 +16123,28 @@ body [data-tooltip]::after {
   .appearance-control > button { grid-template-columns: 80px minmax(0, 1fr); }
   .appearance-preview { height: 60px; }
   .appearance-option-copy small { white-space: normal; overflow: visible; }
+}
+
+/* Keep loading artwork in flow so it cannot cover the placeholder copy. */
+.skeleton-agent-empty .agent-waypoint-watermark {
+  position: static;
+  flex-shrink: 0;
+  width: clamp(64px, 16dvh, 144px);
+  height: clamp(64px, 16dvh, 144px);
+  margin-bottom: 32px;
+  transform: none;
+}
+
+/* Give initials breathing room without widening the account row. */
+.sidebar > .account-area .sidebar-profile .avatar {
+  width: 32px;
+  height: 32px;
+  padding: 7px;
+  font-size: 12px;
+  line-height: 1;
+}
+.app-shell:not([data-sidebar="compact"]) .sidebar > .account-area .sidebar-profile {
+  grid-template-columns: 32px minmax(0, 1fr) 16px;
+  gap: 10px;
+  padding: 8px;
 }

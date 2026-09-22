@@ -4086,15 +4086,15 @@
 }
 .app-toast {
   position: relative;
-  min-height: 64px;
-  padding: 12px 42px 12px 12px;
+  min-height: 52px;
+  padding: 10px 12px;
   border: 1px solid var(--line);
   border-radius: 12px;
   color: var(--ink);
   background: var(--canvas);
   box-shadow: var(--floating-shadow);
   display: grid;
-  grid-template-columns: 30px minmax(0, 1fr);
+  grid-template-columns: 20px minmax(0, 1fr) auto;
   align-items: center;
   gap: 10px;
   overflow: hidden;
@@ -4102,27 +4102,15 @@
   animation: toast-enter 280ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 .app-toast-icon {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
+  width: 20px;
+  height: 20px;
   color: var(--success);
-  background: color-mix(in oklch, var(--success) 10%, var(--canvas));
   display: grid;
   place-items: center;
 }
-.app-toast[data-tone="removed"] .app-toast-icon {
-  color: var(--muted);
-  background: var(--surface-2);
-}
-.app-toast[data-tone="info"] .app-toast-icon {
-  color: var(--primary);
-  background: var(--primary-soft);
-}
-.app-toast-icon svg {
-  width: 14px;
-  height: 14px;
-  stroke-width: var(--icon-stroke);
-}
+.app-toast[data-tone="removed"] .app-toast-icon { color: var(--muted); }
+.app-toast[data-tone="info"] .app-toast-icon { color: var(--primary); }
+.app-toast-icon svg { width: 18px; height: 18px; stroke-width: var(--icon-stroke); }
 .app-toast-copy {
   min-width: 0;
   display: grid;
@@ -4131,7 +4119,8 @@
 .app-toast-copy strong {
   overflow: hidden;
   font-size: 13px;
-  font-weight: 620;
+  font-weight: 550;
+  line-height: 1.5;
   overflow-wrap: anywhere;
 }
 .app-toast-copy small {
@@ -4140,44 +4129,7 @@
   line-height: 1.4;
 }
 .app-toast > button {
-  position: absolute;
-  top: 9px;
-  right: 9px;
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  border: 0;
-  border-radius: var(--radius-action);
-  color: var(--faint);
-  background: transparent;
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-}
-.app-toast > button:hover {
-  color: var(--ink);
-  background: var(--surface-2);
-}
-.app-toast > button:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: -2px;
-}
-.app-toast > button svg {
-  width: 13px;
-  height: 13px;
-}
-.app-toast-progress {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  height: 2px;
-  background: color-mix(in oklch, var(--success) 55%, transparent);
-  transform-origin: left;
-  animation: toast-progress linear forwards;
-}
-.app-toast[data-tone="removed"] .app-toast-progress {
-  background: color-mix(in oklch, var(--muted) 42%, transparent);
+  color: var(--muted);
 }
 @keyframes toast-enter {
   from {
@@ -4189,12 +4141,6 @@
     transform: translate3d(0, 0, 0) scale(1);
   }
 }
-@keyframes toast-progress {
-  to {
-    transform: scaleX(0);
-  }
-}
-
 @media (max-width: 760px) {
   .toast-viewport {
     right: 12px;
@@ -4219,8 +4165,7 @@
     transition: none;
   }
   .app-shell .task-add-composer,
-  .app-toast,
-  .app-toast-progress {
+  .app-toast {
     animation: none;
   }
 }
@@ -7712,4 +7657,21 @@
 @media (max-width: 760px) {
   .admin-overview-grid { grid-template-columns: minmax(0, 1fr); }
   .admin-section > header { flex-wrap: wrap; align-items: flex-start; gap: 12px; }
+}
+
+/* Collection Create actions use the same compact primary control on mobile. */
+@media (max-width: 760px) {
+  :root body .workspace-page-actions [data-slot="button"][data-variant="default"] {
+    min-height: 32px;
+    height: 32px;
+    padding: 0 12px;
+    border: 0;
+    color: var(--button-fg);
+    background: var(--button-bg);
+    font-size: 13px;
+    line-height: 18px;
+  }
+  :root body .workspace-page-actions [data-slot="button"][data-variant="default"]:hover {
+    background: var(--button-bg-hover);
+  }
 }

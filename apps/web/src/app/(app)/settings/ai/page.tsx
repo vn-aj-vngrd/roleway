@@ -1,7 +1,7 @@
 // OpenRouter free models may queue for minutes; leave time for bounded calls and persistence.
 export const maxDuration = 300;
 
-import { ShieldCheck, Trash2 } from "lucide-react";
+import { PlugZap, Trash2 } from "lucide-react";
 import { AiConnectionDialog } from "@/components/ai-connection-dialog";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
 import { SubmitButton } from "@/components/submit-button";
@@ -17,6 +17,7 @@ import {
 
 type AiQuery = {
   saved?: string;
+  updated?: string;
   tested?: string;
   deleted?: string;
   guidanceSaved?: string;
@@ -34,7 +35,7 @@ export default async function AiSettingsPage(props: {
     admin
       .from("ai_connections")
       .select(
-        "id, provider, label, model, base_url, key_hint, status, last_error, last_tested_at",
+        "id, provider, label, model, base_url, key_hint, status, last_error, last_tested_at, updated_at",
       )
       .eq("user_id", auth.user.id)
       .order("updated_at", { ascending: false }),
@@ -58,6 +59,7 @@ export default async function AiSettingsPage(props: {
             Connection saved. Test it before using Agent.
           </div>
         ) : null}
+        {query.updated ? <div className="form-alert success" role="status">Connection updated.</div> : null}
         {query.tested ? (
           <div className="form-alert success" role="status">
             Connection verified and ready.
@@ -88,13 +90,13 @@ export default async function AiSettingsPage(props: {
                 before storage.
               </p>
             </div>
-            <AiConnectionDialog />
+            <AiConnectionDialog key={connections.map(connection => `${connection.id}:${connection.updated_at}`).join("|")} />
           </header>
           <div className="settings-card ai-provider-card">
             {connections.length ? (
               <div className="connection-list">
                 {connections.map((connection) => (
-                  <article className="connection-row" key={connection.id}>
+                  <article className="connection-row" key={`${connection.id}:${connection.updated_at}`}>
                     <div className="connection-copy">
                       <div className="connection-heading">
                         <strong>{connection.label}</strong>
@@ -132,12 +134,16 @@ export default async function AiSettingsPage(props: {
                           value={connection.id}
                         />
                         <SubmitButton
-                          className="button secondary"
-                          pendingLabel="Testing…"
+                          variant="ghost"
+                          size="icon-sm"
+                          ariaLabel={`Test ${connection.label}`}
+                          tooltip="Test connection"
+                          pendingLabel="Testing connection…"
                         >
-                          Test
+                          <PlugZap aria-hidden="true" />
                         </SubmitButton>
                       </form>
+                      <AiConnectionDialog connection={{ id: connection.id, provider: connection.provider, label: connection.label, model: connection.model, baseUrl: connection.base_url ?? "" }} />
                       <ConfirmationDialog
                         title={`Delete ${connection.label}?`}
                         description="This removes the saved provider configuration and encrypted API key from Roleway."
@@ -162,20 +168,7 @@ export default async function AiSettingsPage(props: {
               </div>
             )}
           </div>
-          <aside
-            className="agent-permissions-note"
-            aria-label="Agent permissions"
-          >
-            <ShieldCheck aria-hidden="true" />
-            <div>
-              <strong>Changes stay in your control</strong>
-              <p>
-                Agent reads Workspace context only when you send a request. You
-                approve every internal change. It cannot submit applications or
-                contact employers.
-              </p>
-            </div>
-          </aside>
+
         </section>
 
         <section className="settings-group agent-guidance-section">

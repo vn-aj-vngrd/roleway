@@ -3,6 +3,8 @@ export const maxDuration = 300;
 
 import "./agent-chat.css";
 import { formatConversationAge } from "@/features/agent/message-time";
+import { AgentLiveProvider, AgentStreamForm, AgentTranscript } from "@/features/agent/live-chat";
+import { RunTimeline } from "@/features/agent/run-timeline";
 import { AgentMarkdown } from "@/features/agent/markdown";
 import { AgentMessageInput, MessageActions, SavedResultFocus } from "@/features/agent/chat-controls";
 import { formatOpportunityTicket } from "@roleway/core";
@@ -19,7 +21,7 @@ type Opportunity = { id: string; project_id: string; reference_number: number; n
 type Conversation = { id: string; project_id: string; title: string; opportunity_id: string | null; updated_at: string };
 type Message = { id: string; role: "user" | "agent"; content: string; run_id: string | null; created_at: string };
 type Run = { id: string; provider: string; model: string; status: string; input_tokens: number | null; output_tokens: number | null; created_at: string };
-type Step = { id: string; run_id: string; label: string; status: "pending" | "active" | "completed" | "failed"; position: number };
+type Step = { id: string; run_id: string; label: string; status: "pending" | "active" | "completed" | "failed"; position: number; created_at: string };
 type Proposal = { id: string; run_id: string; tool_name: string; target_id: string | null; destination_project_id: string | null; summary: string; arguments: Record<string, unknown>; status: string; created_at: string };
 
 type AgentQuery = { conversation?: string; opportunity?: string; error?: string; decision?: string; record?: string; proposal?: string };
@@ -53,7 +55,7 @@ export default async function AgentPage(props: { searchParams: Promise<AgentQuer
     const [messagesResult, runsResult, stepsResult, proposalsResult] = await Promise.all([
       context.supabase.from("agent_messages").select("id, role, content, run_id, created_at").eq("conversation_id", activeConversation.id).order("created_at", { ascending: false }).limit(200),
       context.supabase.from("ai_runs").select("id, provider, model, status, input_tokens, output_tokens, created_at").eq("conversation_id", activeConversation.id).order("created_at", { ascending: false }).limit(100),
-      context.supabase.from("agent_run_steps").select("id, run_id, label, status, position").eq("conversation_id", activeConversation.id).order("position", { ascending: true }).limit(300),
+      context.supabase.from("agent_run_steps").select("id, run_id, label, status, position, created_at").eq("conversation_id", activeConversation.id).order("position", { ascending: true }).limit(300),
       context.supabase.from("agent_proposals").select("id, run_id, tool_name, target_id, destination_project_id, summary, arguments, status, created_at").eq("conversation_id", activeConversation.id).order("created_at", { ascending: false }).limit(100),
     ]);
     messages = ((messagesResult.data ?? []) as Message[]).reverse();
@@ -67,8 +69,10 @@ export default async function AgentPage(props: { searchParams: Promise<AgentQuer
   const queryFocus = opportunities.some((opportunity) => opportunity.id === query.opportunity) ? query.opportunity : "";
   const focusedOpportunityId = activeConversation?.opportunity_id ?? queryFocus ?? "";
 
+  const pendingRun = runs.find(run => ["queued", "gathering_context", "generating"].includes(run.status) && Date.now() - Date.parse(run.created_at) < 300_000);
+
   return (
-    <div className={`agent-native-page ${activeConversation ? "has-conversation" : "is-empty"}`}>
+    <AgentLiveProvider initialPending={Boolean(pendingRun)} key={`${pendingRun?.id ?? "idle"}:${activeConversation?.id ?? "new"}:${messages.at(-1)?.id ?? "empty"}:${query.error ?? ""}`}><div className={`agent-native-page ${activeConversation ? "has-conversation" : "is-empty"}`}>
       <header className="agent-native-routebar">
         <details className="agent-history-menu">
           <summary aria-label="Open Agent conversation history"><History aria-hidden="true" /><span>{activeConversation?.title ?? "New conversation"}</span><ChevronDown aria-hidden="true" /></summary>
@@ -87,7 +91,6 @@ export default async function AgentPage(props: { searchParams: Promise<AgentQuer
             </div>
           </div>
         </details>
-        <Link href="/help/agent-create" className="agent-help-link">Creation guide</Link>
         <span className="agent-native-scope"><Route aria-hidden="true" />All workspaces</span>
         <Link className="agent-new-chat" href="/agent"><Plus aria-hidden="true" /><span>New conversation</span></Link>
       </header>
@@ -99,26 +102,27 @@ export default async function AgentPage(props: { searchParams: Promise<AgentQuer
       {query.decision === "rejected" ? <div className="agent-inline-state" role="status"><Circle aria-hidden="true" /><span>Proposal rejected. No Roleway record changed.</span></div> : null}
 
       <main className="agent-native-workplane">
-        {activeConversation ? <div className="agent-transcript" aria-label="Agent conversation">
+        <AgentTranscript hasConversation={Boolean(activeConversation)} emptyState={<div className="agent-empty-state">
+          <div className="agent-waypoint-watermark" aria-hidden="true"><Navigation /></div>
+          <div className="agent-empty-copy"><h1>Ask across your search.</h1><p>Agent can read context from all of your Workspaces. It answers questions, prepares drafts, and proposes Workspace-specific changes for your approval.</p></div>
+          <p className="agent-prompt-examples">Use + or / below to create work or explore your search.</p>
+        </div>}>
           {messages.map((message) => {
             const run = message.run_id ? runs.find((item) => item.id === message.run_id) : null;
             const runSteps = message.run_id ? steps.filter((step) => step.run_id === message.run_id) : [];
             const runProposals = message.run_id ? proposals.filter((proposal) => proposal.run_id === message.run_id) : [];
             return (
-              <article className={`agent-message ${message.role}`} key={message.id}>
-                <div className="agent-message-body"><header><span className="agent-message-author">{message.role === "agent" ? <><Navigation aria-hidden="true" />Roleway Agent</> : "You"}</span></header>
+              <article className={`agent-message ${message.role}`} aria-label={message.role === "user" ? "Your message" : "Agent response"} key={message.id}>
+                {run && message.role === "agent" ? <AgentRunDetails run={run} steps={runSteps} endedAt={message.created_at} /> : null}
+                <div className="agent-message-body">
                 <div className="agent-message-content">{message.role === "agent" ? <AgentMarkdown content={message.content} idPrefix={message.id} /> : <p>{message.content}</p>}</div>
                 </div><MessageActions content={message.content} timestamp={message.created_at} />
-                {run && (message.role === "agent" || run.status === "failed") ? <AgentRunDetails run={run} steps={runSteps} /> : null}
+                {run && (message.role === "user" && ["failed", "queued", "gathering_context", "generating"].includes(run.status)) ? <AgentRunDetails run={run} steps={runSteps} /> : null}
                 {(message.role === "agent" ? runProposals : []).map((proposal) => <ApprovalCard createdWorkspaceId={query.proposal === proposal.id && query.decision === "applied" && projectMap.has(query.record ?? "") ? query.record : undefined} workspace={proposal.destination_project_id ? projectMap.get(proposal.destination_project_id)?.name ?? "Unavailable Workspace" : undefined} proposal={proposal} opportunity={proposal.target_id ? opportunityMap.get(proposal.target_id) : undefined} key={proposal.id} />)}
               </article>
             );
           })}
-        </div> : <div className="agent-empty-state">
-          <div className="agent-waypoint-watermark" aria-hidden="true"><Navigation /></div>
-          <div className="agent-empty-copy"><h1>Ask across your search.</h1><p>Agent can read context from all of your Workspaces. It answers questions, prepares drafts, and proposes Workspace-specific changes for your approval.</p></div>
-          <p className="agent-prompt-examples">Use + or / below to create work or explore your search.</p>
-        </div>}
+        </AgentTranscript>
 
         <AgentComposer
           messageKey={messages.at(-1)?.id ?? "new"}
@@ -129,26 +133,28 @@ export default async function AgentPage(props: { searchParams: Promise<AgentQuer
           projects={projectMap}
         />
       </main>
-    </div>
+    </div></AgentLiveProvider>
   );
 }
 
 function AgentComposer({ messageKey, conversationId, connections, opportunities, focusedOpportunityId, projects }: { messageKey: string; conversationId: string; connections: Connection[]; opportunities: Opportunity[]; focusedOpportunityId: string; projects: Map<string, { name: string; ticketKey: string }> }) {
   if (!connections.length) return <section className="agent-native-composer agent-composer-disabled" aria-label="Connect an AI provider to use Agent"><label className="sr-only" htmlFor="disabled-agent-message">Message Roleway Agent</label><textarea id="disabled-agent-message" disabled placeholder="Connect a provider to ask Agent…" /><footer><span className="agent-context-disclosure"><KeyRound aria-hidden="true" />Your API key is encrypted before storage</span><Link className="agent-setup-link" href="/settings/ai">Set up connection</Link></footer></section>;
-  return <form action={sendAgentMessage} className="agent-native-composer" key={conversationId}>
-    <input type="hidden" name="conversationId" value={conversationId} />
+  return <AgentStreamForm action={sendAgentMessage} conversationId={conversationId}>
     <AgentMessageInput key={messageKey} connections={connections} focusedOpportunityId={focusedOpportunityId} fixedFocus={Boolean(conversationId)} opportunities={opportunities.map(opportunity => ({
       id: opportunity.id,
       label: `${projects.get(opportunity.project_id)?.name ?? "Workspace"} · ${formatOpportunityTicket(projects.get(opportunity.project_id)?.ticketKey ?? "RW", opportunity.reference_number)} · ${opportunity.jobs?.company} · ${opportunity.jobs?.title}`,
     }))} />
-  </form>;
+  </AgentStreamForm>;
 }
 
-function AgentRunDetails({ run, steps }: { run: Run; steps: Step[] }) {
-  return <details className="agent-run-details">
-    <summary><span className={`agent-run-state ${run.status}`}><Check aria-hidden="true" /></span><span>{run.status === "awaiting_approval" ? "Answer ready · approval requested" : run.status === "failed" ? "Run failed safely" : "Context and model details"}</span><ChevronDown aria-hidden="true" /></summary>
-    <div>{steps.map((step) => <p className={`agent-step ${step.status}`} key={step.id}><span>{step.status === "completed" ? <Check aria-hidden="true" /> : <Circle aria-hidden="true" />}</span>{step.label}</p>)}<p className="agent-run-model">{run.provider} · {run.model}{run.input_tokens || run.output_tokens ? ` · ${run.input_tokens ?? 0} in / ${run.output_tokens ?? 0} out` : ""}</p></div>
-  </details>;
+function AgentRunDetails({ run, steps, endedAt }: { run: Run; steps: Step[]; endedAt?: string }) {
+  const active = ["queued", "gathering_context", "generating"].includes(run.status);
+  const stale = active && Date.now() - Date.parse(run.created_at) >= 300_000;
+  const visibleSteps = steps.some(step => step.position >= 10) ? steps.filter(step => step.position >= 10 || step.status === "failed") : steps;
+  return <RunTimeline recovering={active} pending={active && !stale} statusUnknown={stale} startedAt={run.created_at} endedAt={endedAt ?? steps.find(step => step.status === "failed")?.created_at}
+    failed={run.status === "failed"} awaitingApproval={run.status === "awaiting_approval"}
+    steps={visibleSteps.map(step => ({ id: step.id, label: step.label, status: step.status === "pending" ? "active" : step.status }))}
+    model={`${run.provider} · ${run.model}${run.input_tokens || run.output_tokens ? ` · ${run.input_tokens ?? 0} in / ${run.output_tokens ?? 0} out` : ""}`} />;
 }
 
 function ApprovalCard({ proposal, opportunity, workspace, createdWorkspaceId }: { createdWorkspaceId: string | undefined; proposal: Proposal; opportunity: Opportunity | undefined; workspace: string | undefined }) {

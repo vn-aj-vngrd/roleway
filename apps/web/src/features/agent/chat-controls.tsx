@@ -3,6 +3,7 @@
 import {
   ArrowUp,
   Check,
+  ChevronDown,
   Copy,
   Cpu,
   Plus,
@@ -11,6 +12,7 @@ import {
   X,
 } from "lucide-react";
 import {
+  type ReactNode,
   useEffect,
   useId,
   useRef,
@@ -21,18 +23,12 @@ import { useFormStatus } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Popover,
   PopoverContent,
   PopoverTitle,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { useAgentLive } from "./live-chat";
 import { matchingCapabilities } from "./capabilities";
 import { formatMessageTimestamp } from "./message-time";
 
@@ -42,6 +38,26 @@ type ComposerProps = {
   focusedOpportunityId: string;
   fixedFocus: boolean;
 };
+
+function ComposerPanel({ title, description, onClose, children }: {
+  title: string;
+  description: string;
+  onClose: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <div className="agent-capability-popover floating-panel" data-side="top">
+      <div className="agent-capability-heading">
+        <strong>{title}</strong>
+        <Button type="button" variant="ghost" size="icon-sm" aria-label={`Close ${title}`} onClick={onClose}>
+          <X aria-hidden="true" />
+        </Button>
+      </div>
+      <p>{description}</p>
+      {children}
+    </div>
+  );
+}
 
 export function AgentMessageInput({
   connections,
@@ -57,12 +73,18 @@ export function AgentMessageInput({
     "All workspaces";
   const [message, setMessage] = useState("");
   const [open, setOpen] = useState(false);
+  const [picker, setPicker] = useState<"focus" | "model" | null>(null);
+  const focusOpen = picker === "focus";
+  const modelOpen = picker === "model";
   const [active, setActive] = useState(0);
   const root = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLTextAreaElement>(null);
   const list = useRef<HTMLDivElement>(null);
+  const focusList = useRef<HTMLDivElement>(null);
   const id = useId();
-  const { pending } = useFormStatus();
+  const { pending: formPending } = useFormStatus();
+  const live = useAgentLive();
+  const pending = formPending || Boolean(live?.pending);
   const timeZone = useSyncExternalStore(
     subscribe,
     () => Intl.DateTimeFormat().resolvedOptions().timeZone,
@@ -73,18 +95,22 @@ export function AgentMessageInput({
   const highlighted = Math.min(active, Math.max(0, items.length - 1));
 
   useEffect(() => {
-    if (!open) return;
+    if (!open && !picker) return;
     const dismiss = (event: PointerEvent) => {
-      if (!root.current?.contains(event.target as Node)) setOpen(false);
+      if (!root.current?.contains(event.target as Node)) { setOpen(false); setPicker(null); }
     };
     document.addEventListener("pointerdown", dismiss);
     return () => document.removeEventListener("pointerdown", dismiss);
-  }, [open]);
+  }, [open, picker]);
   useEffect(() => {
     list.current
       ?.querySelector('[aria-selected="true"]')
       ?.scrollIntoView({ block: "nearest" });
   }, [highlighted, open]);
+
+  useEffect(() => {
+    if (picker) focusList.current?.querySelector<HTMLButtonElement>('[aria-pressed="true"]')?.focus();
+  }, [picker]);
 
   function choose(index: number) {
     const item = items[index];
@@ -98,6 +124,7 @@ export function AgentMessageInput({
     input.current?.focus();
   }
   function toggle() {
+    setPicker(null);
     setOpen((value) => !value);
     setActive(0);
     input.current?.focus();
@@ -108,38 +135,22 @@ export function AgentMessageInput({
       ref={root}
       className="agent-message-input"
       onBlur={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget as Node | null))
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
           setOpen(false);
+          setPicker(null);
+        }
       }}
       onKeyDown={(event) => {
-        if (event.key === "Escape" && open) {
+        if (event.key === "Escape" && (open || picker)) {
           event.preventDefault();
           setOpen(false);
+          setPicker(null);
           input.current?.focus();
         }
       }}
     >
       {open && !pending ? (
-        <div
-          className="agent-capability-popover floating-panel"
-          data-side="top"
-        >
-          <div className="agent-capability-heading">
-            <strong>Create & explore</strong>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              aria-label="Close Agent actions"
-              onClick={() => {
-                setOpen(false);
-                input.current?.focus();
-              }}
-            >
-              <X aria-hidden="true" />
-            </Button>
-          </div>
-          <p>Choose a starting point. Send it to begin.</p>
+        <ComposerPanel title="Create & explore" description="Choose a starting point. Send it to begin." onClose={() => { setOpen(false); input.current?.focus(); }}>
           <div
             ref={list}
             id={id}
@@ -176,8 +187,34 @@ export function AgentMessageInput({
               </p>
             ) : null}
           </div>
-        </div>
+        </ComposerPanel>
       ) : null}
+      {focusOpen && !pending ? (
+        <ComposerPanel title="Conversation focus" description="Use all Workspace context, or focus on an Opportunity." onClose={() => { setPicker(null); input.current?.focus(); }}>
+          <div ref={focusList} id={`${id}-focus`} className="agent-capability-list agent-focus-list" aria-label="Conversation focus options">
+            {[{ id: "", label: "All workspaces" }, ...opportunities].map((item) => (
+              <button type="button" key={item.id} aria-pressed={focusId === item.id} onClick={() => { setFocusId(item.id); setPicker(null); input.current?.focus(); }}>
+                <span>{item.label}</span>
+                {focusId === item.id ? <Check aria-hidden="true" /> : null}
+              </button>
+            ))}
+          </div>
+        </ComposerPanel>
+      ) : null}
+      {modelOpen && !pending ? (
+        <ComposerPanel title="Model" description="Choose a saved provider connection for this message." onClose={() => { setPicker(null); input.current?.focus(); }}>
+          <div ref={focusList} id={`${id}-model`} className="agent-capability-list agent-focus-list" aria-label="Model options">
+            {connections.map((item) => (
+              <button type="button" key={item.id} aria-pressed={connectionId === item.id} onClick={() => { setConnectionId(item.id); setPicker(null); input.current?.focus(); }}>
+                <span><span>{item.label}</span><small>{item.model}</small></span>
+                {connectionId === item.id ? <Check aria-hidden="true" /> : null}
+              </button>
+            ))}
+          </div>
+        </ComposerPanel>
+      ) : null}
+      <input type="hidden" name="connectionId" value={connectionId} />
+      <input type="hidden" name="opportunityId" value={focusId} />
       <input type="hidden" name="timeZone" value={timeZone} />
       <label className="sr-only" htmlFor="agent-message">
         Message Roleway Agent
@@ -189,7 +226,7 @@ export function AgentMessageInput({
         maxLength={4000}
         required
         readOnly={pending}
-        value={message}
+        value={pending ? "" : message}
         placeholder="Ask anything about your search, or type / for actions…"
         aria-controls={open ? id : undefined}
         aria-autocomplete="list"
@@ -198,6 +235,7 @@ export function AgentMessageInput({
         }
         onChange={(event) => {
           setMessage(event.target.value);
+          setPicker(null);
           setOpen(event.target.value.startsWith("/"));
           setActive(0);
         }}
@@ -235,38 +273,20 @@ export function AgentMessageInput({
           >
             <Plus aria-hidden="true" />
           </Button>
-          <Select
-            name="opportunityId"
-            value={focusId}
-            onValueChange={(value) => setFocusId(value ?? "")}
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
             disabled={pending || fixedFocus}
+            aria-label="Agent Opportunity focus"
+            data-tooltip={fixedFocus ? `Conversation focus: ${focusLabel}` : `Focus: ${focusLabel}`}
+            aria-expanded={focusOpen}
+            aria-controls={`${id}-focus`}
+            onClick={() => { setOpen(false); setPicker(focusOpen ? null : "focus"); }}
           >
-            <SelectTrigger
-              className="agent-focus-picker"
-              aria-label="Agent Opportunity focus"
-              data-tooltip={
-                fixedFocus
-                  ? `Conversation focus: ${focusLabel}`
-                  : `Focus: ${focusLabel}`
-              }
-            >
-              <Route aria-hidden="true" />
-            </SelectTrigger>
-            <SelectContent
-              side="top"
-              align="start"
-              alignItemWithTrigger={false}
-              className="agent-picker-menu"
-            >
-              <SelectItem value="">All workspaces</SelectItem>
-              {opportunities.map((item) => (
-                <SelectItem value={item.id} key={item.id}>
-                  {item.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Popover>
+            <Route aria-hidden="true" />
+          </Button>
+          <Popover onOpenChange={(value) => { if (value) { setOpen(false); setPicker(null); } }}>
             <PopoverTrigger
               render={
                 <Button
@@ -298,42 +318,21 @@ export function AgentMessageInput({
           </Popover>
         </div>
         <div className="agent-toolbar-end">
-          <Select
-            name="connectionId"
-            value={connectionId}
-            onValueChange={(value) => {
-              if (value) setConnectionId(value);
-            }}
+          <Button
+            type="button"
+            variant="ghost"
+            className="agent-model-picker"
+            aria-label="Agent provider"
+            data-tooltip={`${connection?.label} · ${connection?.model}`}
             disabled={pending}
-            items={connections.map((item) => ({
-              value: item.id,
-              label: item.model,
-            }))}
+            aria-expanded={modelOpen}
+            aria-controls={`${id}-model`}
+            onClick={() => { setOpen(false); setPicker(modelOpen ? null : "model"); }}
           >
-            <SelectTrigger
-              className="agent-model-picker"
-              aria-label="Agent provider"
-              data-tooltip={`${connection?.label} · ${connection?.model}`}
-            >
-              <Cpu aria-hidden="true" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent
-              side="top"
-              align="end"
-              alignItemWithTrigger={false}
-              className="agent-picker-menu"
-            >
-              {connections.map((item) => (
-                <SelectItem value={item.id} key={item.id}>
-                  <span>
-                    <strong>{item.label}</strong>
-                    <small>{item.model}</small>
-                  </span>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            <Cpu aria-hidden="true" />
+            <span className="agent-model-label">{connection?.model}</span>
+            <ChevronDown aria-hidden="true" />
+          </Button>
           <Button
             className="agent-submit"
             type="submit"

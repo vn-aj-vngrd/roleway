@@ -131,6 +131,8 @@ Insights are account-wide and calculated across owned Workspaces from real Jobs,
 
 Roleway Agent is account-configured through user-supplied provider credentials and can read permitted context across all owned Workspaces. It is a native conversational work surface rather than a generic chat widget. The product workflow, tool tiers, approval states, and rollout are specified in [`ROLEWAY-AGENT.md`](ROLEWAY-AGENT.md). A conversation is account-owned and may optionally focus an Opportunity, Job, interview, contact, or document. Starting a new conversation creates a clean context boundary; proposed mutations still resolve one exact destination Workspace.
 
+The chat route streams validated response text through the Vercel AI SDK and reports persisted context, model, and proposal-preparation steps. Streaming never executes proposed mutations; approval remains a separate server action. Interrupted streams retain their saved conversation and expose recovery.
+
 Every execution is a durable Agent Run. Runs record the selected context categories, provider/model, status, bounded step summaries, draft output, tool proposals, errors, and approvals. Secrets, raw prompts, stack traces, and unrelated record content are never stored in run metadata or system events.
 
 Agent capabilities are tiered:

@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("server-only", () => ({}));
+vi.mock("@/lib/ai/stream-agent", () => ({ streamAgentResponse: vi.fn() }));
+
 const fixtures = vi.hoisted(() => ({
   generate: vi.fn(), rpc: vi.fn(), updates: [] as Array<{ table: string; values: Record<string, unknown> }>,
   opportunities: [] as Array<{ id: string; next_action: string | null; next_action_due_at: string | null }>,
@@ -32,6 +35,7 @@ const client = {
     };
     const query = {
       select: () => query, in: (column: string, value: unknown) => { fixtures.filters.push([table, column, value]); return query; }, eq: (column: string, value: unknown) => { fixtures.filters.push([table, column, value]); return query; }, neq: () => query, gte: () => query, order: (column: string, options: unknown) => { fixtures.orders.push([table,column,options]); return query; }, limit: () => query,
+      upsert: () => query,
       insert: () => { operation="insert"; return query; },
       update: (values: Record<string, unknown>) => { fixtures.updates.push({table,values}); return query; },
       single: async () => result(), maybeSingle: async () => result(),
@@ -161,5 +165,38 @@ describe("Creation correction context", () => {
     for (const proposal of payload.recentProposals.slice(0, 4)) expect(proposal.details).toEqual(args);
     expect(payload.recentProposals[4].details).toBeNull();
     expect(prompt).toContain("older proposal details are absent");
+  });
+});
+
+import { runAgentRequest } from "@/features/agent/run-request";
+import { streamAgentResponse } from "@/lib/ai/stream-agent";
+import type { AgentStreamEvent } from "@/features/agent/stream-types";
+
+describe("streamed Agent runs", () => {
+  it("emits real progress and validates before saving the answer", async () => {
+    vi.mocked(streamAgentResponse).mockImplementationOnce(async (_connection, _key, _prompt, onText) => {
+      onText("A partial");
+      return { output: { message: "A partial answer completed", proposals: [] }, inputTokens: 10, outputTokens: 20 };
+    });
+    const data = new FormData();
+    data.set("connectionId", record); data.set("message", "Hello");
+    const events: AgentStreamEvent[] = [];
+    const href = await runAgentRequest(data, event => events.push(event));
+    expect(href).toBe(`/agent?conversation=${record}`);
+    expect(events).toContainEqual({ type: "answer", text: "A partial" });
+    expect(events.at(-1)).toEqual({ type: "progress", data: { id: "90", label: "Answer saved", status: "completed" } });
+    expect(fixtures.rpc).toHaveBeenCalledWith("complete_agent_run", expect.objectContaining({ input_output: { message: "A partial answer completed", proposals: [] } }));
+    expect(fixtures.rpc).not.toHaveBeenCalledWith("decide_agent_proposal", expect.anything());
+  });
+  it("records a failed stream without leaking the provider error or saving partial output", async () => {
+    vi.mocked(streamAgentResponse).mockRejectedValueOnce(new Error("private-provider-response"));
+    const data = new FormData();
+    data.set("connectionId", record); data.set("message", "Hello");
+    const events: AgentStreamEvent[] = [];
+    const href = await runAgentRequest(data, event => events.push(event));
+    expect(href).toContain("error=Agent");
+    expect(JSON.stringify(events)).not.toContain("private-provider");
+    expect(events.at(-1)).toMatchObject({ type: "progress", data: { status: "failed" } });
+    expect(fixtures.rpc).not.toHaveBeenCalled();
   });
 });

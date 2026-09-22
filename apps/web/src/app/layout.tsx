@@ -5,6 +5,7 @@ import { PwaRegister } from "@/components/pwa-register";
 import { SmoothScroll } from "@/components/smooth-scroll";
 import "./globals.css";
 import "./workspace.css";
+import { AttributeTooltips } from "@/components/attribute-tooltips";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 const Inter = localFont({
@@ -70,7 +71,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             finish: "unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance",
           }) }}
         />
-        <TooltipProvider><PwaRegister /><SmoothScroll><a className="skip-link" href="#main-content">Skip to main content</a>{children}</SmoothScroll></TooltipProvider>
+        <TooltipProvider><AttributeTooltips /><PwaRegister /><SmoothScroll><a className="skip-link" href="#main-content">Skip to main content</a>{children}</SmoothScroll></TooltipProvider>
       </body>
     </html>
   );

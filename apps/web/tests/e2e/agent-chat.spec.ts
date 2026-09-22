@@ -1,11 +1,13 @@
 import { expect, test } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
+import { createServer, type ServerResponse } from "node:http";
 import { randomBytes } from "node:crypto";
 import { createFixtureAccount } from "./auth-fixture";
 
 test("Agent formats Markdown and keeps composer controls usable across sizes and themes", async ({
   page,
 }) => {
+  page.setDefaultTimeout(15_000);
   const admin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -140,6 +142,18 @@ test("Agent formats Markdown and keeps composer controls usable across sizes and
             () => document.documentElement.scrollWidth <= innerWidth,
           ),
         ).toBe(true);
+        await expect(page.getByRole("link", { name: "Creation guide", exact: true })).toHaveCount(0);
+        await page.goto("/agent");
+        await page.getByRole("button", { name: "Agent Opportunity focus", exact: true }).click();
+        const focusPanel = page.locator(".agent-capability-popover");
+        await expect(focusPanel).toContainText("Conversation focus");
+        expect(await focusPanel.evaluate(el => el.clientWidth)).toBe(await page.locator(".agent-message-input").evaluate(el => el.clientWidth));
+        expect(await focusPanel.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
+        await page.getByRole("button", { name: "All workspaces", exact: true }).click();
+        await expect(focusPanel).toHaveCount(0);
+        const modelMetrics = await page.locator('.agent-model-label').evaluate(el => ({ font: parseFloat(getComputedStyle(el).fontSize), line: parseFloat(getComputedStyle(el).lineHeight) }));
+        expect(modelMetrics.line).toBeGreaterThan(modelMetrics.font * 1.3);
+        await page.goto(`/agent?conversation=${conversation.data.id}`);
         await page
           .getByRole("button", { name: "Context and permissions", exact: true })
           .click();
@@ -148,12 +162,14 @@ test("Agent formats Markdown and keeps composer controls usable across sizes and
         );
         await page.keyboard.press("Escape");
         await page
-          .getByRole("combobox", { name: "Agent provider", exact: true })
+          .getByRole("button", { name: "Agent provider", exact: true })
           .click();
+        await expect(page.locator(".agent-capability-popover")).toContainText("Choose a saved provider connection");
+        expect(await page.locator(".agent-capability-popover").evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
         await expect(
-          page.getByRole("option", { name: /Chat fixture/ }),
+          page.getByRole("button", { name: /Chat fixture/ }),
         ).toBeVisible();
-        await page.getByRole("option", { name: /Chat fixture/ }).click();
+        await page.getByRole("button", { name: /Chat fixture/ }).click();
         await input.fill("/create task");
         await expect(
           page
@@ -206,6 +222,127 @@ test("Agent formats Markdown and keeps composer controls usable across sizes and
         await expect(input).toBeVisible();
       }
     }
+    // Serve a paced AI SDK stream to exercise intermediate UI, without a live model call.
+    let response: ServerResponse | undefined;
+    let arrived!: () => void;
+    const requestArrived = new Promise<void>(resolve => { arrived = resolve; });
+    const server = createServer((request, res) => {
+      request.resume();
+      response = res;
+      res.writeHead(200, {
+        "Content-Type": "text/event-stream",
+        "x-vercel-ai-ui-message-stream": "v1",
+        "Access-Control-Allow-Origin": new URL(page.url()).origin,
+        "Access-Control-Allow-Credentials": "true",
+      });
+      res.flushHeaders();
+      arrived();
+    });
+    await new Promise<void>(resolve => server.listen(0, "127.0.0.1", resolve));
+    const address = server.address();
+    if (!address || typeof address === "string") throw new Error("Fixture server unavailable");
+    const write = (chunk: unknown) => response!.write(`data: ${JSON.stringify(chunk)}\n\n`);
+    try {
+      await page.setViewportSize({ width: 390, height: 900 });
+      await page.route("**/api/agent/chat", route => route.continue({ url: `http://127.0.0.1:${address.port}/stream` }));
+      await input.fill("Help me prepare my next step");
+      await page.getByRole("button", { name: "Send to Agent", exact: true }).click();
+      await requestArrived;
+      await expect(page.getByText("Help me prepare my next step", { exact: true })).toBeVisible();
+      await expect(page.getByText(/^Working for/)).toBeVisible();
+      await expect(page.getByRole("button", { name: "Agent is working", exact: true })).toBeDisabled();
+      write({ type: "start", messageId: "stream-fixture" });
+      write({ type: "data-progress", id: "10", data: { id: "10", label: "Reading Workspace context", status: "active" } });
+      await expect(page.getByRole("status").filter({ hasText: "Reading Workspace context" })).toBeVisible();
+      const timeline = page.locator(".agent-work-timeline").last();
+      await timeline.locator("summary").click();
+      await expect(timeline.locator(".agent-work-steps")).toContainText("Reading Workspace context");
+      write({ type: "data-progress", id: "10", data: { id: "10", label: "Read Workspace context", status: "completed" } });
+      write({ type: "data-answer", id: "answer", data: { text: "## Start here\n\nPrepare" } });
+      await expect(page.getByRole("heading", { name: "Start here" })).toBeVisible();
+      await expect(page.getByText(/^Working for/)).toBeVisible();
+      write({ type: "data-answer", id: "answer", data: { text: "## Start here\n\nPrepare **one concrete example**." } });
+      await expect(page.locator(".agent-streaming-answer strong")).toHaveText("one concrete example");
+      await page.screenshot({ path: "/tmp/roleway-working-mobile.png" });
+      const run = await admin.from("ai_runs").insert({ ...ownership, conversation_id: conversation.data.id, connection_id: connection.data.id, provider: "openai", model: "fixture", task_type: "conversation", status: "generating" }).select("id").single();
+      if (run.error) throw run.error;
+      const complete = await admin.rpc("complete_agent_run", { input_run_id: run.data.id, input_output: { message: "## Start here\n\nPrepare **one concrete example**.", proposals: [] }, input_tokens: 10, output_tokens: 20 });
+      if (complete.error) throw complete.error;
+      write({ type: "data-result", data: { href: `/agent?conversation=${conversation.data.id}` }, transient: true });
+      write({ type: "finish" });
+      response!.end("data: [DONE]\n\n");
+      await expect(page.getByText(/^Worked for/)).toBeVisible();
+      await expect(page.getByText(/^Working for/)).toHaveCount(0);
+      await expect(page.locator(".agent-message-author")).toHaveCount(0);
+      await page.locator(".agent-work-timeline").last().locator("summary").click();
+      await expect(page.locator(".agent-work-steps").last()).toContainText("fixture");
+      await page.screenshot({ path: "/tmp/roleway-worked-mobile.png" });
+    } finally {
+      response?.end();
+      await page.unroute("**/api/agent/chat");
+      server.closeAllConnections();
+      await new Promise<void>(resolve => server.close(() => resolve()));
+    }
+    // The real authenticated stream route must persist failures without exposing provider details.
+    await input.fill("Check the saved connection safely");
+    await page.getByRole("button", { name: "Send to Agent", exact: true }).click();
+    await expect(page.locator(".agent-inline-state[role=alert]")).toContainText("Agent could not complete");
+    await expect(page.getByText("Check the saved connection safely", { exact: true })).toBeVisible();
+    await expect(page.locator(".agent-work-failed").last()).toBeVisible();
+    await expect(page.getByText(/^Working for/)).toHaveCount(0);
+    await expect(input).toBeEditable();
+    await page.goto("/settings/ai");
+    await expect(page.getByText("Changes stay in your control", { exact: true })).toHaveCount(0);
+    const testButton = page.getByRole("button", { name: "Test Chat fixture", exact: true });
+    await expect(testButton).toHaveText("");
+    await testButton.hover();
+    await expect(page.getByRole("tooltip")).toHaveText("Test connection");
+    await page.keyboard.press("Escape");
+    const deleteButton = page.locator('.connection-row button[data-tooltip="Delete connection"]');
+    await deleteButton.hover();
+    const tooltip = page.getByRole("tooltip");
+    await expect(tooltip).toContainText("Delete connection");
+    expect(await tooltip.evaluate(el => !el.closest('.connection-row'))).toBe(true);
+    const tooltipBounds = await tooltip.boundingBox();
+    expect(tooltipBounds!.x).toBeGreaterThanOrEqual(0);
+    expect(tooltipBounds!.x + tooltipBounds!.width).toBeLessThanOrEqual(390);
+    await page.screenshot({ path: "/tmp/roleway-connection-tooltip.png", animations: "disabled" });
+    await page.keyboard.press("Escape");
+    await expect(tooltip).toHaveCount(0);
+    const original = await admin.from("ai_connections").select("encrypted_secret, secret_iv, status").eq("id", connection.data.id).single();
+    if (original.error) throw original.error;
+    await page.getByRole("button", { name: "Edit Chat fixture", exact: true }).click();
+    await expect(page.getByLabel("API key", { exact: true })).toHaveValue("");
+    await expect(page.getByLabel("Model", { exact: true })).toHaveValue("long-model-name-for-responsive-review");
+    const closeDialog = page.getByRole("button", { name: "Close Edit connection", exact: true });
+    await closeDialog.hover();
+    await expect(tooltip).toContainText("Close");
+    expect(await tooltip.evaluate(el => Boolean(el.closest('dialog[open]')))).toBe(true);
+    await page.keyboard.press("Escape");
+    await page.getByLabel("Connection name", { exact: true }).fill("Renamed connection");
+    await page.screenshot({ path: "/tmp/roleway-edit-connection-mobile.png", animations: "disabled" });
+    await page.getByRole("button", { name: "Save changes", exact: true }).click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    const renamed = await admin.from("ai_connections").select("encrypted_secret, secret_iv, status").eq("id", connection.data.id).single();
+    expect(renamed.data).toEqual(original.data);
+    await page.getByRole("button", { name: "Edit Renamed connection", exact: true }).click();
+    await page.getByLabel("Model", { exact: true }).fill("updated-model");
+    await page.getByRole("button", { name: "Save changes", exact: true }).click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await expect(page.locator(".connection-row")).toContainText("Not tested");
+    const updated = await admin.from("ai_connections").select("encrypted_secret, model, status").eq("id", connection.data.id).single();
+    expect(updated.data).toEqual({ encrypted_secret: original.data.encrypted_secret, model: "updated-model", status: "untested" });
+    await page.getByRole("button", { name: "Edit Renamed connection", exact: true }).click();
+    await page.getByLabel("API key", { exact: true }).fill("fixture-replacement-key");
+    await page.getByRole("button", { name: "Save changes", exact: true }).click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    const replaced = await admin.from("ai_connections").select("encrypted_secret, key_hint").eq("id", connection.data.id).single();
+    expect(replaced.data?.encrypted_secret).not.toBe(original.data.encrypted_secret);
+    expect(replaced.data?.key_hint).toBe("••••-key");
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.goto("/help");
+    await page.locator('a[href="/help/agent-create"]').click();
+    await expect(page.locator("h1")).toContainText(/Agent|Creat/);
     expect(errors).toEqual([]);
   } finally {
     if (userId) {
