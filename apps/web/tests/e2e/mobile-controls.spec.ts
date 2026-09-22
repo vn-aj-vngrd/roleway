@@ -73,7 +73,7 @@ test("Mobile collection actions, feedback, avatar and Agent loading stay compact
       await expect(toast).toBeVisible();
       expect(await toast.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
       await page.screenshot({ path: `/tmp/roleway-toast-${theme}-mobile.png`, animations: "disabled" });
-      await toast.getByRole("button", { name: "Dismiss Connection verified" }).click();
+      await toast.getByRole("button", { name: "Dismiss notification" }).click();
       await expect(toast).toHaveCount(0);
     }
     await page.setViewportSize({ width: 1440, height: 900 });

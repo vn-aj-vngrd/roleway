@@ -1,19 +1,25 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Archive, Check, Info, Trash2, X } from "lucide-react";
+import { Archive, Check, Info, Trash2 } from "lucide-react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
+import { Toaster, toast } from "sonner";
 
 type ToastTone = "success" | "info" | "removed";
 type ToastInput = { title: string; description?: string; tone?: ToastTone; id?: string; duration?: number };
-type ToastItem = Required<Pick<ToastInput, "title" | "tone" | "duration">> & { id: string; description: string | undefined };
 
 const toastEvent = "roleway:toast";
 
 export function showToast(input: ToastInput) {
   if (typeof window === "undefined") return;
-  window.dispatchEvent(new CustomEvent<ToastInput>(toastEvent, { detail: input }));
+  const tone = input.tone ?? inferredTone(input.title);
+  toast(input.title, {
+    ...(input.id ? { id: input.id } : {}),
+    ...(input.description ? { description: input.description } : {}),
+    duration: input.duration ?? 5200,
+    icon: <ToastIcon tone={tone} title={input.title} />,
+    className: `app-toast toast-${tone}`,
+  });
 }
 
 function inferredTone(message: string): ToastTone {
@@ -54,40 +60,28 @@ function ToastIcon({ tone, title }: { tone: ToastTone; title: string }) {
 export function ToastViewport() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [items, setItems] = useState<ToastItem[]>([]);
   const seen = useRef(new Set<string>());
 
-  const dismiss = useCallback((id: string) => setItems((current) => current.filter((item) => item.id !== id)), []);
-  const push = useCallback((input: ToastInput) => {
-    const key = input.id;
-    if (key && seen.current.has(key)) return;
-    if (key) seen.current.add(key);
-    const item: ToastItem = { id: `${Date.now()}-${Math.random().toString(36).slice(2)}`, title: input.title, description: input.description, tone: input.tone ?? inferredTone(input.title), duration: input.duration ?? 5200 };
-    setItems((current) => [...current.slice(-3), item]);
-    window.setTimeout(() => dismiss(item.id), item.duration);
-  }, [dismiss]);
-
   useEffect(() => {
-    const receive = (event: Event) => push((event as CustomEvent<ToastInput>).detail);
+    const receive = (event: Event) => showToast((event as CustomEvent<ToastInput>).detail);
     window.addEventListener(toastEvent, receive);
     return () => window.removeEventListener(toastEvent, receive);
-  }, [push]);
+  }, []);
 
   useEffect(() => {
     for (const [key, message] of Object.entries(queryMessages(pathname))) {
       const id = `${pathname}:${key}`;
-      if (searchParams.has(key)) push({ ...message, id });
-      else seen.current.delete(id);
+      if (searchParams.has(key) && !seen.current.has(id)) {
+        seen.current.add(id);
+        showToast({ ...message, id });
+      } else if (!searchParams.has(key)) seen.current.delete(id);
     }
-  }, [pathname, push, searchParams]);
+  }, [pathname, searchParams]);
 
-  return <section className="toast-viewport" aria-label="Notifications" aria-live="polite" aria-relevant="additions">
-    {items.map((item) => <article className="app-toast" data-tone={item.tone} key={item.id}>
-      <span className="app-toast-icon"><ToastIcon tone={item.tone} title={item.title} /></span>
-      <span className="app-toast-copy"><strong>{item.title}</strong>{item.description ? <small>{item.description}</small> : null}</span>
-      <Button type="button" variant="ghost" size="icon-sm" aria-label={`Dismiss ${item.title}`} onClick={() => dismiss(item.id)}><X aria-hidden="true" /></Button>
-    </article>)}
-  </section>;
+  return <Toaster position="bottom-right" closeButton visibleToasts={3} gap={8}
+    offset={{ bottom: pathname.startsWith("/settings") ? 20 : 76, right: 20 }}
+    mobileOffset={{ bottom: "calc(76px + env(safe-area-inset-bottom))", left: 12, right: 12 }}
+    toastOptions={{ closeButtonAriaLabel: "Dismiss notification" }} />;
 }
 
 export function CrudToast({ title, description, tone = "success" }: ToastInput) {

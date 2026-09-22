@@ -148,7 +148,11 @@ test("all four Create actions save once, show progress and open their results", 
       }
       await expect(card.getByText(entry.success, { exact: true })).toBeVisible();
       await page.unroute("**/agent?**");
+      await page.getByRole("button", { name: "Dismiss notification", exact: true }).click();
+      await expect(page.locator(".agent-inline-state")).toHaveCount(0);
+      await expect(page).not.toHaveURL(/decision=/);
       await page.reload();
+      await expect(page.locator(".agent-inline-state")).toHaveCount(0);
       await expect(card.getByText(entry.success, { exact: true })).toBeVisible();
       expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
       await expect(card).toBeInViewport();

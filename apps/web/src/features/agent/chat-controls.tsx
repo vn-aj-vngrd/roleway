@@ -20,6 +20,7 @@ import {
   useSyncExternalStore,
 } from "react";
 import { useFormStatus } from "react-dom";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import {
@@ -452,10 +453,26 @@ export function SavedResultFocus({ proposalId }: { proposalId: string }) {
       );
       if (result) {
         result.scrollIntoView({ block: "center", behavior: "instant" });
-        result.focus({ preventScroll: true });
+        (result.querySelector<HTMLElement>("a, button") ?? result).focus({ preventScroll: true });
       }
     });
     return () => cancelAnimationFrame(frame);
   }, [proposalId]);
   return null;
+}
+
+export function AgentNotice({ children, variant = "neutral" }: { children: ReactNode; variant?: "neutral" | "success" | "error" }) {
+  const router = useRouter();
+  const [dismissed, setDismissed] = useState(false);
+  if (dismissed) return null;
+  return <div className={`agent-inline-state ${variant}`} role={variant === "error" ? "alert" : "status"}>
+    {children}
+    <Button type="button" variant="ghost" size="icon-xs" className="agent-notice-dismiss" aria-label="Dismiss notification" data-tooltip="Dismiss" onClick={() => {
+      setDismissed(true);
+      const url = new URL(window.location.href);
+      url.searchParams.delete("decision");
+      url.searchParams.delete("error");
+      router.replace(`${url.pathname}${url.search}${url.hash}`, { scroll: false });
+    }}><X aria-hidden="true" /></Button>
+  </div>;
 }

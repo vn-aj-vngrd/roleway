@@ -261,7 +261,7 @@ Marketing uses the application itself as evidence. Measured graphite headlines l
 
 ### Public entry and feedback consistency
 
-Authentication uses one centered 384px form, 28px heading, visible labels, 44px fields and compact pill actions, and the shared appearance picker. Login, signup, recovery, and verification compose the same Field, Input, Button, and Alert primitives. Alerts pair one 16px outline icon with wrapping copy; error color remains readable in both themes. Toasts use an opaque canvas, a subtle border, the shared floating shadow, a small status icon, and a compact dismiss action. Avoid decorative icon badges and countdown bars. Interface icons share a 1.75 stroke; large illustrative watermark marks retain their own weight. Public display typography may scale from 32px section titles to a 72px hero; operational text retains the 13px floor.
+Authentication uses one centered 384px form, 28px heading, visible labels, 44px fields and compact pill actions, and the shared appearance picker. Login, signup, recovery, and verification compose the same Field, Input, Button, and Alert primitives. Alerts pair one 16px outline icon with wrapping copy; error color remains readable in both themes. Toasts use Sonner through the shared toast adapter, with an opaque canvas, a subtle border, the shared floating shadow, a small status icon, and a compact dismiss action. Avoid decorative icon badges and countdown bars. Interface icons share a 1.75 stroke; large illustrative watermark marks retain their own weight. Public display typography may scale from 32px section titles to a 72px hero; operational text retains the 13px floor.
 
 ### Alert status variants
 

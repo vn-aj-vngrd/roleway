@@ -6,9 +6,9 @@ import { formatConversationAge } from "@/features/agent/message-time";
 import { AgentLiveProvider, AgentStreamForm, AgentTranscript } from "@/features/agent/live-chat";
 import { RunTimeline } from "@/features/agent/run-timeline";
 import { AgentMarkdown } from "@/features/agent/markdown";
-import { AgentMessageInput, MessageActions, SavedResultFocus } from "@/features/agent/chat-controls";
+import { AgentMessageInput, AgentNotice, MessageActions, SavedResultFocus } from "@/features/agent/chat-controls";
 import { formatOpportunityTicket } from "@roleway/core";
-import { Archive, Check, ChevronDown, Circle, History, KeyRound, Navigation, Plus, Route, X } from "lucide-react";
+import { Archive, ArrowUpRight, Check, ChevronDown, Circle, History, KeyRound, Navigation, Plus, Route, X } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { SubmitButton } from "@/components/submit-button";
@@ -102,10 +102,10 @@ export default async function AgentPage(props: { searchParams: Promise<AgentQuer
       </header>
 
       {query.proposal && proposals.some(proposal => proposal.id === query.proposal && proposal.status === "applied") ? <SavedResultFocus proposalId={query.proposal} /> : null}
-      {query.error ? <div className="agent-inline-state error" role="alert"><X aria-hidden="true" /><span>{query.error}</span></div> : null}
-      {query.decision === "applied" ? <div className="agent-inline-state success" role="status"><Check aria-hidden="true" /><span>Saved successfully. You can open the result below.</span></div> : null}
-      {query.decision === "unchanged" ? <div className="agent-inline-state" role="status"><Circle aria-hidden="true" /><span>No change applied. If the proposal expired, ask Agent for a fresh proposal using your current records.</span></div> : null}
-      {query.decision === "rejected" ? <div className="agent-inline-state" role="status"><Circle aria-hidden="true" /><span>Proposal rejected. No Roleway record changed.</span></div> : null}
+      {query.error ? <AgentNotice key={query.error} variant="error"><X aria-hidden="true" /><span>{query.error}</span></AgentNotice> : null}
+      {query.decision === "applied" ? <AgentNotice key={`${query.decision}:${query.proposal}`} variant="success"><Check aria-hidden="true" /><span>Saved successfully. You can open the result below.</span></AgentNotice> : null}
+      {query.decision === "unchanged" ? <AgentNotice key={`${query.decision}:${query.proposal}`}><Circle aria-hidden="true" /><span>No change applied. If the proposal expired, ask Agent for a fresh proposal using your current records.</span></AgentNotice> : null}
+      {query.decision === "rejected" ? <AgentNotice key={`${query.decision}:${query.proposal}`}><Circle aria-hidden="true" /><span>Proposal rejected. No Roleway record changed.</span></AgentNotice> : null}
 
       <main className="agent-native-workplane">
         <AgentTranscript hasConversation={Boolean(activeConversation)} emptyState={<div className="agent-empty-state">
@@ -124,7 +124,7 @@ export default async function AgentPage(props: { searchParams: Promise<AgentQuer
                 <div className="agent-message-content">{message.role === "agent" ? <AgentMarkdown content={message.content} idPrefix={message.id} /> : <p>{message.content}</p>}</div>
                 </div><MessageActions content={message.content} timestamp={message.created_at} />
                 {run && (message.role === "user" && ["failed", "queued", "gathering_context", "generating"].includes(run.status)) ? <AgentRunDetails run={run} steps={runSteps} /> : null}
-                {(message.role === "agent" ? runProposals : []).map((proposal) => <ApprovalCard createdWorkspaceId={query.proposal === proposal.id && query.decision === "applied" && projectMap.has(query.record ?? "") ? query.record : undefined} workspace={proposal.destination_project_id ? projectMap.get(proposal.destination_project_id)?.name ?? "Unavailable Workspace" : undefined} proposal={proposal} opportunity={proposal.target_id ? opportunityMap.get(proposal.target_id) : undefined} key={proposal.id} />)}
+                {(message.role === "agent" ? runProposals : []).map((proposal) => <ApprovalCard createdWorkspaceId={query.proposal === proposal.id && proposal.status === "applied" && projectMap.has(query.record ?? "") ? query.record : undefined} workspace={proposal.destination_project_id ? projectMap.get(proposal.destination_project_id)?.name ?? "Unavailable Workspace" : undefined} proposal={proposal} opportunity={proposal.target_id ? opportunityMap.get(proposal.target_id) : undefined} key={proposal.id} />)}
               </article>
             );
           })}
@@ -169,15 +169,20 @@ function AgentRunDetails({ run, steps, endedAt }: { run: Run; steps: Step[]; end
 function ApprovalCard({ proposal, opportunity, workspace, createdWorkspaceId }: { createdWorkspaceId: string | undefined; proposal: Proposal; opportunity: Opportunity | undefined; workspace: string | undefined }) {
   const feedback = creationFeedback[proposal.tool_name];
   const details = proposalDetails(proposal, opportunity);
+  const savedTitle = proposal.status === "applied" ? String(proposal.arguments.name ?? proposal.arguments.title ?? toolLabel(proposal.tool_name)) : toolLabel(proposal.tool_name);
+  if (proposal.status === "applied" && ["create_workspace", "create_task", "set_next_action"].includes(proposal.tool_name)) {
+    const titleIndex = details.findIndex(([label]) => ["Workspace", "Task", "Next Action"].includes(label));
+    if (titleIndex >= 0) details.splice(titleIndex, 1);
+  }
   if (workspace) details.unshift(["Workspace", workspace]);
   return <section id={`proposal-${proposal.id}`} className={`agent-approval-card ${proposal.status}`} aria-label="Agent proposed change">
-    <header><span><Navigation aria-hidden="true" />{proposal.status === "proposed" ? "Approval required" : proposal.status === "applied" ? "Saved result" : "Proposal"}</span><strong>{toolLabel(proposal.tool_name)}</strong></header>
+    <header><strong className="agent-result-title">{proposal.status === "applied" ? <Check aria-hidden="true" /> : <Navigation aria-hidden="true" />}{savedTitle}</strong><span>{proposal.status === "proposed" ? "Approval required" : proposal.status === "applied" ? "Saved" : "Proposal"}</span></header>
     <p>{proposal.summary}</p>
     <dl>{details.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
     {proposal.status === "proposed" ? <footer>
       <form action={decideAgentProposal}><input type="hidden" name="proposalId" value={proposal.id} /><input type="hidden" name="decision" value="reject" /><SubmitButton className="button ghost" pendingLabel="Rejecting…">Reject</SubmitButton></form>
       <form action={decideAgentProposal}><input type="hidden" name="proposalId" value={proposal.id} /><input type="hidden" name="decision" value="approve" /><SubmitButton pendingLabel={feedback?.pending ?? "Saving…"}>Approve change</SubmitButton></form>
-    </footer> : <div className="agent-approval-outcome" tabIndex={-1}><span className={`agent-proposal-status ${proposal.status}`}><Check aria-hidden="true" />{proposal.status === "applied" ? feedback?.success ?? "Saved" : proposal.status === "rejected" ? "Rejected" : proposal.status === "failed" ? "Could not apply" : proposal.status}</span>{proposal.status === "applied" ? proposal.tool_name === "create_workspace" ? <Link className="button secondary" href={createdWorkspaceId ? `/settings/workspaces/${createdWorkspaceId}` : "/settings/workspaces"}>{createdWorkspaceId ? "Open Workspace" : "View Workspaces"}</Link> : <form action={openAgentResult}><input type="hidden" name="proposalId" value={proposal.id} /><SubmitButton variant="outline" pendingLabel="Opening…">{feedback?.open ?? "Open Opportunity"}</SubmitButton></form> : null}</div>}
+    </footer> : <div className="agent-approval-outcome" tabIndex={-1}><span className={`agent-proposal-status ${proposal.status}`}><Check aria-hidden="true" />{proposal.status === "applied" ? feedback?.success ?? "Saved" : proposal.status === "rejected" ? "Rejected" : proposal.status === "failed" ? "Could not apply" : proposal.status}</span>{proposal.status === "applied" ? proposal.tool_name === "create_workspace" ? <Link className="button primary" href={createdWorkspaceId ? `/settings/workspaces/${createdWorkspaceId}` : "/settings/workspaces"}>{createdWorkspaceId ? "Open Workspace" : "View Workspaces"}<ArrowUpRight aria-hidden="true" /></Link> : <form action={openAgentResult}><input type="hidden" name="proposalId" value={proposal.id} /><SubmitButton pendingLabel="Opening…">{feedback?.open ?? "Open Opportunity"}</SubmitButton></form> : null}</div>}
   </section>;
 }
 
