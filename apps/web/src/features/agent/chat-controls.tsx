@@ -355,7 +355,7 @@ export function AgentMessageInput({
   );
 }
 
-export function MessageActions({ content }: { content: string }) {
+export function MessageActions({ content, timestamp }: { content: string; timestamp: string }) {
   const [status, setStatus] = useState<"idle" | "copied" | "failed">("idle");
   useEffect(() => {
     if (status !== "copied") return;
@@ -364,6 +364,7 @@ export function MessageActions({ content }: { content: string }) {
   }, [status]);
   return (
     <div className="agent-message-actions">
+      <MessageTimestamp value={timestamp} />
       <Button
         type="button"
         variant="ghost"

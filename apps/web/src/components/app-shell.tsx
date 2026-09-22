@@ -6,7 +6,7 @@ import {
   NotebookPen,
   CalendarClock,
   ChartNoAxesColumnIncreasing,
-  ChevronDown,
+  EllipsisVertical,
   FileText,
   Inbox,
   LayoutDashboard,
@@ -745,8 +745,8 @@ function AccountMenu({
           <span className="user-name">{user.name}</span>
           <span className="user-state">{user.email}</span>
         </span>
-        <ChevronDown
-          className={`account-chevron ${open ? "open" : ""}`}
+        <EllipsisVertical
+          className="account-chevron"
           aria-hidden="true"
         />
       </button>

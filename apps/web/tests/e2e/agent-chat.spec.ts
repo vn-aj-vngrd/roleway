@@ -71,6 +71,14 @@ test("Agent formats Markdown and keeps composer controls usable across sizes and
       },
     ]);
     if (messages.error) throw messages.error;
+    const historyFixtures = await admin.from("agent_conversations").insert(
+      Array.from({ length: 20 }, (_, index) => ({
+        ...ownership,
+        title: `Earlier conversation ${index + 1}`,
+        updated_at: new Date(Date.now() - (index + 1) * 86400000).toISOString(),
+      })),
+    );
+    if (historyFixtures.error) throw historyFixtures.error;
     await page.goto(`/agent?conversation=${conversation.data.id}`);
     const input = page.getByLabel("Message Roleway Agent", { exact: true });
     await expect(
@@ -88,6 +96,7 @@ test("Agent formats Markdown and keeps composer controls usable across sizes and
       .locator(".agent-message.user")
       .getByRole("button", { name: "Copy message" });
     await expect(copy).toHaveText("");
+    await page.locator(".agent-message.user").hover();
     await copy.click();
     expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
       "hey",
@@ -109,10 +118,17 @@ test("Agent formats Markdown and keeps composer controls usable across sizes and
         expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width);
         const list = page.locator(".agent-history-list");
         expect(await list.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
-        const archive = menu.getByRole("button", { name: /^Archive/ });
+        const archive = menu.getByRole("button", { name: /^Archive/ }).first();
         await archive.hover();
         expect(await list.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
-        expect(await list.evaluate(el => el.scrollHeight <= el.clientHeight)).toBe(true);
+        expect(bounds!.height).toBeLessThanOrEqual(480);
+        expect(await list.evaluate(el => el.scrollHeight > el.clientHeight)).toBe(true);
+        await expect(menu.locator("time").first()).toHaveText(/Just now|minutes? ago/);
+        const head = await menu.locator(".agent-history-popover-head").boundingBox();
+        await list.locator(".agent-history-row").last().scrollIntoViewIfNeeded();
+        expect(await list.evaluate(el => el.scrollTop)).toBeGreaterThan(0);
+        expect((await menu.locator(".agent-history-popover-head").boundingBox())!.y).toBe(head!.y);
+        await expect(menu.locator("time").last()).toHaveText("2 weeks ago");
         await page.screenshot({ path: `/tmp/roleway-history-${theme}-${width}.png` });
         await history.click();
         const bubble = await page
@@ -164,6 +180,27 @@ test("Agent formats Markdown and keeps composer controls usable across sizes and
         await expect(
           page.getByRole("button", { name: "Send to Agent", exact: true }),
         ).toBeDisabled();
+        const composer = page.locator(".agent-native-composer");
+        const beforeError = await composer.boundingBox();
+        await page.goto(`/agent?conversation=${conversation.data.id}&error=Agent%20could%20not%20complete%20that%20request.`);
+        await expect(page.locator(".agent-inline-state[role=alert]")).toContainText("Agent could not complete");
+        await expect(input).toBeVisible();
+        const afterError = await composer.boundingBox();
+        expect(Math.abs(afterError!.y - beforeError!.y)).toBeLessThan(2);
+        expect(await page.locator(".agent-transcript").evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
+        const footer = page.locator(".agent-message.user .agent-message-actions");
+        await expect(footer.locator("time")).toContainText(/\d{1,2}:\d{2}/);
+        const copyControl = footer.getByRole("button", { name: "Copy message" });
+        await page.locator(".agent-native-routebar").hover();
+        await expect(copyControl).toHaveCSS("opacity", "0");
+        await page.locator(".agent-message.user").hover();
+        await expect(copyControl).toHaveCSS("opacity", "1");
+        await copyControl.focus();
+        await page.locator(".agent-native-routebar").hover();
+        await expect(copyControl).toHaveCSS("opacity", "1");
+        await page.screenshot({ path: `/tmp/roleway-error-${theme}-${width}.png` });
+        await page.goto(`/agent?conversation=${conversation.data.id}`);
+        await expect(input).toBeVisible();
       }
     }
     expect(errors).toEqual([]);

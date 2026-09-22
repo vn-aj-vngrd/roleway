@@ -14404,7 +14404,8 @@ body [data-tooltip]::after {
 }
 .agent-history-list {
   min-height: 0;
-  max-height: 410px;
+  flex: 0 1 auto;
+  overscroll-behavior-y: contain;
   overflow-x: hidden;
   padding-top: 5px;
   overflow-y: auto;
@@ -14441,6 +14442,20 @@ body [data-tooltip]::after {
 .agent-history-row > a small {
   color: var(--muted);
   font-size: 13px;
+}
+.agent-history-row > a .agent-history-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+}
+.agent-history-row > a .agent-history-meta > span:first-child {
+  min-width: 0;
+  font-size: inherit;
+  font-weight: inherit;
+}
+.agent-history-meta time,
+.agent-history-meta > span[aria-hidden] {
+  flex-shrink: 0;
 }
 .agent-history-row form {
   min-width: 0;
@@ -15431,7 +15446,7 @@ body [data-tooltip]::after {
     right: 12px;
     left: 12px;
     width: auto;
-    max-height: calc(100dvh - 126px);
+    max-height: min(480px, calc(100dvh - 126px));
   }
   .agent-native-workplane {
     min-height: calc(100dvh - 102px);

@@ -2,8 +2,9 @@
 export const maxDuration = 300;
 
 import "./agent-chat.css";
+import { formatConversationAge } from "@/features/agent/message-time";
 import { AgentMarkdown } from "@/features/agent/markdown";
-import { AgentMessageInput, MessageActions, MessageTimestamp, SavedResultFocus } from "@/features/agent/chat-controls";
+import { AgentMessageInput, MessageActions, SavedResultFocus } from "@/features/agent/chat-controls";
 import { formatOpportunityTicket } from "@roleway/core";
 import { Archive, Check, ChevronDown, Circle, History, KeyRound, Navigation, Plus, Route, X } from "lucide-react";
 import Link from "next/link";
@@ -79,7 +80,7 @@ export default async function AgentPage(props: { searchParams: Promise<AgentQuer
                 const focus = conversation.opportunity_id ? opportunityMap.get(conversation.opportunity_id) : null;
                 const subtitle = focus?.jobs ? `${focus.jobs.company} · ${focus.jobs.title}` : projectMap.get(conversation.project_id)?.name ?? "All workspaces";
                 return <div className={`agent-history-row ${active ? "active" : ""}`} key={conversation.id}>
-                  <Link href={`/agent?conversation=${conversation.id}`} aria-current={active ? "page" : undefined}><span>{conversation.title}</span><small>{subtitle} · {relativeDate(conversation.updated_at)}</small></Link>
+                  <Link href={`/agent?conversation=${conversation.id}`} aria-current={active ? "page" : undefined}><span>{conversation.title}</span><small className="agent-history-meta"><span>{subtitle}</span><span aria-hidden="true">·</span><time dateTime={conversation.updated_at} title={new Date(conversation.updated_at).toUTCString()}>{formatConversationAge(conversation.updated_at)}</time></small></Link>
                   <form action={archiveAgentConversation}><input type="hidden" name="conversationId" value={conversation.id} /><button aria-label={`Archive ${conversation.title}`} data-tooltip="Archive conversation"><Archive aria-hidden="true" /></button></form>
                 </div>;
               }) : <p className="agent-history-empty">No conversations yet.</p>}
@@ -105,10 +106,9 @@ export default async function AgentPage(props: { searchParams: Promise<AgentQuer
             const runProposals = message.run_id ? proposals.filter((proposal) => proposal.run_id === message.run_id) : [];
             return (
               <article className={`agent-message ${message.role}`} key={message.id}>
-                <MessageTimestamp value={message.created_at} />
                 <div className="agent-message-body"><header><span className="agent-message-author">{message.role === "agent" ? <><Navigation aria-hidden="true" />Roleway Agent</> : "You"}</span></header>
                 <div className="agent-message-content">{message.role === "agent" ? <AgentMarkdown content={message.content} idPrefix={message.id} /> : <p>{message.content}</p>}</div>
-                <MessageActions content={message.content} /></div>
+                </div><MessageActions content={message.content} timestamp={message.created_at} />
                 {run && (message.role === "agent" || run.status === "failed") ? <AgentRunDetails run={run} steps={runSteps} /> : null}
                 {(message.role === "agent" ? runProposals : []).map((proposal) => <ApprovalCard createdWorkspaceId={query.proposal === proposal.id && query.decision === "applied" && projectMap.has(query.record ?? "") ? query.record : undefined} workspace={proposal.destination_project_id ? projectMap.get(proposal.destination_project_id)?.name ?? "Unavailable Workspace" : undefined} proposal={proposal} opportunity={proposal.target_id ? opportunityMap.get(proposal.target_id) : undefined} key={proposal.id} />)}
               </article>
@@ -177,11 +177,6 @@ function proposalDetails(proposal: Proposal, opportunity?: Opportunity): Array<[
 
 function toolLabel(tool: string) {
   return ({ create_workspace: "Create Workspace", create_task: "Create task", set_next_action: "Update Next Action", create_note: "Add note" } as Record<string, string>)[tool] ?? "Change Roleway record";
-}
-
-function relativeDate(value: string) {
-  const days = Math.max(0, Math.floor((Date.now() - Date.parse(value)) / 86_400_000));
-  return days === 0 ? "Today" : days === 1 ? "Yesterday" : `${days}d ago`;
 }
 
 const creationFeedback: Record<string, { pending: string; success: string; open: string }> = {

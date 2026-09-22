@@ -80,7 +80,7 @@
 .agent-message .agent-message-timestamp {
   display: block;
   min-height: 18px;
-  margin: 0 0 12px;
+  margin: 0;
   color: var(--muted);
   font: inherit;
   font-size: 12px;
@@ -132,7 +132,7 @@
   scroll-margin-top: 90px;
 }
 
-/* Keep short user messages compact while timestamps span the transcript. */
+/* Keep short user messages compact without narrowing their metadata. */
 .agent-native-page .agent-message.user {
   width: 100%;
 }
@@ -419,4 +419,69 @@
   .agent-message.user .agent-message-body {
     max-width: 92%;
   }
+}
+
+/* The transcript absorbs available height; banners never reposition the composer. */
+.app-shell .main-content-scroll:has(.agent-native-page) {
+  display: flex;
+  flex-direction: column;
+}
+.app-shell .agent-native-page {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.agent-native-page > .agent-native-routebar,
+.agent-native-page > .agent-inline-state {
+  flex-shrink: 0;
+}
+.agent-native-page .agent-native-workplane {
+  min-height: 0;
+  overflow: hidden;
+}
+.agent-native-page .agent-transcript {
+  min-height: 0;
+  flex: 1;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-block: 32px 20px;
+}
+.agent-native-page.has-conversation .agent-native-composer {
+  position: relative;
+  inset: auto;
+  margin: 0 auto 18px;
+}
+.agent-message.user .agent-message-actions {
+  justify-content: flex-end;
+}
+@media (hover: hover) and (pointer: fine) {
+  .agent-message-actions [data-slot="button"] {
+    opacity: 0;
+    pointer-events: none;
+  }
+  .agent-message:hover .agent-message-actions [data-slot="button"],
+  .agent-message:focus-within .agent-message-actions [data-slot="button"] {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+@media (max-width: 760px) {
+  .agent-native-page.has-conversation .agent-native-composer {
+    margin: 0 12px 12px;
+  }
+  .agent-native-page .agent-transcript {
+    padding-block: 20px;
+  }
+}
+
+.agent-message-actions button[data-tooltip]::after {
+  top: auto;
+  bottom: calc(100% + 8px);
+  left: 0;
+  transform: none;
+}
+.agent-message.user .agent-message-actions button[data-tooltip]::after {
+  right: 0;
+  left: auto;
 }
