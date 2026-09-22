@@ -48,7 +48,7 @@ test("Agent formats Markdown and keeps composer controls usable across sizes and
     if (connection.error) throw connection.error;
     const conversation = await admin
       .from("agent_conversations")
-      .insert({ ...ownership, title: "Chat formatting" })
+      .insert({ ...ownership, title: "Chat formatting with a long conversation title " + "detail".repeat(8) })
       .select("id")
       .single();
     if (conversation.error) throw conversation.error;
@@ -100,6 +100,21 @@ test("Agent formats Markdown and keeps composer controls usable across sizes and
       }, theme);
       for (const width of [1440, 390]) {
         await page.setViewportSize({ width, height: 900 });
+        const history = page.getByLabel("Open Agent conversation history");
+        await history.click();
+        const menu = page.locator(".agent-history-popover");
+        await expect(menu).toBeVisible();
+        const bounds = await menu.boundingBox();
+        expect(bounds!.x).toBeGreaterThanOrEqual(0);
+        expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width);
+        const list = page.locator(".agent-history-list");
+        expect(await list.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
+        const archive = menu.getByRole("button", { name: /^Archive/ });
+        await archive.hover();
+        expect(await list.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
+        expect(await list.evaluate(el => el.scrollHeight <= el.clientHeight)).toBe(true);
+        await page.screenshot({ path: `/tmp/roleway-history-${theme}-${width}.png` });
+        await history.click();
         const bubble = await page
           .locator(".agent-message.user .agent-message-content")
           .boundingBox();

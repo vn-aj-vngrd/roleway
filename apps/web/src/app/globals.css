@@ -14363,12 +14363,15 @@ body [data-tooltip]::after {
   left: 0;
   width: min(360px, calc(100vw - 32px));
   max-height: min(480px, calc(100dvh - 120px));
+  display: flex;
+  flex-direction: column;
   padding: 6px;
   border: 1px solid var(--line);
   border-radius: 10px;
   overflow: hidden;
 }
 .agent-history-popover-head {
+  flex-shrink: 0;
   min-height: 38px;
   padding: 0 7px 5px;
   border-bottom: 1px solid var(--line);
@@ -14400,7 +14403,9 @@ body [data-tooltip]::after {
   height: 14px;
 }
 .agent-history-list {
+  min-height: 0;
   max-height: 410px;
+  overflow-x: hidden;
   padding-top: 5px;
   overflow-y: auto;
   scrollbar-width: thin;
@@ -14437,6 +14442,10 @@ body [data-tooltip]::after {
   color: var(--muted);
   font-size: 13px;
 }
+.agent-history-row form {
+  min-width: 0;
+  margin: 0;
+}
 .agent-history-row form button {
   width: 28px;
   height: 28px;
@@ -14453,6 +14462,23 @@ body [data-tooltip]::after {
 .agent-history-row:hover form button,
 .agent-history-row form button:focus-visible {
   opacity: 1;
+}
+/* Keep the archive tooltip inside the scrollable row. */
+.agent-history-row form button[data-tooltip]::after {
+  top: 50%;
+  right: calc(100% + 8px);
+  left: auto;
+  transform: translateY(-50%);
+}
+@media (hover: none) {
+  .agent-history-row {
+    grid-template-columns: minmax(0, 1fr) 44px;
+  }
+  .agent-history-row form button {
+    width: 44px;
+    height: 44px;
+    opacity: 1;
+  }
 }
 .agent-history-row form button:hover {
   color: var(--ink);
