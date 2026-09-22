@@ -1,3 +1,4 @@
+import { EmptyState } from "@/components/ui-primitives";
 import { formatOpportunityTicket } from "@roleway/core";
 import { ArrowRight, CalendarClock, CheckCircle2, Circle, Inbox, Plus, Target, UserRound } from "lucide-react";
 import Link from "next/link";
@@ -55,7 +56,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
     <WorkspaceHeader
       title="Home"
       context={<><span>{new Intl.DateTimeFormat(undefined, { weekday: "long", month: "long", day: "numeric" }).format(now)}</span><span aria-hidden="true"> · </span><span>{context.project.name}</span></>}
-      actions={<CreateJobButton variant="ghost" size="sm"><Plus data-icon="inline-start" aria-hidden="true" />Add job</CreateJobButton>}
+      actions={<CreateJobButton size="sm"><Plus data-icon="inline-start" aria-hidden="true" />Add job</CreateJobButton>}
       className="home-v2-header"
     />
 
@@ -89,7 +90,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
         <section className="home-active-opportunities" aria-labelledby="active-opportunities-heading">
           <div className="home-rail-heading"><h2 id="active-opportunities-heading">Active opportunities</h2><Link href="/opportunities">View all</Link></div>
           <div className="home-opportunity-list">{opportunities.slice(0, 5).map((opportunity) => <Link href={`/opportunities/${opportunity.id}`} key={opportunity.id}><span className="status-dot" /><span><strong>{opportunity.jobs?.title ?? "Untitled role"}</strong><small>{opportunity.jobs?.company ?? "Unknown company"} · {stageLabel(opportunity.stage)}</small></span><ArrowRight aria-hidden="true" /></Link>)}</div>
-          {opportunities.length === 0 ? <p className="empty-inline">Track a Job to create this Workspace’s first Opportunity.</p> : null}
+          {opportunities.length === 0 ? <EmptyState className="compact" title="No opportunities yet" description="Track a Job from the Inbox to start working on an Opportunity." /> : null}
         </section>
       </aside>
     </div>

@@ -1,3 +1,4 @@
+import { CircleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatOpportunityTicket } from "@roleway/core";
 import {
@@ -268,6 +269,7 @@ export default async function DocumentsPage(props: {
           {error ? (
             <EmptyState
               className="documents-empty-state"
+              icon={<CircleAlert />}
               title="Documents could not be loaded"
               description="Refresh this page to recover the library. Your saved documents have not been changed."
             />

@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { CircleAlert, CircleCheck } from "lucide-react";
+import { CircleAlert, CircleCheck, Infinity as InfinityIcon, Layers, HardDrive, Receipt } from "lucide-react";
 import { requireUser } from "@/lib/supabase/server";
 import { getPlans } from "@/features/billing/queries";
 import {
@@ -14,7 +14,7 @@ import {
 import { cancelPayment, submitPayment } from "@/features/billing/actions";
 import { PlanComparison } from "@/components/plan-comparison";
 import { SettingsNav } from "@/components/settings-nav";
-import { PageHeader } from "@/components/ui-primitives";
+import { EmptyState, PageHeader } from "@/components/ui-primitives";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
 import { SubmitButton } from "@/components/submit-button";
@@ -223,7 +223,7 @@ export default async function BillingPage({
                 </table>
               </div>
             ) : (
-              <p>No payments yet. Your Free plan does not require a payment.</p>
+              <EmptyState className="compact" icon={<Receipt />} title="No payments yet" description="Your payment requests and their review status will appear here. The Free plan requires no payment." />
             )}
           </section>
           <Button
@@ -253,12 +253,14 @@ function Usage({
 }) {
   return (
     <div className="usage-item">
-      <div>
+      <div className="usage-heading">
+        {bytes ? <HardDrive aria-hidden="true" /> : <Layers aria-hidden="true" />}
         <strong>{label}</strong>
-        <span>
-          {bytes ? formatBytes(used) : used} /{" "}
-          {unlimited ? "Unlimited" : bytes ? formatBytes(limit) : limit}
-        </span>
+        {unlimited ? <span className="usage-unlimited"><InfinityIcon aria-hidden="true" />Unlimited</span> : null}
+      </div>
+      <div className="usage-value">
+        <strong>{bytes ? formatBytes(used) : used}</strong>
+        <span>{unlimited ? "used · no limit" : `of ${bytes ? formatBytes(limit) : limit} used`}</span>
       </div>
       {!unlimited ? (
         <progress
@@ -266,7 +268,7 @@ function Usage({
           value={Math.min(used, limit)}
           max={limit}
         />
-      ) : null}
+      ) : <div className="usage-unlimited-track" aria-hidden="true" />}
       {!unlimited && used >= limit ? (
         <p role="status">
           Limit reached. Free capacity or choose another plan to add more.

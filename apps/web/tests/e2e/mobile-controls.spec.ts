@@ -21,9 +21,10 @@ test("Mobile collection actions, feedback, avatar and Agent loading stay compact
     for (const theme of ["light", "dark"]) {
       await page.goto("/inbox");
       await page.evaluate(theme => { localStorage.setItem("roleway-theme", theme); document.documentElement.dataset.theme = theme; }, theme);
+      await expect(page.locator('.workspace-page-actions [data-slot="button"]')).toBeVisible();
       const reference = await page.locator('.workspace-page-actions [data-slot="button"]').evaluate(el => ({ height: el.getBoundingClientRect().height, background: getComputedStyle(el).backgroundColor, font: getComputedStyle(el).fontSize }));
       expect(reference.height).toBe(32);
-      for (const route of ["interview", "contacts", "documents"]) {
+      for (const route of ["home", "interview", "contacts", "documents"]) {
         await page.goto(`/${route}`);
         const button = page.locator('.workspace-page-actions [data-slot="button"]');
         await expect(button).toBeVisible();
@@ -33,10 +34,40 @@ test("Mobile collection actions, feedback, avatar and Agent loading stay compact
         await page.screenshot({ path: `/tmp/roleway-${route}-${theme}-mobile.png`, animations: "disabled" });
         await button.click();
         await expect(page.getByRole("dialog")).toBeVisible();
+        await expect(page.locator(".create-modal-panel")).toHaveCSS("animation-name", "overlay-reveal");
+        await page.emulateMedia({ reducedMotion: "reduce" });
+        await expect(page.locator(".create-modal-panel")).toHaveCSS("animation-name", "none");
+        await page.emulateMedia({ reducedMotion: "no-preference" });
         await page.keyboard.press("Escape");
         await expect(page.getByRole("dialog")).toHaveCount(0);
         expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
       }
+      for (const width of [1440, 390]) {
+        await page.setViewportSize({ width, height: 1000 });
+        await page.goto("/settings/billing");
+        await expect(page.getByRole("heading", { name: "Choose your capacity" })).toBeVisible();
+        await expect(page.getByRole("progressbar", { name: "Active Workspaces" })).toBeVisible();
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+        if (width === 1440) {
+          const tops = await page.locator(".plan-price").evaluateAll(els => els.map(el => el.getBoundingClientRect().top));
+          expect(Math.max(...tops) - Math.min(...tops)).toBeLessThan(2);
+        }
+        await page.locator(".billing-content").screenshot({ path: `/tmp/roleway-billing-${theme}-${width}.png`, animations: "disabled" });
+      }
+      await page.goto("/notifications");
+      const badge = page.locator(".notification-view-tabs .count-badge").first();
+      await expect(badge).toBeVisible();
+      for (const value of ["0", "9", "45", "128", "9999"]) {
+        const geometry = await badge.evaluate((el, value) => {
+          el.textContent = value;
+          const range = document.createRange(); range.selectNodeContents(el);
+          return { width: el.getBoundingClientRect().width, text: range.getBoundingClientRect().width, height: el.getBoundingClientRect().height, overflow: el.scrollWidth > el.clientWidth };
+        }, value);
+        expect(geometry.width - geometry.text).toBeGreaterThanOrEqual(9);
+        expect(geometry.height).toBe(20);
+        expect(geometry.overflow).toBe(false);
+      }
+      await page.locator(".notification-view-tabs").screenshot({ path: `/tmp/roleway-counts-${theme}.png`, animations: "disabled" });
       await page.evaluate(() => window.dispatchEvent(new CustomEvent("roleway:toast", { detail: { title: "Connection verified", description: "Your provider is ready to use.", duration: 30_000 } })));
       const toast = page.locator(".app-toast").filter({ hasText: "Your provider is ready to use" });
       await expect(toast).toBeVisible();
@@ -46,6 +77,29 @@ test("Mobile collection actions, feedback, avatar and Agent loading stay compact
       await expect(toast).toHaveCount(0);
     }
     await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto("/home");
+    const options = page.locator(".sidebar-search-project-more").first();
+    await options.click();
+    const menu = page.getByRole("menu", { name: /options$/ });
+    await expect(menu).toBeVisible();
+    expect(await menu.evaluate(el => {
+      const rect = el.getBoundingClientRect();
+      return [rect.left + 12, rect.right - 12].every(x => el.contains(document.elementFromPoint(x, rect.top + 20)));
+    })).toBe(true);
+    await page.screenshot({ path: "/tmp/roleway-workspace-menu.png", animations: "disabled" });
+    await menu.getByRole("button", { name: "Archive workspace" }).click();
+    await expect(page.getByRole("dialog")).toBeVisible();
+    await page.getByRole("dialog").getByRole("button", { name: "Cancel", exact: true }).click();
+    await page.keyboard.press("Escape");
+    for (const route of ["contacts", "documents", "interview", "notifications"]) {
+      await page.goto(`/${route}`);
+      const empty = page.locator(".empty-state").first();
+      await expect(empty).toBeVisible();
+      await expect(empty.locator(".empty-icon svg")).toHaveCSS("width", "46px");
+      await expect(empty.getByRole("heading")).toBeVisible();
+      await expect(empty.locator('[data-slot="empty-description"]')).toBeVisible();
+      await empty.screenshot({ path: `/tmp/roleway-empty-${route}.png`, animations: "disabled" });
+    }
     const avatar = page.locator(".sidebar > .account-area .avatar");
     await expect(avatar).toHaveCSS("width", "32px");
     await expect(avatar).toHaveCSS("padding", "7px");

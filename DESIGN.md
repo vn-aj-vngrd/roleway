@@ -290,3 +290,11 @@ Shared PillTabs keep a 30px visible capsule with 10px horizontal padding on ever
 Mobile action buttons share 32px minimum visible height, 13px text, and compact horizontal padding across public pages, authentication, settings, and Workspace controls. Invisible vertical hit extensions preserve tap space without enlarging the painted control. Multiline actions may grow with their labels; fields and navigation keep their existing sizing.
 
 Mobile navigation uses Home, Inbox, Opportunities, Agent, and More in that order, with matching plain icons. Search lives in More; the floating Agent launcher is reserved for desktop.
+
+### Overlay motion and capacity indicators
+
+Shared dialogs, menus, popovers, and tooltips reveal with a short opacity and subtle scale transition (200ms; tooltips 150ms), using the same ease-out curve. Positioning transforms remain independent. Exits are quicker; reduced-motion preferences disable overlay animation and layout transitions. Avoid bounce, large travel, blur, or staggered controls.
+
+Count badges use a 20px minimum height and width, 5px horizontal padding, and tabular numbers; their width grows with the count rather than squeezing multiple digits into a circle. Billing usage pairs an icon and label with a prominent total and compact limit. Finite capacity has a real progress meter; unlimited capacity uses an infinity label and a neutral segmented rule, never a fabricated percentage. Plan columns align names, descriptions, prices, capacities, and actions. Shared plan features appear once beneath the comparison.
+
+Empty collection and section states reuse `EmptyState`: a 46px quiet outline icon, 16px title, readable muted description, and an optional action only when it resolves the state. Compact sections retain the hierarchy with less vertical space. Keep inline field messages and dense menu no-results messages compact; do not turn them into page-sized empty states.

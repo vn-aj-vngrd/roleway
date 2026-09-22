@@ -10,6 +10,7 @@ import {
   Settings,
   Star,
 } from "lucide-react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import {
   useEffect,
@@ -53,6 +54,8 @@ export function SearchProjectSwitcher({
     Record<string, boolean>
   >({});
   const [isPending, startTransition] = useTransition();
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const rootRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(
@@ -73,6 +76,20 @@ export function SearchProjectSwitcher({
       setFavoriteOverrides({});
     }
   }, []);
+
+  useEffect(() => {
+    if (!menuProjectId) return;
+    const closeOnMove = (event: Event) => {
+      if (document.querySelector("dialog[open]")) return;
+      if (!(event.target instanceof Node) || !menuRef.current?.contains(event.target)) setMenuProjectId(null);
+    };
+    window.addEventListener("resize", closeOnMove);
+    document.addEventListener("scroll", closeOnMove, true);
+    return () => {
+      window.removeEventListener("resize", closeOnMove);
+      document.removeEventListener("scroll", closeOnMove, true);
+    };
+  }, [menuProjectId]);
 
   const isFavorite = (project: SearchProject) =>
     favoriteOverrides[project.id] ?? project.is_favorite;
@@ -96,7 +113,7 @@ export function SearchProjectSwitcher({
   useEffect(() => {
     if (!open && !menuProjectId) return;
     const close = (event: MouseEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) {
+      if (!rootRef.current?.contains(event.target as Node) && !menuRef.current?.contains(event.target as Node)) {
         setOpen(false);
         setMenuProjectId(null);
       }
@@ -215,16 +232,21 @@ export function SearchProjectSwitcher({
                       data-tooltip="Workspace options"
                       aria-haspopup="menu"
                       aria-expanded={menuProjectId === project.id}
-                      onClick={() =>
-                        setMenuProjectId((current) =>
-                          current === project.id ? null : project.id,
-                        )
-                      }
+                      onClick={(event) => {
+                        const rect = event.currentTarget.getBoundingClientRect();
+                        setMenuPosition({
+                          left: Math.max(8, Math.min(rect.left, window.innerWidth - 228)),
+                          top: Math.max(8, Math.min(rect.bottom + 6, window.innerHeight - 190)),
+                        });
+                        setMenuProjectId((current) => current === project.id ? null : project.id);
+                      }}
                     >
                       <MoreHorizontal aria-hidden="true" />
                     </button>
-                    {menuProjectId === project.id ? (
+                    {menuProjectId === project.id ? createPortal(
                       <div
+                        ref={menuRef}
+                        style={{ position: "fixed", ...menuPosition }}
                         className="sidebar-search-project-menu floating-panel"
                         role="menu"
                         aria-label={`${project.name} options`}
@@ -298,7 +320,7 @@ export function SearchProjectSwitcher({
                           hiddenFields={{ projectId: project.id }}
                           destructive
                         />
-                      </div>
+                      </div>, document.body
                     ) : null}
                   </div>
                   <div

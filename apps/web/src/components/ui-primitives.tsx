@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Inbox } from "lucide-react";
 import type { ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -25,14 +26,10 @@ export function CountBadge({
   tone = "neutral",
   className,
 }: CountBadgeProps) {
-  const displayValue =
-    typeof value === "number" || typeof value === "string" ? String(value) : "";
-  const wide = displayValue.length > 2;
   return (
     <Badge
       variant={tone === "accent" ? "default" : "secondary"}
       className={cn("count-badge", className)}
-      data-wide={wide || undefined}
       {...(label ? { "aria-label": label } : {})}
     >
       {value}
@@ -278,7 +275,7 @@ type EmptyStateProps = {
 export function EmptyState({
   title,
   description,
-  icon,
+  icon = <Inbox />,
   actions,
   className = "",
 }: EmptyStateProps) {

@@ -1,3 +1,4 @@
+import { CircleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatOpportunityTicket } from "@roleway/core";
 import {
@@ -342,6 +343,7 @@ export default async function PreparationPage(props: {
           {interviewsResult.error ? (
             <EmptyState
               className="interview-empty-state"
+              icon={<CircleAlert />}
               title="Interviews could not be loaded"
               description="Refresh this page to recover the schedule. Your saved interview records have not been changed."
             />

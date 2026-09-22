@@ -2187,10 +2187,10 @@ h3 {
   color: var(--primary);
 }
 .count-badge {
-  width: 18px;
-  min-width: 18px;
-  height: 18px;
-  padding: 0;
+  width: auto;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
   border: 1px solid var(--line);
   border-radius: 999px;
   color: var(--muted);
@@ -2198,18 +2198,10 @@ h3 {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex: 0 0 18px;
-  font:
-    400 11px/1 var(--font-geist),
-    sans-serif;
+  flex: 0 0 auto;
+  font: 500 11px/1.4 var(--font-geist), sans-serif;
   font-variant-numeric: tabular-nums;
   text-align: center;
-}
-.count-badge[data-wide="true"] {
-  width: auto;
-  min-width: 18px;
-  padding-inline: 5px;
-  flex-basis: auto;
 }
 .nav-badge {
   margin-left: auto;
@@ -15095,67 +15087,41 @@ html:has(.app-shell) {
   gap: 0;
 }
 .settings-shell-main .ai-provider-card .connection-row {
-  min-height: 68px;
-  padding: 12px 16px;
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  min-height: 88px;
+  padding: 16px;
   border: 0;
   border-bottom: 1px solid var(--line);
   border-radius: 0;
 }
-.settings-shell-main .ai-provider-card .connection-row:last-child {
-  border-bottom: 0;
-}
-.ai-provider-card .connection-heading,
-.ai-provider-card .connection-metadata,
-.ai-provider-card .connection-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.ai-provider-card .connection-heading {
-  flex-wrap: wrap;
-  gap: 6px 12px;
-}
-.ai-provider-card .connection-heading strong {
-  overflow-wrap: anywhere;
-}
-.ai-provider-card .connection-metadata {
-  flex-wrap: wrap;
-  gap: 2px 12px;
+.settings-shell-main .ai-provider-card .connection-row:last-child { border-bottom: 0; }
+.connection-provider-mark {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: var(--surface);
   color: var(--muted);
-  font-size: 13px;
-  line-height: 1.5;
+  display: grid;
+  place-items: center;
 }
-.ai-provider-card .connection-metadata .mono {
-  overflow-wrap: anywhere;
-  min-width: 0;
-}
-.ai-provider-card .connection-key {
-  white-space: nowrap;
-}
-.ai-provider-card .connection-actions {
-  flex-shrink: 0;
-  gap: 8px;
-}
-.ai-provider-card .status-label {
-  white-space: nowrap;
-  font-size: 12px;
-}
-.ai-provider-card .status-label.error {
-  color: var(--danger);
-}
-.ai-provider-card .status-label.error i {
-  background: currentColor;
-}
-.ai-provider-card .connection-copy {
-  gap: 6px;
-}
-.ai-provider-card .connection-copy small {
-  white-space: normal;
-  overflow-wrap: anywhere;
-}
-.ai-provider-card .connection-copy .connection-help {
-  color: var(--muted);
-}
+.connection-provider-mark svg { width: 18px; height: 18px; }
+.ai-provider-card .connection-copy { min-width: 0; gap: 5px; }
+.ai-provider-card .connection-heading { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.ai-provider-card .connection-heading strong { font-size: 14px; font-weight: 550; overflow-wrap: anywhere; }
+.ai-provider-card .connection-provider { color: var(--muted); font-size: 12px; }
+.ai-provider-card .connection-model { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
+.ai-provider-card .connection-key { display: flex; align-items: center; gap: 5px; color: var(--faint); font-size: 12px; line-height: 1.5; }
+.ai-provider-card .connection-key svg { width: 12px; height: 12px; }
+.ai-provider-card .connection-controls { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+.ai-provider-card .connection-actions { display: flex; align-items: center; gap: 4px; }
+.ai-provider-card .status-label { white-space: nowrap; font-size: 12px; }
+.ai-provider-card .status-label.error { color: var(--danger); }
+.ai-provider-card .status-label.error i { background: currentColor; }
+.ai-provider-card .connection-copy small { white-space: normal; overflow-wrap: anywhere; }
+.ai-provider-card .connection-copy .connection-help { color: var(--muted); }
 .agent-guidance-section form > label {
   display: block;
   margin-bottom: 8px;
@@ -15367,15 +15333,18 @@ html:has(.app-shell) {
     max-height: calc(100dvh - 84px);
   }
   .settings-shell-main .ai-provider-card .connection-row {
-    padding: 12px;
+    grid-template-columns: 32px minmax(0, 1fr);
+    align-items: start;
+    gap: 10px 12px;
+    padding: 14px;
+  }
+  .ai-provider-card .connection-provider-mark { width: 32px; height: 32px; }
+  .ai-provider-card .connection-controls {
+    grid-column: 2;
+    flex-direction: row;
     flex-wrap: wrap;
-  }
-  .settings-shell-main .ai-provider-card .connection-copy {
-    flex-basis: 100%;
-  }
-  .ai-provider-card .connection-actions {
-    width: 100%;
-    justify-content: flex-end;
+    align-items: center;
+    justify-content: space-between;
   }
   .agent-guidance-section form footer {
     align-items: flex-end;
@@ -16147,4 +16116,37 @@ html:has(.app-shell) {
   grid-template-columns: 32px minmax(0, 1fr) 16px;
   gap: 10px;
   padding: 8px;
+}
+
+/* Shared overlay entrances: quiet movement without changing positioning transforms. */
+@keyframes overlay-reveal {
+  from { opacity: 0; scale: .985; }
+  to { opacity: 1; scale: 1; }
+}
+@keyframes overlay-dismiss {
+  from { opacity: 1; scale: 1; }
+  to { opacity: 0; scale: .985; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  :is([data-slot="popover-content"], [data-slot="dropdown-menu-content"], [data-slot="dropdown-menu-sub-content"], [data-slot="select-content"], [data-slot="tooltip-content"], [data-slot="dialog-content"])[data-open],
+  .floating-panel,
+  dialog[open]:not(.create-modal),
+  .create-modal:not(.is-closing) .create-modal-panel {
+    animation: overlay-reveal 200ms cubic-bezier(.16, 1, .3, 1);
+  }
+  :is([data-slot="popover-content"], [data-slot="dropdown-menu-content"], [data-slot="dropdown-menu-sub-content"], [data-slot="select-content"], [data-slot="tooltip-content"], [data-slot="dialog-content"])[data-closed] {
+    animation: overlay-dismiss 120ms ease-in forwards;
+  }
+  [data-slot="tooltip-content"][data-open] { animation-duration: 150ms; }
+  dialog[open]:not(.create-modal)::backdrop { animation: create-modal-backdrop-in 200ms ease-out; }
+}
+@media (prefers-reduced-motion: reduce) {
+  :is([data-slot="popover-content"], [data-slot="dropdown-menu-content"], [data-slot="dropdown-menu-sub-content"], [data-slot="select-content"], [data-slot="tooltip-content"], [data-slot="dialog-content"], [data-slot="dialog-overlay"]),
+  .floating-panel,
+  dialog[open],
+  .create-modal-panel {
+    animation: none !important;
+    transition: none !important;
+  }
+  dialog[open]::backdrop { animation: none !important; }
 }

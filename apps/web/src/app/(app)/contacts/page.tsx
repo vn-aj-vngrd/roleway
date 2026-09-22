@@ -1,3 +1,4 @@
+import { CircleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatOpportunityTicket } from "@roleway/core";
 import {
@@ -358,6 +359,7 @@ export default async function ContactsPage(props: {
           {contactsResult.error ? (
             <EmptyState
               className="contacts-empty-state"
+              icon={<CircleAlert />}
               title="Contacts could not be loaded"
               description="Refresh this page to recover the directory. Your saved contacts have not been changed."
             />

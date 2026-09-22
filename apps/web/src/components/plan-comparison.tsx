@@ -33,13 +33,13 @@ export function PlanComparison({
                 <Badge variant="secondary">Coming soon</Badge>
               ) : null}
             </div>
-            <p>{plan.description}</p>
+            <p className="plan-description">{plan.description}</p>
             <div className="plan-price">
               {plan.slug === "free" ? (
                 "Free"
               ) : plan.availability === "coming_soon" ||
                 plan.price_minor === null ? (
-                "Pricing to be announced"
+                <span className="plan-price-pending">Pricing to be announced</span>
               ) : (
                 <>
                   {formatPrice(plan.price_minor, plan.currency)}{" "}
@@ -53,41 +53,42 @@ export function PlanComparison({
                 {plan.workspace_limit === 1 ? "Workspace" : "Workspaces"}
               </li>
               <li>{formatBytes(plan.storage_limit_bytes)} saved content</li>
-              <li>Jobs, Opportunities, documents, and interviews</li>
-              <li>Optional AI with your own provider</li>
             </ul>
-            {plan.availability === "coming_soon" ? (
-              <Button variant="outline" disabled>
-                Coming soon
-              </Button>
-            ) : !billing ? (
-              <Button
-                nativeButton={false}
-                render={
-                  <Link
-                    href={
-                      plan.slug === "free" ? "/signup" : "/settings/billing"
-                    }
-                  />
-                }
-              >
-                {plan.slug === "free" ? "Start with Free" : "View plan"}
-              </Button>
-            ) : plan.slug !== "free" ? (
-              <form action={requestPayment}>
-                <input type="hidden" name="plan" value={plan.slug} />
-                <SubmitButton
-                  disabled={!enabled || hasOpenRequest}
-                  pendingLabel="Creating…"
+            <div className="plan-option-action">
+              {plan.availability === "coming_soon" ? (
+                <Button variant="outline" disabled>
+                  Coming soon
+                </Button>
+              ) : !billing ? (
+                <Button
+                  nativeButton={false}
+                  render={
+                    <Link
+                      href={
+                        plan.slug === "free" ? "/signup" : "/settings/billing"
+                      }
+                    />
+                  }
                 >
-                  {enabled ? "Request this plan" : "Payments unavailable"}
-                </SubmitButton>
-              </form>
-            ) : (
-              <p className="muted">Always available when a paid term ends.</p>
-            )}
+                  {plan.slug === "free" ? "Start with Free" : "View plan"}
+                </Button>
+              ) : plan.slug !== "free" ? (
+                <form action={requestPayment}>
+                  <input type="hidden" name="plan" value={plan.slug} />
+                  <SubmitButton
+                    disabled={!enabled || hasOpenRequest}
+                    pendingLabel="Creating…"
+                  >
+                    {enabled ? "Request this plan" : "Payments unavailable"}
+                  </SubmitButton>
+                </form>
+              ) : (
+                <p className="muted">Always available when a paid term ends.</p>
+              )}
+            </div>
           </section>
         ))}
+      <p className="plan-shared-features">Included in every plan: Jobs, Opportunities, documents, interviews, and optional AI with your own provider.</p>
     </div>
   );
 }

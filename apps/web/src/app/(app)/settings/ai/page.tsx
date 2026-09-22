@@ -1,12 +1,12 @@
 // OpenRouter free models may queue for minutes; leave time for bounded calls and persistence.
 export const maxDuration = 300;
 
-import { PlugZap, Trash2 } from "lucide-react";
+import { Cpu, KeyRound, PlugZap, Trash2 } from "lucide-react";
 import { AiConnectionDialog } from "@/components/ai-connection-dialog";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
 import { SubmitButton } from "@/components/submit-button";
 import { Textarea } from "@/components/ui/textarea";
-import { PageHeader } from "@/components/ui-primitives";
+import { EmptyState, PageHeader } from "@/components/ui-primitives";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireUser } from "@/lib/supabase/server";
 import {
@@ -97,27 +97,14 @@ export default async function AiSettingsPage(props: {
               <div className="connection-list">
                 {connections.map((connection) => (
                   <article className="connection-row" key={`${connection.id}:${connection.updated_at}`}>
+                    <span className="connection-provider-mark" aria-hidden="true"><Cpu /></span>
                     <div className="connection-copy">
                       <div className="connection-heading">
                         <strong>{connection.label}</strong>
-                        <span
-                          className={`status-label ${connection.status === "connected" ? "success" : connection.status === "error" ? "error" : "neutral"}`}
-                        >
-                          <i aria-hidden="true" />
-                          {connection.status === "connected"
-                            ? "Connected"
-                            : connection.status === "error"
-                              ? "Connection failed"
-                              : "Not tested"}
-                        </span>
+                        <span className="connection-provider">{providerLabel(connection.provider)}</span>
                       </div>
-                      <div className="connection-metadata">
-                        <span>{providerLabel(connection.provider)}</span>
-                        <span className="mono">{connection.model}</span>
-                        <span className="connection-key">
-                          Key {connection.key_hint}
-                        </span>
-                      </div>
+                      <p className="connection-model">{connection.model}</p>
+                      <span className="connection-key"><KeyRound aria-hidden="true" /><span className="sr-only">API key </span>{connection.key_hint}</span>
                       {connection.last_error ? (
                         <small>{connection.last_error}</small>
                       ) : connection.status !== "connected" ? (
@@ -126,46 +113,55 @@ export default async function AiSettingsPage(props: {
                         </small>
                       ) : null}
                     </div>
-                    <div className="connection-actions">
-                      <form action={testAiConnection}>
-                        <input
-                          type="hidden"
-                          name="connectionId"
-                          value={connection.id}
+                    <div className="connection-controls">
+                      <span
+                        className={`status-label ${connection.status === "connected" ? "success" : connection.status === "error" ? "error" : "neutral"}`}
+                      >
+                        <i aria-hidden="true" />
+                        {connection.status === "connected"
+                          ? "Connected"
+                          : connection.status === "error"
+                            ? "Connection failed"
+                            : "Not tested"}
+                      </span>
+                      <div className="connection-actions">
+                        <form action={testAiConnection}>
+                          <input
+                            type="hidden"
+                            name="connectionId"
+                            value={connection.id}
+                          />
+                          <SubmitButton
+                            variant="ghost"
+                            size="icon-sm"
+                            ariaLabel={`Test ${connection.label}`}
+                            tooltip="Test connection"
+                            pendingLabel="Testing connection…"
+                          >
+                            <PlugZap aria-hidden="true" />
+                          </SubmitButton>
+                        </form>
+                        <AiConnectionDialog connection={{ id: connection.id, provider: connection.provider, label: connection.label, model: connection.model, baseUrl: connection.base_url ?? "" }} />
+                        <ConfirmationDialog
+                          title={`Delete ${connection.label}?`}
+                          description="This removes the saved provider configuration and encrypted API key from Roleway."
+                          action={deleteAiConnection}
+                          confirmLabel="Delete connection"
+                          pendingLabel="Deleting…"
+                          trigger={<Trash2 aria-hidden="true" />}
+                          triggerClassName="icon-button"
+                          triggerAriaLabel={`Delete ${connection.label}`}
+                          triggerTooltip="Delete connection"
+                          hiddenFields={{ connectionId: connection.id }}
+                          destructive
                         />
-                        <SubmitButton
-                          variant="ghost"
-                          size="icon-sm"
-                          ariaLabel={`Test ${connection.label}`}
-                          tooltip="Test connection"
-                          pendingLabel="Testing connection…"
-                        >
-                          <PlugZap aria-hidden="true" />
-                        </SubmitButton>
-                      </form>
-                      <AiConnectionDialog connection={{ id: connection.id, provider: connection.provider, label: connection.label, model: connection.model, baseUrl: connection.base_url ?? "" }} />
-                      <ConfirmationDialog
-                        title={`Delete ${connection.label}?`}
-                        description="This removes the saved provider configuration and encrypted API key from Roleway."
-                        action={deleteAiConnection}
-                        confirmLabel="Delete connection"
-                        pendingLabel="Deleting…"
-                        trigger={<Trash2 aria-hidden="true" />}
-                        triggerClassName="icon-button"
-                        triggerAriaLabel={`Delete ${connection.label}`}
-                        triggerTooltip="Delete connection"
-                        hiddenFields={{ connectionId: connection.id }}
-                        destructive
-                      />
+                      </div>
                     </div>
                   </article>
                 ))}
               </div>
             ) : (
-              <div className="empty-inline">
-                No provider connected yet. Choose Add connection to get started.
-                Roleway works without AI.
-              </div>
+              <EmptyState className="compact" icon={<Cpu />} title="No provider connected" description="Add a connection to use Agent. Roleway works without AI." />
             )}
           </div>
 

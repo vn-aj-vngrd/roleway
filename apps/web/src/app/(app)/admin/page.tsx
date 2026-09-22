@@ -1,3 +1,4 @@
+import { EmptyState } from "@/components/ui-primitives";
 import { AdminPlans, AdminBilling, AdminHelp } from "./plan-panels";
 import {
   Activity,
@@ -707,12 +708,7 @@ function AdminAudit({ logs }: { logs: AuditLog[] }) {
           ))}
         </div>
       ) : (
-        <div className="empty-state">
-          <h2>No admin actions recorded</h2>
-          <p>
-            Role, registration, and account status changes will appear here.
-          </p>
-        </div>
+        <EmptyState title="No admin actions recorded" description="Role, registration, and account status changes will appear here." />
       )}
     </section>
   );

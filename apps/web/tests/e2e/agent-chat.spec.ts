@@ -293,6 +293,15 @@ test("Agent formats Markdown and keeps composer controls usable across sizes and
     await expect(input).toBeEditable();
     await page.goto("/settings/ai");
     await expect(page.getByText("Changes stay in your control", { exact: true })).toHaveCount(0);
+    for (const theme of ["light", "dark"]) {
+      await page.evaluate(theme => { document.documentElement.dataset.theme = theme; }, theme);
+      for (const width of [1440, 390]) {
+        await page.setViewportSize({ width, height: 900 });
+        await expect(page.locator(".connection-row")).toBeVisible();
+        expect(await page.locator(".connection-row").evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
+        await page.screenshot({ path: `/tmp/roleway-provider-${theme}-${width}.png`, animations: "disabled" });
+      }
+    }
     const testButton = page.getByRole("button", { name: "Test Chat fixture", exact: true });
     await expect(testButton).toHaveText("");
     await testButton.hover();
