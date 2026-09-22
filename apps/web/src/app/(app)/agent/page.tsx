@@ -6,7 +6,7 @@ import { formatConversationAge } from "@/features/agent/message-time";
 import { AgentLiveProvider, AgentStreamForm, AgentTranscript } from "@/features/agent/live-chat";
 import { RunTimeline } from "@/features/agent/run-timeline";
 import { AgentMarkdown } from "@/features/agent/markdown";
-import { AgentMessageInput, AgentNotice, MessageActions, SavedResultFocus } from "@/features/agent/chat-controls";
+import { AgentMessageInput, AgentHistoryMenu, AgentNotice, MessageActions, SavedResultFocus } from "@/features/agent/chat-controls";
 import { formatOpportunityTicket } from "@roleway/core";
 import { Archive, ArrowUpRight, Check, ChevronDown, Circle, History, KeyRound, Navigation, Plus, Route, X } from "lucide-react";
 import Link from "next/link";
@@ -80,7 +80,7 @@ export default async function AgentPage(props: { searchParams: Promise<AgentQuer
   return (
     <AgentLiveProvider conversationId={activeConversation?.id ?? ""} initialPending={Boolean(pendingRun)} persistedMessageId={messages.at(-1)?.id ?? "empty"}><div className={`agent-native-page ${activeConversation ? "has-conversation" : "is-empty"}`}>
       <header className="agent-native-routebar">
-        <details className="agent-history-menu">
+        <AgentHistoryMenu>
           <summary aria-label="Open Agent conversation history"><History aria-hidden="true" /><span>{activeConversation?.title ?? "New conversation"}</span><ChevronDown aria-hidden="true" /></summary>
           <div className="agent-history-popover floating-panel">
             <div className="agent-history-popover-head"><strong>Conversations</strong><Link href="/agent"><Plus aria-hidden="true" />New</Link></div>
@@ -96,7 +96,7 @@ export default async function AgentPage(props: { searchParams: Promise<AgentQuer
               }) : <p className="agent-history-empty">No conversations yet.</p>}
             </div>
           </div>
-        </details>
+        </AgentHistoryMenu>
         <span className="agent-native-scope"><Route aria-hidden="true" />{scopeLabel}{contextPage !== "agent" ? ` · ${agentContextPages[contextPage]}` : ""}</span>
         <Link className="agent-new-chat" href="/agent"><Plus aria-hidden="true" /><span>New conversation</span></Link>
       </header>

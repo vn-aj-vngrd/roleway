@@ -476,3 +476,33 @@ export function AgentNotice({ children, variant = "neutral" }: { children: React
     }}><X aria-hidden="true" /></Button>
   </div>;
 }
+
+/** A transient history menu; run timelines remain ordinary persistent disclosures. */
+export function AgentHistoryMenu({ children }: { children: ReactNode }) {
+  const root = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    const outside = (event: PointerEvent) => {
+      if (root.current?.open && !root.current.contains(event.target as Node)) root.current.open = false;
+    };
+    const escape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || !root.current?.open || event.defaultPrevented) return;
+      event.preventDefault();
+      root.current.open = false;
+      root.current.querySelector("summary")?.focus({ preventScroll: true });
+    };
+    document.addEventListener("pointerdown", outside);
+    document.addEventListener("keydown", escape);
+    return () => {
+      document.removeEventListener("pointerdown", outside);
+      document.removeEventListener("keydown", escape);
+    };
+  }, []);
+  return <details ref={root} className="agent-history-menu" onBlur={event => {
+    if (event.relatedTarget && !event.currentTarget.contains(event.relatedTarget)) event.currentTarget.open = false;
+  }} onClick={event => {
+    if ((event.target as Element).closest("a[href]")) {
+      event.currentTarget.open = false;
+      event.currentTarget.querySelector("summary")?.focus({ preventScroll: true });
+    }
+  }}>{children}</details>;
+}

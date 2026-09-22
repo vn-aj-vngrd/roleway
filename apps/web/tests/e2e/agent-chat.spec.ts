@@ -132,7 +132,19 @@ test("Agent formats Markdown and keeps composer controls usable across sizes and
         expect((await menu.locator(".agent-history-popover-head").boundingBox())!.y).toBe(head!.y);
         await expect(menu.locator("time").last()).toHaveText("2 weeks ago");
         await page.screenshot({ path: `/tmp/roleway-history-${theme}-${width}.png` });
+        await input.click();
+        await expect(menu).toBeHidden();
         await history.click();
+        await menu.getByRole("link").first().focus();
+        await page.keyboard.press("Escape");
+        await expect(menu).toBeHidden();
+        await expect(history).toBeFocused();
+        await history.click();
+        await menu.locator('a[aria-current="page"]').click();
+        await expect(menu).toBeHidden();
+        await history.click();
+        await input.focus();
+        await expect(menu).toBeHidden();
         const bubble = await page
           .locator(".agent-message.user .agent-message-content")
           .boundingBox();

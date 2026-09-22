@@ -94,7 +94,7 @@ export function AgentPopoverLauncher({ pathname, projectId, projectName, breadcr
   useEffect(() => {
     if (!open) return;
     requestAnimationFrame(() => panelRef.current?.querySelector<HTMLTextAreaElement>("textarea:not(:disabled)")?.focus());
-    const close = (event: MouseEvent) => {
+    const close = (event: PointerEvent) => {
       const target = event.target as Node;
       if (!panelRef.current?.contains(target) && !launcherRef.current?.contains(target)) setOpen(false);
     };
@@ -103,10 +103,10 @@ export function AgentPopoverLauncher({ pathname, projectId, projectName, breadcr
       setOpen(false);
       requestAnimationFrame(() => launcherRef.current?.focus());
     };
-    document.addEventListener("mousedown", close);
+    document.addEventListener("pointerdown", close);
     window.addEventListener("keydown", escape);
     return () => {
-      document.removeEventListener("mousedown", close);
+      document.removeEventListener("pointerdown", close);
       window.removeEventListener("keydown", escape);
     };
   }, [open]);
