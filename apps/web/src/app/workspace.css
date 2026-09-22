@@ -4077,7 +4077,7 @@
 [data-sonner-toaster] .app-toast[data-sonner-toast][data-styled="true"] {
   min-height: 52px;
   padding: 12px;
-  gap: 10px;
+  gap: 8px;
   border: 1px solid var(--line);
   border-radius: 12px;
   color: var(--ink);
@@ -4085,9 +4085,9 @@
   box-shadow: var(--floating-shadow);
   font-family: inherit;
 }
-[data-sonner-toaster] .app-toast[data-sonner-toast] [data-icon] { order: 1; color: var(--primary); }
+[data-sonner-toaster] .app-toast[data-sonner-toast] [data-icon] { order: 1; width: 16px; height: 16px; margin: 0; justify-content: center; color: var(--primary); }
 [data-sonner-toaster] .app-toast[data-sonner-toast].toast-removed [data-icon] { color: var(--muted); }
-[data-sonner-toaster] .app-toast[data-sonner-toast] [data-icon] svg { width: 17px; height: 17px; stroke-width: var(--icon-stroke); }
+[data-sonner-toaster] .app-toast[data-sonner-toast] [data-icon] svg { width: 16px; height: 16px; margin: 0; stroke-width: var(--icon-stroke); }
 [data-sonner-toaster] .app-toast[data-sonner-toast] [data-content] { order: 2; flex: 1; min-width: 0; gap: 3px; }
 [data-sonner-toaster] .app-toast[data-sonner-toast] [data-title] { font-size: 13px; font-weight: 550; line-height: 1.5; overflow-wrap: anywhere; }
 [data-sonner-toaster] .app-toast[data-sonner-toast] [data-description] { color: var(--muted); font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
