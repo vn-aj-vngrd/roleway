@@ -1,6 +1,6 @@
 # Roleway Agent: Create and Explore
 
-This is the implementation contract and audit for the current Agent version. Read it when changing chat, context gathering, provider instructions, capability discovery, or approvals. Domain language lives in [CONTEXT.md](../CONTEXT.md); ownership rules live in [PLANNING.md](PLANNING.md).
+This is the implementation contract and audit for the current Agent version. For the concise technical flow, packages, and diagrams, see [How Roleway Agent works](HOW_ROLEWAY_AGENT_WORKS.md). Read this contract when changing chat, context gathering, provider instructions, capability discovery, or approvals. Domain language lives in [CONTEXT.md](../CONTEXT.md); ownership rules live in [PLANNING.md](PLANNING.md).
 
 ## User journey
 
@@ -66,7 +66,7 @@ These are not presented as working controls:
 
 - Creation of Jobs, Opportunities, contacts, interviews, documents and applications. Each needs its own validated proposal and approval transaction that preserves the existing domain side effects and quota checks before being advertised.
 - Exhaustive Explore/search, document-body retrieval, full career evidence, notes and activity-history reads. Add bounded on-demand retrieval before promising complete historical analysis.
-- Streaming, cancellation, resumable runs, dedicated retry, searchable/paginated history, attachments, reusable prompt templates and external integrations.
+- In-progress stream resumption, a dedicated retry control, searchable/paginated history, attachments, reusable prompt templates and external integrations.
 - Multi-turn creation is model-guided, not a persisted deterministic questionnaire. Conversations longer than the recent-message window can require clarification again.
 - The hourly run limit is a count-before-insert check, not an atomic reservation; simultaneous requests can race. Stronger concurrency guarantees require a database-backed reservation.
 
