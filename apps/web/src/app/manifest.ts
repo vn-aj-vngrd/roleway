@@ -6,7 +6,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "Roleway — Job Search Tracker",
     short_name: "Roleway",
     description: "Track jobs, applications, tasks, interviews, and follow-ups in one place.",
-    start_url: "/today",
+    start_url: "/home",
     scope: "/",
     display: "standalone",
     background_color: "#ffffff",
@@ -19,9 +19,9 @@ export default function manifest(): MetadataRoute.Manifest {
       { src: "/icons/roleway-maskable-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
     ],
     shortcuts: [
-      { name: "Today", short_name: "Today", description: "See what needs your attention", url: "/today" },
+      { name: "Home", short_name: "Home", description: "See your Workspace context and what needs attention", url: "/home" },
       { name: "Pipeline", short_name: "Pipeline", description: "Open your application pipeline", url: "/opportunities" },
-      { name: "Add a job", short_name: "Add job", description: "Save a job to review", url: "/jobs?create=true" },
+      { name: "Add a job", short_name: "Add job", description: "Save a job to review", url: "/inbox?create=true" },
     ],
   };
 }

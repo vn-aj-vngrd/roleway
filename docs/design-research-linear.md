@@ -38,3 +38,30 @@ A second pass checked the implemented landing page against Linear’s current de
 - **Touch and safe areas are first-class.** The public page uses `viewport-fit=cover`, safe-area padding, 44px controls, inert decorative previews, and layouts verified from 320px through tablet and phone landscape.
 
 Sources: [Linear, “How we redesigned the Linear UI”](https://linear.app/now/how-we-redesigned-the-linear-ui), [Linear, “A calmer interface for a product in motion”](https://linear.app/now/behind-the-latest-design-refresh), [Apple Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines/), and [Vercel Web Interface Guidelines](https://github.com/vercel-labs/web-interface-guidelines).
+
+## Creation flow audit — 25 August 2026
+
+A focused crawl checked Linear’s current design notes, its official issue-creation documentation, and the supplied creation-dialog specimen.
+
+- **The composer—not a conventional form—is the pattern.** Linear’s official issue-creation screenshot leads with a borderless title and description, keeps metadata in compact property controls, and isolates creation actions in one footer. Roleway now uses the same information hierarchy for jobs, documents, and interviews.
+- **Creation is a protected focus task.** New records open over the current workspace instead of replacing it with a standalone page. The underlying context remains visible but recessive.
+- **Context precedes content.** A compact workspace/new-record trail anchors the modal without adding a second page-style heading.
+- **Properties are secondary.** Location, compensation, arrangement, URLs, type, Opportunity, date, and duration use dense property controls below the content instead of stacked labeled form sections.
+- **Actions remain predictable.** Cancel and the single forward action occupy a stable footer; Escape, the close control, and the backdrop all provide a way out.
+- **The Opportunity reads as an issue.** The identifier and title lead; the description owns the main column; stage and role metadata live in the right properties rail; next action remains visible beneath them.
+- **Sidebar creation stays immediate.** Search and create are compact icon actions beside the workspace identity, while `C` opens the composer from anywhere.
+
+This follows Linear’s stated principles that supporting navigation should recede, rich density should remain readable, and structure should be felt rather than outlined everywhere. Sources: [Linear, “Creating issues”](https://linear.app/docs/creating-issues), [Linear, “A calmer interface for a product in motion”](https://linear.app/now/behind-the-latest-design-refresh), and [Linear, “How we redesigned the Linear UI”](https://linear.app/now/how-we-redesigned-the-linear-ui).
+
+## Full-system interaction audit — 26 August 2026
+
+A final primary-source pass reviewed Linear’s current filter, custom-view, display-option, board, and Peek documentation against Roleway’s implemented workflows.
+
+- **The default list should remain the operational home.** Linear’s views combine grouping, ordering, filtering, and visible properties without forcing every field into a badge. Roleway’s Opportunity index now leads with grouped issue rows, plain-text next steps and dates, and a compact board alternate.
+- **Filters are useful when the result stays readable.** Priority and due-date filters compose beside the lifecycle tabs, remain visible as removable chips, and do not open a full-screen filter builder.
+- **Saved views are personal navigation, not database ceremony.** Users can save, rename, apply, and remove Opportunity views on the current device. The saved state contains only filter and layout preferences—never record content.
+- **Triage should preserve context while increasing speed.** The Inbox now keeps a keyboard-navigable review queue beside one listing dossier on desktop, then turns that dossier into a full-screen mobile layer. Track, keep, and dismiss actions remain visible and explicit.
+- **Secondary mobile navigation belongs behind one intentional disclosure.** Home, Opportunities, and Inbox stay in the bottom bar. Interviews, Contacts, Documents, Assist, Insights, Notifications, and Settings remain one tap away in an accessible More sheet.
+- **People need a Workspace-level operating surface.** Contacts now have a compact, searchable list with relationship, Opportunity, and follow-up context while remaining subordinate to the active Workspace.
+
+Primary sources: [Linear filters](https://linear.app/docs/filters), [custom views](https://linear.app/docs/custom-views), [display options](https://linear.app/docs/display-options), [board layout](https://linear.app/docs/board-layout), and [Peek](https://linear.app/docs/peek).

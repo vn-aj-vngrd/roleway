@@ -4,10 +4,12 @@ import { requireUser } from "@/lib/supabase/server";
 export async function GET() {
   const auth = await requireUser();
   if (!auth) return NextResponse.json({ error: "Authentication required." }, { status: 401 });
+  const { data: withinQuota, error: quotaError } = await auth.supabase.rpc("consume_roleway_api_quota", { input_bucket: "export" });
+  if (quotaError || withinQuota !== true) return NextResponse.json({ error: "Data exports are limited to three per hour." }, { status: 429, headers: { "Cache-Control": "no-store", "Retry-After": "3600" } });
 
-  const tables = ["profiles", "career_preferences", "jobs", "opportunities", "tasks", "opportunity_notes", "opportunity_events", "interviews", "documents", "notifications", "ai_runs"] as const;
+  const tables = ["profiles", "career_preferences", "search_projects", "jobs", "opportunities", "application_records", "tasks", "opportunity_notes", "opportunity_events", "contacts", "interviews", "documents", "document_versions", "notifications", "ai_runs", "agent_conversations", "agent_messages", "agent_run_steps", "agent_proposals", "agent_preferences", "account_plans", "account_usage", "payment_requests"] as const;
   const results = await Promise.all(tables.map(async (table) => {
-    const { data, error } = await auth.supabase.from(table).select("*");
+    const { data, error } = await auth.supabase.from(table).select("*").eq("user_id", auth.user.id);
     return [table, { data: data ?? [], error: error?.message }] as const;
   }));
   const failed = results.find(([, result]) => result.error);
@@ -15,7 +17,7 @@ export async function GET() {
 
   const payload = {
     exportedAt: new Date().toISOString(),
-    formatVersion: 1,
+    formatVersion: 2,
     user: { id: auth.user.id, email: auth.user.email },
     data: Object.fromEntries(results.map(([table, result]) => [table, result.data])),
   };

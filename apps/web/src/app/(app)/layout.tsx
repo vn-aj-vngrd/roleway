@@ -1,29 +1,48 @@
+import "./agent/agent-chat.css";
+import { CapacityNotice } from "@/components/capacity-notice";
+import type { PlanSummary } from "@/features/billing/types";
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
-import { requireUser } from "@/lib/supabase/server";
+import { requireSearchContext } from "@/features/projects/context";
+import { createAdminClient } from "@/lib/supabase/admin";
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false, nocache: true },
+};
 
 export default async function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
-  const auth = await requireUser();
-  if (!auth) redirect("/login");
+  const context = await requireSearchContext();
+  if (!context) redirect("/login");
+  if (!context.profile?.onboarding_completed) redirect("/onboarding");
+  if (!context.project) redirect("/onboarding");
 
-  const [profileResult, notificationsResult] = await Promise.all([
-    auth.supabase.from("profiles").select("full_name, onboarding_completed, tour_completed").eq("user_id", auth.user.id).maybeSingle(),
-    auth.supabase.from("notifications").select("id", { count: "exact", head: true }).eq("user_id", auth.user.id).is("read_at", null),
+  const [notificationsResult, adminResult, agentConnectionResult, planResult] = await Promise.all([
+    context.supabase
+      .from("notifications")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", context.user.id)
+      .is("read_at", null),
+    context.supabase.rpc("is_roleway_admin"),
+    createAdminClient().from("ai_connections").select("id, label").eq("user_id", context.user.id).eq("status", "connected").order("updated_at", { ascending: false }).limit(1).maybeSingle(),
+    context.supabase.rpc("account_plan_summary"),
   ]);
-  const profile = profileResult.data;
-
-  if (!profile?.onboarding_completed) redirect("/onboarding");
 
   return (
     <AppShell
       user={{
-        name: profile.full_name || auth.user.email?.split("@")[0] || "Roleway user",
-        email: auth.user.email || "",
+        name: context.profile.full_name || context.user.email?.split("@")[0] || "Roleway user",
+        email: context.user.email || "",
+        plan: (planResult.data as PlanSummary | null)?.plan.name ?? "Plan unavailable",
       }}
-      showTour={!profile.tour_completed}
+      projects={context.projects}
+      activeProject={context.project}
+      showTour={!context.profile.tour_completed}
       notificationCount={notificationsResult.count ?? 0}
-      isAdmin={auth.user.email?.toLowerCase() === "vanajvanguardia@gmail.com"}
+      isAdmin={adminResult.data === true}
+      agentConnection={agentConnectionResult.data}
     >
+      {planResult.data ? <CapacityNotice summary={planResult.data as PlanSummary}/> : null}
       {children}
     </AppShell>
   );

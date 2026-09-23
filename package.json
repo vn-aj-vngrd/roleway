@@ -8,12 +8,23 @@
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
     "test": "turbo test",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "check:full": "pnpm typecheck && pnpm test && pnpm test:workflow && pnpm lint && pnpm build",
+    "setup:hooks": "git config core.hooksPath .githooks",
+    "test:workflow": "node --test scripts/workflow.test.mjs"
   },
   "devDependencies": {
-    "next": "^15.3.3",
+    "conventional-changelog-conventionalcommits": "9.3.1",
+    "next": "^16.3.3",
     "prettier": "^3.5.3",
+    "semantic-release": "25.0.9",
     "turbo": "^2.5.4",
     "typescript": "^5.8.3"
+  },
+  "pnpm": {
+    "overrides": {
+      "@types/react": "19.2.18",
+      "@types/react-dom": "19.2.5"
+    }
   }
 }

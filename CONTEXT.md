@@ -4,16 +4,36 @@ Roleway models a person’s job search as a deliberate workflow from discovering
 
 ## Language
 
+**Account**:
+A person’s private Roleway identity, global Career Profile, Agent, Insights, and Notification Center. An Account can own several Workspaces.
+_Avoid_: Workspace
+
+**Workspace**:
+One focused job search with its own icon or emoji, color, objective, preferences, Opportunity ticket key, Jobs, Opportunities, documents, people, goals, and attributed notification events. Workspaces isolate operational records so different role targets and strategies never mix; account-wide surfaces may aggregate those records. The database retains the legacy `search_projects` table and `project_id` keys; these are storage names, not product language.
+_Avoid_: Account, Job, Opportunity, pipeline
+
+**Home**:
+The Workspace-scoped return surface that combines the Workspace’s objective and strategy context with its ordered queue of due tasks, Next Actions, follow-ups, interviews, and Jobs awaiting review. Home is a projection of existing records, not a separate record type.
+_Avoid_: Today, dashboard
+
 **Job**:
-Objective listing data captured from a source. A Job can remain in discovery without becoming user-managed work.
+Objective listing data captured from a source inside one Workspace. A Job can remain in discovery without becoming user-managed work.
 _Avoid_: Application, Opportunity
 
 **Opportunity**:
-A user’s tracked relationship with one Job, including strategy, work, history, and outcome.
+A person’s tracked relationship with one Job inside a Workspace, including evaluation, application work, people, interviews, documents, next action, history, and outcome.
 _Avoid_: Lead, saved job, card
 
+**Application Record**:
+The durable record of what a person submitted for an Opportunity, when and where they submitted it, and which documents or answers they used.
+_Avoid_: Opportunity, Job
+
+**Contact**:
+A person relevant to a Workspace or Opportunity, such as a recruiter, hiring manager, interviewer, referral, or networking contact.
+_Avoid_: User, account
+
 **Stage**:
-The workflow position of an Opportunity: Inbox, Interested, Preparing, Applied, Interview, Offer, or Closed.
+The workflow position of an Opportunity: Interested, Preparing, Applied, Interview, Offer, or Closed. Inbox belongs only to untracked Jobs.
 _Avoid_: Column, status
 
 **Next Action**:
@@ -47,6 +67,14 @@ _Avoid_: Match score
 **Application Plan**:
 A reviewable set of recommendations, risks, source material, and proposed tasks for one Opportunity.
 _Avoid_: Auto-apply
+
+**Roleway Agent**:
+The account-wide conversational assistant. It can answer questions from permitted context across the Account’s Workspaces, prepare drafts, and propose internal changes. Every proposed mutation identifies its destination Workspace and requires explicit approval; external actions remain unavailable.
+_Avoid_: Chatbot, autopilot, recruiter, auto-apply
+
+**Agent Conversation**:
+A durable account-owned thread that can use all permitted Workspace context and may focus on one Opportunity. Starting a new conversation creates a clean context; a focused mutation never crosses the target record’s Workspace.
+_Avoid_: Prompt history, Workspace chat
 
 **Agent Run**:
 A durable, inspectable execution containing context, model, steps, tool calls, outputs, errors, and approvals.

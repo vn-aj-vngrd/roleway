@@ -1,9 +1,19 @@
 import { GeistMono } from "geist/font/mono";
-import { GeistSans } from "geist/font/sans";
 import type { Metadata, Viewport } from "next";
+import localFont from "next/font/local";
 import { PwaRegister } from "@/components/pwa-register";
 import { SmoothScroll } from "@/components/smooth-scroll";
 import "./globals.css";
+import "./workspace.css";
+import { AttributeTooltips } from "@/components/attribute-tooltips";
+import { TooltipProvider } from "@/components/ui/tooltip";
+
+const Inter = localFont({
+  src: "./fonts/inter-variable.ttf",
+  variable: "--font-inter",
+  display: "swap",
+  weight: "100 900",
+});
 
 export const viewport: Viewport = {
   colorScheme: "light dark",
@@ -15,9 +25,14 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://roleway.vanajvanguardia.tech"),
   applicationName: "Roleway",
   title: { default: "Roleway", template: "%s · Roleway" },
-  description: "Track jobs, applications, tasks, interviews, and follow-ups in one place.",
+  description: "Run a focused job search with Jobs, Opportunities, applications, interviews, and every Next Action in one place.",
+  creator: "Roleway",
+  publisher: "Roleway",
+  category: "productivity",
+  keywords: ["job search tracker", "application tracker", "interview preparation", "job search workspace", "opportunity tracker"],
   manifest: "/manifest.webmanifest",
   icons: {
     icon: [
@@ -36,7 +51,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`${Inter.variable} ${GeistMono.variable}`} suppressHydrationWarning>
       <head>
         <script
           id="roleway-theme-init"
@@ -48,15 +63,15 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           id="roleway-design-contract"
           type="application/json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify({
-            thesis: "Roleway tells one continuous product story from scattered job-search fragments to a controlled opportunity workflow; it refuses feature-card marketing and empty productivity claims.",
+            thesis: "Roleway separates distinct workspaces, then turns each serious opportunity into a controlled workflow; it refuses one giant global tracker, feature-card marketing, and empty productivity claims.",
             ownWorld: "Geist typography, pure neutral canvases, Waypoint Blue as the only saturated voice, precise hairlines, full-fidelity HTML product scenes, and one tactile next-action slip.",
-            story: "The visitor recognizes the fragmentation problem, sees the review-to-decision loop, explores the complete workspace and optional Assist, then starts a search.",
-            firstViewport: "A 72px navigation leads into an 88px product thesis, one-line subtitle, and paired actions; below, one edge-to-edge opportunity workspace fills a softly lit product stage while a blue next-action slip crosses its lower edge.",
+            story: "The visitor recognizes the fragmentation problem, understands separate Workspaces, sees the review-to-decision loop and complete Opportunity context, then opens a workspace.",
+            firstViewport: "A 72px navigation leads into the thesis ‘One workspace for every focused job search,’ a concise subtitle, and paired actions; below, one edge-to-edge Workspace-scoped Opportunities view fills the stage while a blue next-action slip crosses its lower edge.",
             form: "Linear-paced product narrative inside the selected architectural working-pin-up world; seed 165e5825, explicitly pinned by the user to linear.app as the quality and pacing reference.",
             finish: "unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance",
           }) }}
         />
-        <PwaRegister /><SmoothScroll><a className="skip-link" href="#main-content">Skip to main content</a>{children}</SmoothScroll>
+        <TooltipProvider><AttributeTooltips /><PwaRegister /><SmoothScroll><a className="skip-link" href="#main-content">Skip to main content</a>{children}</SmoothScroll></TooltipProvider>
       </body>
     </html>
   );

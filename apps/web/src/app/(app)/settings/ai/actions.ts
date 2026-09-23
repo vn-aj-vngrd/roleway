@@ -13,18 +13,31 @@ const connectionIdSchema = z.string().uuid();
 const defaultModels: Record<AiProviderKind, string> = { openai: "gpt-4.1-mini", anthropic: "claude-sonnet-4-5", gemini: "gemini-2.5-flash", openrouter: "openai/gpt-4.1-mini", "openai-compatible": "" };
 
 export async function saveAiConnection(formData: FormData) {
-  const parsed = z.object({ provider: providerSchema, label: z.string().trim().min(1).max(80), model: z.string().trim().max(160), baseUrl: z.string().trim().max(500), apiKey: z.string().trim().min(8).max(500) }).safeParse(Object.fromEntries(formData));
+  const parsed = z.object({ connectionId: z.union([z.literal(""), connectionIdSchema]).default(""), provider: providerSchema, label: z.string().trim().min(1).max(80), model: z.string().trim().max(160), baseUrl: z.string().trim().max(500), apiKey: z.union([z.literal(""), z.string().trim().min(8).max(500)]) }).safeParse(Object.fromEntries(formData));
   if (!parsed.success) redirect(`/settings/ai?error=${encodeURIComponent(parsed.error.issues[0]?.message || "Check the connection details.")}`);
   const auth = await requireUser(); if (!auth) redirect("/login");
   const model = parsed.data.model || defaultModels[parsed.data.provider];
   if (!model) redirect("/settings/ai?error=Enter%20a%20model%20name.");
   if (parsed.data.provider === "openai-compatible" && !parsed.data.baseUrl) redirect("/settings/ai?error=Enter%20the%20provider%20base%20URL.");
-  const secret = encryptSecret(parsed.data.apiKey);
   const admin = createAdminClient();
-  const { error } = await admin.from("ai_connections").insert({ user_id: auth.user.id, provider: parsed.data.provider, label: parsed.data.label, model, base_url: parsed.data.baseUrl || null, encrypted_secret: secret.encrypted, secret_iv: secret.iv, key_hint: `••••${parsed.data.apiKey.slice(-4)}` });
-  if (error) redirect("/settings/ai?error=The%20connection%20could%20not%20be%20saved.");
-  revalidatePath("/settings/ai"); revalidatePath("/assistant");
-  redirect("/settings/ai?saved=true");
+  const existing = parsed.data.connectionId ? await admin.from("ai_connections")
+    .select("id, provider, model, base_url").eq("id", parsed.data.connectionId).eq("user_id", auth.user.id).maybeSingle() : null;
+  if (parsed.data.connectionId && (!existing?.data || existing.error)) redirect("/settings/ai?error=Connection%20not%20found.");
+  if ((!existing?.data || existing.data.provider !== parsed.data.provider) && !parsed.data.apiKey) redirect("/settings/ai?error=Enter%20an%20API%20key%20for%20this%20provider.");
+  const baseUrl = parsed.data.provider === "openai-compatible" ? parsed.data.baseUrl : "";
+  const changed = !existing?.data || existing.data.provider !== parsed.data.provider || existing.data.model !== model || (existing.data.base_url ?? "") !== baseUrl || Boolean(parsed.data.apiKey);
+  const secret = parsed.data.apiKey ? encryptSecret(parsed.data.apiKey) : null;
+  const values = {
+    provider: parsed.data.provider, label: parsed.data.label, model, base_url: baseUrl || null,
+    ...(secret ? { encrypted_secret: secret.encrypted, secret_iv: secret.iv, key_hint: `••••${parsed.data.apiKey.slice(-4)}` } : {}),
+    ...(changed ? { status: "untested", last_error: null, last_tested_at: null } : {}),
+  };
+  const result = existing?.data
+    ? await admin.from("ai_connections").update(values).eq("id", existing.data.id).eq("user_id", auth.user.id).select("id").maybeSingle()
+    : await admin.from("ai_connections").insert({ user_id: auth.user.id, ...values }).select("id").single();
+  if (result.error || !result.data) redirect("/settings/ai?error=The%20connection%20could%20not%20be%20saved.");
+  revalidatePath("/settings/ai"); revalidatePath("/agent");
+  redirect(changed ? "/settings/ai?saved=true" : "/settings/ai?updated=true");
 }
 
 export async function testAiConnection(formData: FormData) {
@@ -48,11 +61,21 @@ export async function testAiConnection(formData: FormData) {
   redirect("/settings/ai?tested=true");
 }
 
+export async function updateAgentGuidance(formData: FormData) {
+  const guidance = z.string().trim().max(6000).safeParse(formData.get("guidance") ?? "");
+  if (!guidance.success) redirect("/settings/ai?error=Agent%20guidance%20must%20be%206000%20characters%20or%20fewer.");
+  const auth = await requireUser(); if (!auth) redirect("/login");
+  const { error } = await auth.supabase.from("agent_preferences").upsert({ user_id: auth.user.id, guidance: guidance.data });
+  if (error) redirect("/settings/ai?error=Agent%20guidance%20could%20not%20be%20saved.");
+  revalidatePath("/settings/ai");
+  redirect("/settings/ai?guidanceSaved=true");
+}
+
 export async function deleteAiConnection(formData: FormData) {
   const connectionId = connectionIdSchema.safeParse(formData.get("connectionId"));
   if (!connectionId.success) return;
   const auth = await requireUser(); if (!auth) redirect("/login");
   await createAdminClient().from("ai_connections").delete().eq("id", connectionId.data).eq("user_id", auth.user.id);
-  revalidatePath("/settings/ai"); revalidatePath("/assistant");
+  revalidatePath("/settings/ai"); revalidatePath("/agent");
   redirect("/settings/ai?deleted=true");
 }

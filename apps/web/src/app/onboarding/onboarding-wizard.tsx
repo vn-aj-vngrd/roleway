@@ -1,56 +1,280 @@
 "use client";
 
-import { Check, Inbox, Target } from "lucide-react";
-import { useRef, useState } from "react";
-import { completeOnboarding } from "./actions";
+import {
+  BriefcaseBusiness,
+  CalendarClock,
+  ChartNoAxesColumnIncreasing,
+  Check,
+  Navigation,
+  Target,
+} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { SelectField } from "@/components/form-controls";
 import { SubmitButton } from "@/components/submit-button";
+import { Field, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { completeOnboarding } from "./actions";
 
-const steps = ["Profile", "Preferences", "Workflow"] as const;
+const steps = ["Profile", "Workspace", "Ready"] as const;
+
+const featureGroups = [
+  {
+    icon: BriefcaseBusiness,
+    title: "Capture and decide",
+    body: "Save Jobs to Inbox first, then promote only the serious ones to Opportunities.",
+    features: "Inbox · Opportunities",
+  },
+  {
+    icon: Target,
+    title: "Always know the next move",
+    body: "Home orders due work while every active Opportunity carries one clear Next Action.",
+    features: "Home · Tasks · Next Actions",
+  },
+  {
+    icon: CalendarClock,
+    title: "Prepare with the full record",
+    body: "Keep interviews, people, approved documents, and application history attached to the right Opportunity.",
+    features: "Interviews · Contacts · Documents",
+  },
+  {
+    icon: ChartNoAxesColumnIncreasing,
+    title: "See what your activity supports",
+    body: "Insights and notifications work across Workspaces without mixing their records.",
+    features: "Insights · Notifications",
+  },
+  {
+    icon: Navigation,
+    title: "Use Agent on your terms",
+    body: "Connect your own provider for grounded drafts and internal changes that always require your approval.",
+    features: "Agent · Reviewable approvals",
+  },
+] as const;
 
 export function OnboardingWizard({ email }: { email: string }) {
   const [step, setStep] = useState(0);
   const formRef = useRef<HTMLFormElement>(null);
+  const previousStep = useRef(step);
 
-  const continueToNext = () => {
-    const panel = formRef.current?.querySelector<HTMLElement>(`[data-step="${step}"]`);
-    const fields = panel?.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>("input, textarea, select") ?? [];
+  useEffect(() => {
+    if (previousStep.current !== step) {
+      formRef.current
+        ?.querySelector<HTMLElement>(`[data-step="${step}"] h1`)
+        ?.focus();
+      previousStep.current = step;
+    }
+  }, [step]);
+
+  const continueForward = () => {
+    const panel = formRef.current?.querySelector<HTMLElement>(
+      `[data-step="${step}"]`,
+    );
+    const fields =
+      panel?.querySelectorAll<HTMLInputElement | HTMLSelectElement>(
+        "input, select",
+      ) ?? [];
     for (const field of fields) {
       if (!field.reportValidity()) return;
     }
     setStep((current) => Math.min(current + 1, steps.length - 1));
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({
+      top: 0,
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "instant"
+        : "smooth",
+    });
   };
 
   return (
-    <form ref={formRef} action={completeOnboarding} className="onboarding-form wizard-form">
-      <div className="wizard-progress" aria-label={`Step ${step + 1} of ${steps.length}`}>
-        {steps.map((label, index) => <div className={`wizard-progress-item ${index <= step ? "active" : ""}`} key={label}><span>{index < step ? <Check /> : index + 1}</span><b>{label}</b></div>)}
+    <form
+      ref={formRef}
+      action={completeOnboarding}
+      className="onboarding-form wizard-form"
+    >
+      <div
+        className="wizard-progress"
+        aria-label={`Step ${step + 1} of ${steps.length}`}
+      >
+        {steps.map((label, index) => (
+          <div
+            className={`wizard-progress-item ${index <= step ? "active" : ""}`}
+            aria-current={index === step ? "step" : undefined}
+            key={label}
+          >
+            <span>
+              {index < step ? <Check aria-hidden="true" /> : index + 1}
+            </span>
+            <b>{label}</b>
+          </div>
+        ))}
       </div>
 
       <section className="wizard-panel" data-step="0" hidden={step !== 0}>
-        <div className="onboarding-copy"><div className="wizard-time">About 2 minutes</div><h1>Start with what you’re aiming for</h1><p>We’ll use this to make your empty workspace useful from the first job you add. Nothing here is public.</p></div>
-        <div className="form-section"><h2>Your professional profile</h2><p>Just enough context to identify your workspace and shape future recommendations.</p><div className="field-grid"><div className="field"><label htmlFor="fullName">Full name</label><input className="input" id="fullName" name="fullName" required autoComplete="name" /></div><div className="field"><label htmlFor="headline">Professional headline</label><input className="input" id="headline" name="headline" required placeholder="Product-minded full-stack engineer" /></div></div><div className="field"><label htmlFor="summary">Short summary <span className="muted">(optional)</span></label><textarea className="textarea" id="summary" name="summary" placeholder="What kind of work do you do best?" /></div><p className="field-note">Signed in as {email}</p></div>
+        <div className="onboarding-copy">
+          <h1 tabIndex={-1}>Start with the direction you are taking.</h1>
+          <p>
+            Roleway keeps your account context separate from the focused
+            Workspaces where you run each job search.
+          </p>
+        </div>
+        <div className="form-section">
+          <div className="onboarding-section-heading">
+            <h2>Your account</h2>
+            <p>
+              This is private and editable later. Agent only uses facts you
+              choose to record.
+            </p>
+          </div>
+          <div className="field-grid">
+            <Field>
+              <FieldLabel htmlFor="fullName">Full name</FieldLabel>
+              <Input
+                id="fullName"
+                name="fullName"
+                required
+                autoComplete="name"
+              />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="headline">Professional headline</FieldLabel>
+              <Input
+                id="headline"
+                name="headline"
+                required
+                placeholder="Product-minded full-stack engineer"
+              />
+            </Field>
+          </div>
+          <p className="field-note">Signed in as {email}</p>
+        </div>
       </section>
 
       <section className="wizard-panel" data-step="1" hidden={step !== 1}>
-        <div className="onboarding-copy"><h1>Define a good opportunity</h1><p>Preferences help you review jobs consistently. They don’t hide anything or make decisions for you.</p></div>
-        <div className="form-section"><h2>Search preferences</h2><p>Separate multiple entries with commas.</p><div className="field"><label htmlFor="targetTitles">Target roles</label><input className="input" id="targetTitles" name="targetTitles" required placeholder="Product Engineer, Full-Stack Engineer" /><span className="field-hint">Add the titles you would genuinely consider next.</span></div><div className="field"><label htmlFor="technologies">Preferred technologies</label><input className="input" id="technologies" name="technologies" placeholder="TypeScript, React, PostgreSQL" /></div><div className="field-grid"><div className="field"><label htmlFor="remotePreference">Remote preference</label><SelectField id="remotePreference" name="remotePreference" defaultValue="preferred" options={[{ value: "required", label: "Remote required" }, { value: "preferred", label: "Remote preferred" }, { value: "flexible", label: "Flexible" }]} /></div><div className="field"><label htmlFor="minimumCompensation">Minimum annual compensation</label><input className="input" id="minimumCompensation" name="minimumCompensation" type="number" min="0" placeholder="50000" /></div></div><div className="field"><label htmlFor="locations">Allowed locations</label><input className="input" id="locations" name="locations" placeholder="Worldwide, APAC, Philippines" /></div></div>
+        <div className="onboarding-copy">
+          <h1 tabIndex={-1}>Create your first Workspace.</h1>
+          <p>
+            A Workspace gives one role direction its own Jobs, Opportunities,
+            people, documents, interviews, and strategy.
+          </p>
+        </div>
+        <div className="form-section">
+          <div className="onboarding-section-heading">
+            <h2>Search direction</h2>
+            <p>Start broad enough to be useful. Refine the details later.</p>
+          </div>
+          <div className="field-grid">
+            <Field>
+              <FieldLabel htmlFor="projectName">Workspace name</FieldLabel>
+              <Input
+                id="projectName"
+                name="projectName"
+                required
+                defaultValue="My job search"
+                placeholder="Remote product engineering"
+              />
+              <span className="field-hint">
+                A name that distinguishes this direction from another search.
+              </span>
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="targetTitles">Target role</FieldLabel>
+              <Input
+                id="targetTitles"
+                name="targetTitles"
+                required
+                placeholder="Product Engineer"
+              />
+              <span className="field-hint">
+                Separate multiple related roles with commas.
+              </span>
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="locations">Preferred locations</FieldLabel>
+              <Input
+                id="locations"
+                name="locations"
+                placeholder="Remote, New York, London"
+              />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="remotePreference">
+                Work arrangement
+              </FieldLabel>
+              <SelectField
+                id="remotePreference"
+                name="remotePreference"
+                defaultValue="flexible"
+                ariaLabel="Work arrangement"
+                options={[
+                  { value: "flexible", label: "Flexible" },
+                  { value: "preferred", label: "Remote preferred" },
+                  { value: "required", label: "Remote required" },
+                ]}
+              />
+            </Field>
+          </div>
+        </div>
       </section>
 
       <section className="wizard-panel" data-step="2" hidden={step !== 2}>
-        <div className="onboarding-copy"><h1>Your workspace starts with one decision</h1><p>Add a promising job, review it in your Inbox, then track it only when it deserves your attention.</p></div>
-        <div className="workflow-preview" aria-label="Roleway workflow">
-          <div><span><Inbox /></span><div><b>Add a job</b><p>Capture a listing without committing it to your pipeline.</p></div></div>
-          <div><span><Check /></span><div><b>Review the Inbox</b><p>Track, keep for later, or dismiss. You remain in control.</p></div></div>
-          <div><span><Target /></span><div><b>Move the Opportunity forward</b><p>Give it one next action, then keep every task and note attached.</p></div></div>
+        <div className="onboarding-copy onboarding-ready-copy">
+          <h1 tabIndex={-1}>One system from discovery to outcome.</h1>
+          <p>
+            You will get a short guided tour inside the app. Here is the model
+            it will walk you through.
+          </p>
         </div>
-        <div className="tour-preview-note"><strong>A short product tour comes next.</strong><span>Four quick pointers, then you’ll add your first real job.</span></div>
+        <div className="workflow-preview onboarding-feature-preview">
+          {featureGroups.map(({ icon: Icon, title, body, features }) => (
+            <div key={title}>
+              <span>
+                <Icon aria-hidden="true" />
+              </span>
+              <div>
+                <strong>{title}</strong>
+                <p>{body}</p>
+                <small>{features}</small>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="tour-preview-note">
+          <strong>You remain in control.</strong>
+          <span>
+            Core tracking works without AI. Roleway never submits applications
+            or contacts employers for you.
+          </span>
+        </div>
       </section>
 
+      <input type="hidden" name="summary" value="" />
+      <input type="hidden" name="technologies" value="" />
+      <input type="hidden" name="minimumCompensation" value="" />
+      <input type="hidden" name="currency" value="USD" />
+
       <div className="onboarding-actions wizard-actions">
-        {step > 0 ? <button className="button ghost" type="button" onClick={() => setStep((current) => current - 1)}>Back</button> : <span className="muted small">Private by default · Editable later</span>}
-        {step < steps.length - 1 ? <button className="button primary" type="button" onClick={continueToNext}>Continue</button> : <SubmitButton pendingLabel="Creating workspace…">Open my workspace</SubmitButton>}
+        {step > 0 ? (
+          <Button
+            variant="ghost"
+            type="button"
+            onClick={() => setStep((current) => Math.max(0, current - 1))}
+          >
+            Back
+          </Button>
+        ) : (
+          <span className="muted small">
+            Private by default · Editable later
+          </span>
+        )}
+        {step < steps.length - 1 ? (
+          <Button type="button" onClick={continueForward}>
+            Continue
+          </Button>
+        ) : (
+          <SubmitButton pendingLabel="Creating Workspace…">
+            Create Workspace and start tour
+          </SubmitButton>
+        )}
       </div>
     </form>
   );

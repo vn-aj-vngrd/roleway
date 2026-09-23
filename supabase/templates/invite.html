@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="supported-color-schemes" content="light dark">
+  <title>You are invited to Roleway</title>
+  <style>
+    body, table, td, a { -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%; }
+    table { border-spacing:0; mso-table-lspace:0; mso-table-rspace:0; }
+    a:focus-visible { outline:2px solid #315fcf; outline-offset:4px; }
+    @media screen and (max-width:600px) {
+      .email-outer { padding:24px 16px !important; }
+      .email-content { padding-left:24px !important; padding-right:24px !important; }
+    }
+    @media (prefers-color-scheme:dark) {
+      .email-body { background:#1d1f23 !important; color:#eef0f3 !important; }
+      .email-panel { background:#15171a !important; border-color:#2f3236 !important; }
+      .email-ink { color:#eef0f3 !important; }
+      .email-muted { color:#a1a5aa !important; }
+      .email-link { color:#81a6f3 !important; }
+      .email-footer { border-color:#2f3236 !important; }
+      .email-code { background:#1d1f23 !important; color:#eef0f3 !important; border-color:#2f3236 !important; }
+      .email-button { background:#315fcf !important; color:#ffffff !important; }
+    }
+  </style>
+</head>
+<body class="email-body" style="margin:0;padding:0;background:#f5f6f7;color:#121416;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;mso-hide:all">Your Roleway account is ready to set up. Accept your invitation and choose a password to get started.</div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+    <tr><td class="email-outer" align="center" style="padding:48px 24px">
+      <!--[if mso]><table role="presentation" width="560" cellpadding="0" cellspacing="0"><tr><td><![endif]-->
+      <table class="email-panel" role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#fdfdfd;border:1px solid #dee0e2;border-radius:12px">
+        <tr><td class="email-content" style="padding:32px 32px 28px">
+          <a href="{{ .SiteURL }}" class="email-ink" style="display:inline-block;color:#121416;font-size:16px;line-height:24px;font-weight:650;letter-spacing:-.3px;text-decoration:none">Roleway</a>
+          <p class="email-muted" style="margin:8px 0 0;color:#585b5f;font-size:13px;line-height:1.5">One focused search. One clear next step.</p>
+        </td></tr>
+        <tr><td class="email-content" style="padding:0 32px 32px">
+          <h1 class="email-ink" style="margin:0 0 16px;color:#121416;font-size:28px;line-height:1.2;font-weight:650;letter-spacing:-.7px">Make room for your next role.</h1>
+          <p class="email-muted" style="margin:0 0 24px;color:#585b5f;font-size:14px;line-height:1.65">Your Roleway account is ready to set up. Accept your invitation and choose a password to get started.</p>
+            <!--[if mso]>
+          <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&amp;type=invite" style="height:46px;v-text-anchor:middle;width:224px" arcsize="100%" stroke="f" fillcolor="#315fcf">
+            <w:anchorlock/>
+            <center style="color:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:bold">Set up account</center>
+          </v:roundrect>
+          <![endif]-->
+          <!--[if !mso]><!-->
+          <table role="presentation" cellpadding="0" cellspacing="0"><tr><td bgcolor="#315fcf" style="border-radius:999px;background:#315fcf;mso-padding-alt:12px 24px"><a href="{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&amp;type=invite" class="email-button" style="display:inline-block;border:1px solid #315fcf;border-radius:999px;background:#315fcf;padding:12px 24px;color:#ffffff;font-size:14px;line-height:20px;text-align:center;text-decoration:none;font-weight:600;mso-padding-alt:0">Set up account</a></td></tr></table>
+          <!--<![endif]--><p class="email-muted" style="font-size:13px;color:#585b5f;margin:20px 0 0">This link expires after one hour and can only be used once. If the button does not work, copy this address into your browser:</p>
+            <p style="font-size:13px;overflow-wrap:anywhere;word-break:break-all"><a href="{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&amp;type=invite" class="email-link" style="text-underline-offset:3px;color:#315fcf">{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&amp;type=invite</a></p>
+            <p class="email-muted" style="font-size:13px;color:#585b5f;margin:24px 0 0">If you were not expecting this invitation, you can ignore it.</p>
+        </td></tr>
+        <tr><td class="email-content email-footer" style="padding:24px 32px;border-top:1px solid #dee0e2">
+          <p class="email-muted" style="margin:0 0 8px;color:#585b5f;font-size:13px;line-height:1.6">Sent by Roleway for your account security.</p>
+          <p style="margin:0;font-size:13px;line-height:1.6"><a href="{{ .SiteURL }}/login" class="email-muted" style="color:#585b5f;text-underline-offset:3px">Open Roleway</a> &nbsp;·&nbsp; <a href="{{ .SiteURL }}/privacy" class="email-muted" style="color:#585b5f;text-underline-offset:3px">Privacy</a></p>
+        </td></tr>
+      </table>
+      <!--[if mso]></td></tr></table><![endif]-->
+    </td></tr>
+  </table>
+</body>
+</html>

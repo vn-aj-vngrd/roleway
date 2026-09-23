@@ -1,0 +1,35 @@
+# Deployment and releases
+
+## Ownership
+
+Vercel's existing GitHub integration deploys Roleway. `main` is production; PR branches receive previews when enabled by Vercel. GitHub Actions creates source versions and release notes. Release success and deployment success are separate evidence.
+
+The release workflow follows Relay: successful push CI on main triggers a release of that exact SHA, provided it remains the current main head. PR-triggered workflows cannot invoke privileged release code. Superseded heads are consolidated into the next release.
+
+`.releaserc.json` defines version rules: breaking changes produce major releases, features minor releases, and other conventional types patch releases. The first release starts at v1.0.0 when no prior release tag exists. Tags are the version source of truth; package versions remain development metadata. GitHub Releases contains the generated notes. Use the PR title unchanged as the squash subject; the original branch commits do not become separate release-note entries.
+
+## Activate and verify
+
+1. Squash and merge the reviewed PR with passing CI after explicit user authorization, following the squash-only rule in [Development workflow](DEVELOPMENT_WORKFLOW.md#merge-and-verify).
+2. Verify CI and Release completed for the expected main SHA. The job-scoped GitHub token creates tags/releases; no personal token is needed.
+3. Verify Vercel reports Ready for that same SHA and that the canonical alias serves the application.
+4. Run affected browser journeys against the deployment. Apply forward Supabase migrations before code that requires them, using the configured project's migration tooling and preserving data.
+
+Vercel deploys independently of GitHub CI. These workflows do not claim to gate production deployment on CI. Branch protection should require the `Lint, types, tests, and build` check and an up-to-date PR, prohibit force pushes/deletion, and use PR titles for squash subjects. For solo maintenance, a separate human reviewer count is optional; merge authorization remains mandatory.
+
+## Browser CI
+
+For SMTP provisioning, auth template updates, or email delivery failures, follow [Auth email setup](AUTH_EMAIL.md). Deploy callback changes before activating hosted confirmation settings.
+
+`Browser journeys` is manually dispatched against the selected branch. Configure the GitHub `e2e` environment with E2E_SUPABASE_URL, E2E_SUPABASE_ANON_KEY, E2E_SUPABASE_SERVICE_ROLE_KEY, and E2E_AI_CREDENTIAL_ENCRYPTION_KEY. Use an isolated Supabase project with the repository migrations applied. Tests create disposable users and clean them up. The default suite exercises password signup/login and needs CAPTCHA disabled only in that isolated test project. For testing existing application workflows against a CAPTCHA-enabled project, run `E2E_AUTH_MODE=admin pnpm --filter @roleway/web test:e2e`: its fixture creates and authenticates only `e2e-*@roleway.test` users through the Admin API, leaves production CAPTCHA enabled, and verifies deletion is denied without a valid challenge. That mode does not prove public signup or password login. Do not expose these secrets to untrusted PR code or publish browser traces containing sessions.
+
+The ordinary CI build uses placeholders and runs without production credentials. It cannot prove remote database or real-provider integration. Live AI verification additionally requires an authorized BYO-provider connection and must cover generation, approval, persisted mutation, rejection, and failure recovery. `agent-live.spec.ts` opts in with `ROLEWAY_TEST_OPENROUTER_KEY`, uses the selected Nemotron free model and synthetic records, and disables traces/screenshots to protect the key. Run it separately from ordinary E2E; without the key it is explicitly skipped. OpenRouter calls time out after 240 seconds; other provider calls retain their 45-second limit. AI pages allow 300 seconds for the request and persistence, within Vercel Fluid Compute limits. A free-provider queue may still exceed this bound.
+
+## Recovery
+
+- CI failure prevents release creation. Vercel may still have deployed independently; inspect both.
+- Failed Vercel deployment: inspect build/runtime logs, fix through a PR, or roll back through Vercel when authorized. Preserve release history.
+- Failed release: inspect the Actions log and rerun after correction. If a tag exists without release notes, verify its SHA before restoring notes. Preserve published tags.
+- Database unavailable: restore project connectivity before interpreting authenticated E2E failures as application defects.
+
+Pinned release tooling follows Relay, including its compatible Conventional Commits preset. Upgrade analyzer, notes generator, and preset together and run `pnpm test:workflow`.

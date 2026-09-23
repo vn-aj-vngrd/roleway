@@ -2,6 +2,7 @@
 
 import { RefreshCw } from "lucide-react";
 import { LogoMark } from "@/components/logo";
+import { Button } from "@/components/ui/button";
 
 export default function ErrorPage({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
   return (
@@ -11,7 +12,7 @@ export default function ErrorPage({ reset }: { error: Error & { digest?: string 
         <span className="system-state-label">Workspace unavailable</span>
         <h1>This workspace could not be loaded</h1>
         <p>Your data was not changed. Check your connection, then try again.</p>
-        <button className="button primary" onClick={reset}><RefreshCw aria-hidden="true" />Try again</button>
+        <Button className="button primary" onClick={reset}><RefreshCw aria-hidden="true" />Try again</Button>
       </section>
     </main>
   );
