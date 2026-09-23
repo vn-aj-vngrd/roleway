@@ -27,6 +27,13 @@ function conversationTitle(message: string) {
   return normalized.length <= 68 ? normalized : `${normalized.slice(0, 67).trimEnd()}…`;
 }
 
+// Catch a short introductory paragraph with no promised content or approval card.
+// This is deliberately narrow: short greetings and clarification questions are valid.
+function isUnfinishedIntroduction(output: { message: string; proposals: unknown[] }) {
+  const message = output.message.trim();
+  return output.proposals.length === 0 && message.length <= 600 && !message.includes("\n") && message.endsWith(":");
+}
+
 export async function runAgentRequest(formData: FormData, emit?: (event: AgentStreamEvent) => void, signal?: AbortSignal) {
   const parsed = sendSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return `/agent?error=${encodeURIComponent(parsed.error.issues[0]?.message ?? "Check your message.")}`;
@@ -191,16 +198,35 @@ export async function runAgentRequest(formData: FormData, emit?: (event: AgentSt
     const apiKey = decryptSecret(connection.encrypted_secret, connection.secret_iv);
     await progress(20, "Waiting for the model", "active");
     const provider = { provider: connection.provider as AiProviderKind, model: connection.model, base_url: connection.base_url };
+    // Share the streaming budget across the original answer and its one repair.
+    const generationDeadline = AbortSignal.timeout(240_000);
+    const generationSignal = signal ? AbortSignal.any([signal, generationDeadline]) : generationDeadline;
     let receiving = false;
-    const result = emit
-      ? await streamAgentResponse(provider, apiKey, prompt, (text) => {
+    const generate = (requestPrompt: string) => emit
+      ? streamAgentResponse(provider, apiKey, requestPrompt, (text) => {
           if (!receiving) {
             receiving = true;
             emit({ type: "progress", data: { id: "20", label: "Receiving the answer", status: "active" } });
           }
           emit({ type: "answer", text });
-        }, signal)
-      : await generateAgentResponse(provider, apiKey, prompt);
+        }, generationSignal)
+      : generateAgentResponse(provider, apiKey, requestPrompt);
+    let result = await generate(prompt);
+    if (isUnfinishedIntroduction(result.output)) {
+      generationSignal.throwIfAborted();
+      await progress(20, "Completing the answer", "active");
+      emit?.({ type: "answer", text: "" });
+      const retry = await generate(`${prompt}\n\nResponse requirement: The previous attempt ended with an introduction and omitted the answer. Return a complete, self-contained response in the message field, including any content you introduce. For a greeting, a brief greeting and a question are sufficient. Do not invent missing context.`);
+      result = {
+        ...retry,
+        inputTokens: result.inputTokens == null || retry.inputTokens == null ? undefined : result.inputTokens + retry.inputTokens,
+        outputTokens: result.outputTokens == null || retry.outputTokens == null ? undefined : result.outputTokens + retry.outputTokens,
+      };
+      if (isUnfinishedIntroduction(result.output)) {
+        failureCode = "invalid_provider_output";
+        throw new Error("Incomplete provider answer");
+      }
+    }
     await progress(20, "Received the model response", "completed");
     await progress(30, "Validating the answer and proposed changes", "active");
 
@@ -243,4 +269,3 @@ export async function runAgentRequest(formData: FormData, emit?: (event: AgentSt
   revalidatePath("/agent");
   return `/agent?conversation=${conversationId}`;
 }
-
