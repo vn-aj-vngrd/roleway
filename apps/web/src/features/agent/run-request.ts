@@ -198,7 +198,7 @@ export async function runAgentRequest(formData: FormData, emit?: (event: AgentSt
     const apiKey = decryptSecret(connection.encrypted_secret, connection.secret_iv);
     await progress(20, "Waiting for the model", "active");
     const provider = { provider: connection.provider as AiProviderKind, model: connection.model, base_url: connection.base_url };
-    // Share the streaming budget across the original answer and its one repair.
+    // Share the generation budget across the original answer and its one repair.
     const generationDeadline = AbortSignal.timeout(240_000);
     const generationSignal = signal ? AbortSignal.any([signal, generationDeadline]) : generationDeadline;
     let receiving = false;
@@ -210,7 +210,7 @@ export async function runAgentRequest(formData: FormData, emit?: (event: AgentSt
           }
           emit({ type: "answer", text });
         }, generationSignal)
-      : generateAgentResponse(provider, apiKey, requestPrompt);
+      : generateAgentResponse(provider, apiKey, requestPrompt, generationSignal);
     let result = await generate(prompt);
     if (isUnfinishedIntroduction(result.output)) {
       generationSignal.throwIfAborted();

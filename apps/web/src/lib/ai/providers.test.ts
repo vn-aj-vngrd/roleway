@@ -46,6 +46,22 @@ describe("AI provider adapters", () => {
 });
 
 describe("compatible provider endpoint boundaries", () => {
+  it.each(["openai", "openrouter", "anthropic", "gemini"] as const)("propagates cancellation to the %s non-stream request", async provider => {
+    const controller = new AbortController();
+    const fetchMock = vi.fn((_url: string, init: RequestInit) => new Promise<Response>((_resolve, reject) => {
+      init.signal!.addEventListener("abort", () => reject(init.signal!.reason), { once: true });
+      controller.abort(new DOMException("Generation deadline reached", "TimeoutError"));
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(generateAgentResponse({ provider, model: "fixture", base_url: null }, "secret", "Prompt", controller.signal)).rejects.toMatchObject({ name: "TimeoutError" });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+  it("does not start a non-stream request after its shared deadline", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(generateAgentResponse({ provider: "openrouter", model: "fixture", base_url: null }, "secret", "Prompt", AbortSignal.abort(new DOMException("Expired", "TimeoutError")))).rejects.toMatchObject({ name: "TimeoutError" });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
   it.each(["https://[::1]/v1", "https://[::ffff:7f00:1]/v1", "https://user:password@example.com/v1", "https://example.com:8443/v1"])('rejects unsafe endpoint %s before sending credentials', async (base_url) => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);

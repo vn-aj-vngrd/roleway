@@ -66,6 +66,8 @@ describe("Agent result persistence", () => {
     await expect(request()).rejects.toThrow(`redirect:/agent?conversation=${record}`);
     expect(fixtures.generate).toHaveBeenCalledTimes(2);
     expect(fixtures.generate.mock.calls[1]?.[2]).toContain("complete, self-contained response");
+    expect(fixtures.generate.mock.calls[0]?.[3]).toBeInstanceOf(AbortSignal);
+    expect(fixtures.generate.mock.calls[1]?.[3]).toBe(fixtures.generate.mock.calls[0]?.[3]);
     expect(fixtures.rpc).toHaveBeenCalledWith("complete_agent_run", expect.objectContaining({ input_output: { message: "A grounded answer", proposals: [] }, input_tokens: 22, output_tokens: 28 }));
   });
   it("fails safely if the retry is also only an introduction", async () => {
