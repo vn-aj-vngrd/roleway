@@ -16,3 +16,8 @@ test-results
 supabase/.temp
 
 .pnpm-store/
+
+# Generated Impeccable review artifacts and local question sessions
+**/.impeccable/review/
+**/.impeccable/critique/
+**/.impeccable/questions/
