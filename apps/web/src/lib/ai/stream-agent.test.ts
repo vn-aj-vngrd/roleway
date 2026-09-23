@@ -3,12 +3,12 @@ vi.mock("server-only", () => ({}));
 import { streamAgentResponse } from "./stream-agent";
 
 const reply = { message: "A **streamed** answer.", proposals: [] };
-function streamResponse(value: unknown) {
+function streamResponse(value: unknown, finishReason = "tool_calls") {
   const args = JSON.stringify(value);
   const chunks = [
     { choices: [{ index: 0, delta: { tool_calls: [{ index: 0, id: "call-1", type: "function", function: { name: "roleway_agent", arguments: "" } }] } }] },
     ...Array.from(args).map(character => ({ choices: [{ index: 0, delta: { tool_calls: [{ index: 0, function: { arguments: character } }] } }] })),
-    { choices: [{ index: 0, delta: {}, finish_reason: "tool_calls" }], usage: { prompt_tokens: 12, completion_tokens: 8, total_tokens: 20 } },
+    { choices: [{ index: 0, delta: {}, finish_reason: finishReason }], usage: { prompt_tokens: 12, completion_tokens: 8, total_tokens: 20 } },
   ];
   return new Response(chunks.map(chunk => `data: ${JSON.stringify(chunk)}\n\n`).join("") + "data: [DONE]\n\n", { headers: { "Content-Type": "text/event-stream" } });
 }
@@ -53,6 +53,10 @@ describe("Agent provider streaming", () => {
   it("rejects malformed proposals even after partial answer text is streamed", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(streamResponse({ message: "Draft", proposals: [{ tool: "create_task", targetId: null }] })));
     await expect(streamAgentResponse({ provider: "openai", model: "fixture", base_url: null }, "key", "prompt", () => {})).rejects.toThrow();
+  });
+  it("rejects an output-limit ending even when its JSON is valid", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(streamResponse(reply, "length")));
+    await expect(streamAgentResponse({ provider: "openai", model: "fixture", base_url: null }, "key", "prompt", () => {})).rejects.toThrow("output limit");
   });
   it("never sends credentials to an unsafe compatible endpoint", async () => {
     const fetchMock = vi.fn();

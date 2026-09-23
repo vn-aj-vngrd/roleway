@@ -69,7 +69,9 @@ export async function safeCompatibleBaseUrl(value: string | null) {
 }
 
 async function requestJson(url: string, init: RequestInit, timeoutMs = 45_000) {
-  const signal = AbortSignal.timeout(timeoutMs);
+  const deadline = AbortSignal.timeout(timeoutMs);
+  const signal = init.signal ? AbortSignal.any([init.signal, deadline]) : deadline;
+  signal.throwIfAborted();
   const response = await fetch(url, { ...init, redirect: "error", cache: "no-store", signal });
   const payload = await response.json().catch(() => { if (signal.aborted) throw signal.reason; return null; }) as Record<string, unknown> | null;
   if (!response.ok) {
@@ -156,6 +158,8 @@ Creation is conversational: gather missing information one question at a time, r
 
 Explore covers Workspaces, Opportunities, Inbox Jobs, tasks, interviews, contacts, document inventory and the supplied Career Profile. Context is a bounded snapshot, not an exhaustive search: document bodies, full career evidence, activity history and unfocused Job descriptions may be absent. Ask for missing source text rather than inventing it. Follow-ups, interview preparation, document text, fit analysis and application plans can be drafted in the message; only the four allowed tools persist records. Respect the supplied scope: in a workspace-scoped conversation use only that Workspace and do not imply access to other Workspaces. Use the starting page to interpret phrases such as "here": Home means priorities and upcoming work; Inbox means untracked Jobs; Interviews means interview preparation; Contacts means relationships and follow-ups; Documents means document inventory; Opportunities means tracked work. Career Profile remains account-wide. When information is absent, say so and ask rather than substituting records from elsewhere.
 
+Put the entire user-facing answer in the message field. Returning the structured response ends this turn; there is no later message or tool result that will supply the rest. If you introduce a snapshot, list, summary or recommendation, include its substance in that same message. Never stop after an introduction ending in a colon. When context is empty, say what is missing and offer a useful next step. For a simple greeting, respond briefly and ask how you can help instead of volunteering a report.
+
 Write the message field in clear GitHub-flavored Markdown: short paragraphs separated by blank lines, meaningful headings for longer answers, and one bullet per task, Opportunity, or recommendation. Use bold labels sparingly. Never compress multiple records into one long semicolon-separated paragraph. Format dates in the supplied timezone, explain overdue time in readable terms, and preserve uncertainty. Use fenced code blocks only for code, never around the whole answer or a Markdown document. The message string contains Markdown; the outer response remains structured JSON.`;
 
 function parseAgentResponse(value: unknown) {
@@ -166,10 +170,11 @@ function parseAgentResponse(value: unknown) {
   return agentResponseSchema.parse(value);
 }
 
-async function openAiAgent(connection: AiConnection, apiKey: string, prompt: string) {
+async function openAiAgent(connection: AiConnection, apiKey: string, prompt: string, signal?: AbortSignal) {
   const base = connection.provider === "openai" ? "https://api.openai.com/v1" : connection.provider === "openrouter" ? "https://openrouter.ai/api/v1" : await safeCompatibleBaseUrl(connection.base_url);
   const payload = await requestJson(`${base}/chat/completions`, {
     method: "POST",
+    signal: signal ?? null,
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}`, ...(connection.provider === "openrouter" ? { "HTTP-Referer": "https://roleway.vanajvanguardia.tech", "X-Title": "Roleway" } : {}) },
     body: JSON.stringify({ model: connection.model, messages: [{ role: "system", content: agentSystemPolicy }, { role: "user", content: prompt }], temperature: 0.2, ...openAiOutputOptions(connection, "roleway_agent", agentJsonSchema, 3000) }),
   }, connection.provider === "openrouter" ? 240_000 : 45_000);
@@ -177,9 +182,10 @@ async function openAiAgent(connection: AiConnection, apiKey: string, prompt: str
   return { output: parseAgentResponse(openAiResponseValue(payload, connection, "roleway_agent")), inputTokens: usage?.prompt_tokens, outputTokens: usage?.completion_tokens };
 }
 
-async function anthropicAgent(connection: AiConnection, apiKey: string, prompt: string) {
+async function anthropicAgent(connection: AiConnection, apiKey: string, prompt: string, signal?: AbortSignal) {
   const payload = await requestJson("https://api.anthropic.com/v1/messages", {
     method: "POST",
+    signal: signal ?? null,
     headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01" },
     body: JSON.stringify({ model: connection.model, max_tokens: 3000, system: agentSystemPolicy, messages: [{ role: "user", content: prompt }], tools: [{ name: "return_roleway_agent", description: "Return the grounded Agent answer and any reviewable internal proposals", input_schema: agentJsonSchema }], tool_choice: { type: "tool", name: "return_roleway_agent" } }),
   });
@@ -188,9 +194,10 @@ async function anthropicAgent(connection: AiConnection, apiKey: string, prompt: 
   return { output: parseAgentResponse(content?.find((part) => part.type === "tool_use")?.input), inputTokens: usage?.input_tokens, outputTokens: usage?.output_tokens };
 }
 
-async function geminiAgent(connection: AiConnection, apiKey: string, prompt: string) {
+async function geminiAgent(connection: AiConnection, apiKey: string, prompt: string, signal?: AbortSignal) {
   const payload = await requestJson(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(connection.model)}:generateContent`, {
     method: "POST",
+    signal: signal ?? null,
     headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
     body: JSON.stringify({ systemInstruction: { parts: [{ text: agentSystemPolicy }] }, contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.2, responseMimeType: "application/json", responseJsonSchema: agentJsonSchema } }),
   });
@@ -199,8 +206,8 @@ async function geminiAgent(connection: AiConnection, apiKey: string, prompt: str
   return { output: parseAgentResponse(candidates?.[0]?.content?.parts?.[0]?.text), inputTokens: usage?.promptTokenCount, outputTokens: usage?.candidatesTokenCount };
 }
 
-export async function generateAgentResponse(connection: AiConnection, apiKey: string, prompt: string) {
-  if (connection.provider === "anthropic") return anthropicAgent(connection, apiKey, prompt);
-  if (connection.provider === "gemini") return geminiAgent(connection, apiKey, prompt);
-  return openAiAgent(connection, apiKey, prompt);
+export async function generateAgentResponse(connection: AiConnection, apiKey: string, prompt: string, signal?: AbortSignal) {
+  if (connection.provider === "anthropic") return anthropicAgent(connection, apiKey, prompt, signal);
+  if (connection.provider === "gemini") return geminiAgent(connection, apiKey, prompt, signal);
+  return openAiAgent(connection, apiKey, prompt, signal);
 }

@@ -52,6 +52,7 @@ function request(timeZone = "Asia/Manila", message = "What happens next?") {
   return sendAgentMessage(data);
 }
 beforeEach(() => {
+  vi.mocked(streamAgentResponse).mockReset();
   fixtures.recordEvent.mockClear();
   fixtures.contextRows={};fixtures.filters=[];fixtures.orders=[];
   fixtures.opportunities=[];
@@ -60,6 +61,27 @@ beforeEach(() => {
   fixtures.rpc.mockReset().mockResolvedValue({error:null});
 });
 describe("Agent result persistence", () => {
+  it("retries an introduction-only answer once and saves only the complete answer with combined usage", async () => {
+    fixtures.generate.mockResolvedValueOnce({ output: { message: "Hey! Here is a snapshot of your job search:", proposals: [] }, inputTokens: 12, outputTokens: 8 });
+    await expect(request()).rejects.toThrow(`redirect:/agent?conversation=${record}`);
+    expect(fixtures.generate).toHaveBeenCalledTimes(2);
+    expect(fixtures.generate.mock.calls[1]?.[2]).toContain("complete, self-contained response");
+    expect(fixtures.generate.mock.calls[0]?.[3]).toBeInstanceOf(AbortSignal);
+    expect(fixtures.generate.mock.calls[1]?.[3]).toBe(fixtures.generate.mock.calls[0]?.[3]);
+    expect(fixtures.rpc).toHaveBeenCalledWith("complete_agent_run", expect.objectContaining({ input_output: { message: "A grounded answer", proposals: [] }, input_tokens: 22, output_tokens: 28 }));
+  });
+  it("fails safely if the retry is also only an introduction", async () => {
+    fixtures.generate.mockResolvedValue({ output: { message: "Here is your summary:", proposals: [] } });
+    await expect(request()).rejects.toThrow("error=Agent");
+    expect(fixtures.generate).toHaveBeenCalledTimes(2);
+    expect(fixtures.rpc).not.toHaveBeenCalled();
+    expect(fixtures.recordEvent).toHaveBeenCalledWith(expect.objectContaining({ code: "invalid_provider_output" }));
+  });
+  it.each(["Hey! How can I help?", "What would you like to name the Workspace?", "Here is your summary:\n\n- No active tasks."])("keeps complete replies without retrying: %s", async message => {
+    fixtures.generate.mockResolvedValue({ output: { message, proposals: [] } });
+    await expect(request()).rejects.toThrow(`redirect:/agent?conversation=${record}`);
+    expect(fixtures.generate).toHaveBeenCalledTimes(1);
+  });
   it("includes the caller timezone and bounded-context disclosure", async () => {
     await expect(request()).rejects.toThrow(`redirect:/agent?conversation=${record}`);
     const prompt = fixtures.generate.mock.calls[0]?.[2] as string;
@@ -173,6 +195,40 @@ import { streamAgentResponse } from "@/lib/ai/stream-agent";
 import type { AgentStreamEvent } from "@/features/agent/stream-types";
 
 describe("streamed Agent runs", () => {
+  it("replaces an unfinished streamed introduction with the complete retry", async () => {
+    vi.mocked(streamAgentResponse)
+      .mockImplementationOnce(async (_connection, _key, _prompt, onText) => {
+        onText("Here is your snapshot:");
+        return { output: { message: "Here is your snapshot:", proposals: [] }, inputTokens: 10, outputTokens: 5 };
+      })
+      .mockImplementationOnce(async (_connection, _key, _prompt, onText) => {
+        onText("Hey! How can I help?");
+        return { output: { message: "Hey! How can I help?", proposals: [] }, inputTokens: 10, outputTokens: 8 };
+      });
+    const data = new FormData();
+    data.set("connectionId", record); data.set("message", "hey");
+    const events: AgentStreamEvent[] = [];
+    expect(await runAgentRequest(data, event => events.push(event))).toBe(`/agent?conversation=${record}`);
+    expect(events.filter(event => event.type === "answer")).toEqual([
+      { type: "answer", text: "Here is your snapshot:" },
+      { type: "answer", text: "" },
+      { type: "answer", text: "Hey! How can I help?" },
+    ]);
+    expect(fixtures.rpc).toHaveBeenCalledWith("complete_agent_run", expect.objectContaining({ input_output: { message: "Hey! How can I help?", proposals: [] }, input_tokens: 20, output_tokens: 13 }));
+    expect(vi.mocked(streamAgentResponse).mock.calls[1]?.[4]).toBe(vi.mocked(streamAgentResponse).mock.calls[0]?.[4]);
+  });
+  it("does not retry an incomplete answer after cancellation", async () => {
+    const controller = new AbortController();
+    vi.mocked(streamAgentResponse).mockImplementationOnce(async () => {
+      controller.abort();
+      return { output: { message: "Here is your snapshot:", proposals: [] }, inputTokens: 10, outputTokens: 5 };
+    });
+    const data = new FormData();
+    data.set("connectionId", record); data.set("message", "hey");
+    expect(await runAgentRequest(data, () => {}, controller.signal)).toContain("error=Agent");
+    expect(streamAgentResponse).toHaveBeenCalledTimes(1);
+    expect(fixtures.rpc).not.toHaveBeenCalled();
+  });
   it("emits real progress and validates before saving the answer", async () => {
     vi.mocked(streamAgentResponse).mockImplementationOnce(async (_connection, _key, _prompt, onText) => {
       onText("A partial");

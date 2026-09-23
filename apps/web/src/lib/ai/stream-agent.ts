@@ -33,7 +33,7 @@ export async function streamAgentResponse(connection: AiConnection, apiKey: stri
     abortSignal,
     tools: {
       roleway_agent: tool({
-        description: "Return the grounded answer and reviewable proposals. This does not execute any changes.",
+        description: "Return the complete grounded answer in message and any reviewable proposals. This ends the turn; no continuation follows. This does not execute any changes.",
         inputSchema: agentResponseSchema,
       }),
     },
@@ -62,6 +62,7 @@ export async function streamAgentResponse(connection: AiConnection, apiKey: stri
     if (part.type === "tool-call" && part.toolName === "roleway_agent") output = part.input;
     if (part.type === "tool-error") throw new Error("Invalid provider tool output");
   }
+  if (await result.finishReason === "length") throw new Error("Provider response reached its output limit");
   const parsed = agentResponseSchema.parse(output);
   if (parsed.message !== lastText) onText(parsed.message);
   const usage = await result.totalUsage;
