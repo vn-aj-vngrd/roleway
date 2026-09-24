@@ -707,7 +707,7 @@ test.describe.serial("critical product journey", () => {
     await page.goto("/opportunities");
     await expect(
       page.getByRole("heading", {
-        name: "No tracked opportunities in this workspace",
+        name: "No opportunities yet",
       }),
     ).toBeVisible();
 
