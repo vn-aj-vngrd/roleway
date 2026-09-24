@@ -1,6 +1,6 @@
 # How Roleway Agent works
 
-Roleway Agent answers questions from a bounded snapshot of the signed-in person's Account or one Workspace. It can draft text and propose four internal changes. A proposal becomes a record only after the person approves it and the database applies it. The application remains useful when no AI provider is connected.
+Roleway Agent answers questions from a bounded snapshot and scoped, on-demand reads of the signed-in person's Account or one Workspace. It can draft text and propose four internal changes. A proposal becomes a record only after the person approves it and the database applies it. The application remains useful when no AI provider is connected.
 
 ## What a person sees
 
@@ -10,27 +10,26 @@ Roleway Agent answers questions from a bounded snapshot of the signed-in person'
 4. Approve or reject each proposal. A successful approval shows the saved result and a link to open it; rejection leaves product records unchanged. Saved conversations can be resumed or archived. Messages show timestamps and can be copied.
 
 ```mermaid
-sequenceDiagram
-    actor User
-    participant UI as Agent UI
-    participant API as Next.js server
-    participant DB as Supabase PostgreSQL
-    participant Model as Selected AI provider
-    User->>UI: Send message
-    UI->>API: POST /api/agent/chat
-    API->>DB: Authenticate, check limit, save message and run
-    API->>DB: Read owned, bounded context
-    API->>Model: Send policy, conversation, and context
-    Model-->>API: Stream roleway_agent response
-    API-->>UI: Stream answer and progress
-    API->>API: Validate answer and proposals
-    API->>DB: Save answer and proposals
-    User->>UI: Approve or reject a proposal
-    UI->>API: decideAgentProposal Server Action
-    API->>DB: decide_agent_proposal transaction
-    DB-->>API: Applied record or decision state
-    API-->>UI: Refresh conversation and show result
+flowchart TD
+    UI["useChat + DefaultChatTransport"] --> Route["POST /api/agent/chat<br/>Origin/body checks; UI message stream"]
+    Fallback["sendAgentMessage<br/>Server Action"] --> Run
+    Route --> Run["runAgentRequest<br/>Auth, quota, connection, saved scope"]
+    Run --> Start["Save user message and run<br/>Create scoped reader"]
+    Start --> Context["Query initial context; build prompt<br/>Decrypt provider key on server"]
+    Context --> SDK["streamAgentResponse<br/>ToolLoopAgent model/read loop"]
+    SDK --> Resolve["Parse agentGenerationSchema<br/>resolveAgentAnswer"]
+    Resolve --> Repair{"Unfinished introduction?"}
+    Repair -->|"Yes, once"| Retry["Retry with repair instruction<br/>Shared read/time budget"]
+    Retry --> Resolve
+    Repair -->|No| Validate["Validate targets and revisions<br/>Sanitize notes; capture Next Action state"]
+    Repair -->|"Still incomplete"| Fail["Fail run; preserve user message"]
+    Validate --> Save["complete_agent_run<br/>Save answer and proposals atomically"]
+    Save --> Cards["Refresh saved conversation<br/>Answer and any approval cards"]
+    Cards -->|"User approves or rejects"| Decision["decideAgentProposal<br/>Authenticated decision RPC"]
+    Decision --> Result["Approve: apply authorized change once<br/>Reject: no domain write"]
 ```
+
+This shows the successful path and the one answer-repair branch. Provider, validation, or persistence failures after the run starts enter the failed-run path. The detailed SDK loop and context inputs are shown below.
 
 The stream is feedback, not proof of a saved answer or applied change. On interruption, the user can reload the saved conversation to inspect the run and its result.
 
@@ -49,15 +48,80 @@ The stream is feedback, not proof of a saved answer or applied change. On interr
 
 The dependency versions are in [`STACK.md`](../STACK.md). The Create and Explore catalog is in `apps/web/src/features/agent/capabilities.ts`; the detailed behavior contract is [`ROLEWAY-AGENT.md`](ROLEWAY-AGENT.md).
 
-## Model calls versus product tools
+## Inside the Vercel AI SDK loop
 
-The streaming model has **a bounded read loop and a final structured response tool**, `roleway_agent`. Its payload is `{ message, proposals }`, where `proposals` is an array of at most four entries. Each entry has a `tool`, `summary`, and nullable `targetId`, `title`, `body`, `dueAt`, `name`, `objective`, and optional `supersedesProposalId`; Zod enforces the required fields for each tool type. This response tool returns data to the server; it has no database or external-action implementation. A `create_task` entry is a request for a review card, not a tool execution. Returning `roleway_agent` ends the model turn; there is no model step that applies the proposal. The provider also returns a required `clarification` decision. A missing or ambiguous creation detail produces a server-written question and no approval cards, even if the model also supplied proposals. This state is resolved before persistence; stored answers retain the existing `{ message, proposals }` contract. Before answering, `search_records` and `read_context` may retrieve owned source material. The loop allows at most five model steps per attempt and six reads total across the original answer and its one repair; the fifth step forces the final response. Read results contain at most 24,000 characters and disclose truncation.
+[`stream-agent.ts`](../apps/web/src/lib/ai/stream-agent.ts) constructs a `ToolLoopAgent`. Roleway owns authentication, context selection, persistence, and approval; the SDK manages model steps and dispatches the read tools' `execute` callbacks. The selected provider runs the model. The model supplies a tool name and JSON arguments, not executable JavaScript or SQL.
 
-OpenAI, OpenRouter, Anthropic, Gemini, and validated OpenAI-compatible connections share this policy and read-enabled SDK loop. Both streamed chat and the Server Action fallback validate the same `{ message, proposals }` contract. Native provider tool formats do not grant additional product capabilities.
+```mermaid
+sequenceDiagram
+    participant Server as streamAgentResponse
+    participant SDK as AI SDK ToolLoopAgent
+    participant Model as Provider/model
+    participant Read as Scoped read callbacks
+    participant DB as Supabase
 
-The older low-level provider adapters remain covered by unit tests; application conversations, including the non-streaming Server Action, use the read-enabled SDK loop. Testing a connection in Settings uses a separate `generateAssistantOutput` check. It asks for a small structured draft (`roleway_assist` for OpenRouter, `return_roleway_assist` for Anthropic, or JSON for the other providers). This verifies the supplied key and model; it is not a conversation or product write. The initial snapshot and model-invoked read tools both use authenticated Supabase queries with server-fixed owner, Workspace, and conversation scope. The Server Action fallback uses the same read-enabled provider loop.
+    Note over Server: Called by runAgentRequest with prompt, key, signal and reader.tools
+    Server->>SDK: new ToolLoopAgent(model, instructions, tools, limits)
+    Server->>SDK: agent.stream({ prompt, abortSignal })
+    loop Up to 5 model steps per attempt
+        SDK->>Model: Policy + prompt + schemas + prior step results
+        alt search_records or read_context
+            Model-->>SDK: Tool call name and JSON arguments
+            SDK->>Read: Validate inputSchema, execute(args)
+            Read->>Read: Enforce 6-read budget, emit progress
+            Read->>DB: Query with fixed owner and scope
+            DB-->>Read: Owned source rows
+            Read-->>SDK: Bounded content + truncation flag
+            Note over SDK,Model: Tool call/result joins the next model step
+        else Terminal roleway_agent call
+            Model-->>SDK: message, proposals, clarification JSON
+            SDK-->>Server: tool-input-delta events
+            Server->>Server: parsePartialJson, onText(partial message)
+            SDK-->>Server: Validated tool-call input
+            Note over Server,SDK: No execute callback for roleway_agent, loop ends
+        end
+    end
+    Server->>Server: Parse complete output and resolve clarification
+    Note over Server: Return answer/proposals and usage to runAgentRequest
+```
 
-The real write call is separate: after the user selects **Approve**, `decideAgentProposal` invokes PostgreSQL `decide_agent_proposal` through the signed-in Supabase client. **Reject** records the decision without a product write. The server-only `complete_agent_run` function saves the model answer and proposed changes, but does not apply them.
+
+The diagram follows a valid read or terminal call. One model step can request multiple reads in parallel; they share the same six-read counter. Further calls return a read-limit error without querying the database. Invalid arguments, provider errors, aborts, multiple terminal response calls, and truncated output fail the request. Returning a read result does not grant permission to write.
+
+### Three SDK tools, four proposal types
+
+| Model-visible SDK tool | Input | What runs on the server |
+| --- | --- | --- |
+| `search_records` | `{ kind, query, offset }`; Opportunities, Jobs, or documents | `tool({ inputSchema: agentSearchInputSchema, execute })` searches owned metadata in [`read-context.ts`](../apps/web/src/features/agent/read-context.ts). |
+| `read_context` | `{ kind, id, offset }`; Opportunity, Job, document, Career Profile, or conversation | `tool({ inputSchema: agentReadInputSchema, execute })` reads source text or history using the same fixed scope. |
+| `roleway_agent` | `{ message, proposals, clarification }` via `agentGenerationSchema` | No `execute` function. This is the terminal structured answer. Roleway parses it and resolves clarification before saving. |
+
+The four names inside `proposals`—`create_workspace`, `create_task`, `set_next_action`, and `create_note`—are **data in the terminal tool's arguments**, not four SDK tools. The model cannot directly invoke their database mutations. A `create_task` proposal requests an approval card; only a later user approval can execute it.
+
+`clarification` is a required nullable decision naming the first missing detail. When non-null, `resolveAgentAnswer` replaces the model's prose with a concrete question and discards all accompanying proposals. When null, the answer must be non-empty. The persisted contract is `{ message, proposals }`; the provider-only `clarification` field is not stored in that response. Each proposal has `tool`, `summary`, nullable `targetId`, `title`, `body`, `dueAt`, `name`, `objective`, and optional `supersedesProposalId`; Zod enforces the fields required by each type. At most four proposals are allowed.
+
+### Loop and request limits
+
+| Setting | Current implementation |
+| --- | --- |
+| Model steps | `stopWhen: [isStepCount(5), hasToolCall("roleway_agent")]`. A terminal tool with no `execute` also naturally ends the SDK loop. |
+| Tool selection | `toolChoice: "required"` when read tools are present. `prepareStep`, at zero-based `stepNumber >= 4`, makes only `roleway_agent` active and forces it. |
+| Read calls | Six model-invoked reads across the original attempt and optional repair, enforced by the same reader closure. Initial snapshot queries and the separately fetched focused Opportunity are outside this counter. |
+| Read size | Up to 12 rows per paginated collection, with a lookahead row to compute `nextOffset`; each returned content string is capped at 24,000 characters. Individual source fields have additional caps. |
+| Output and retries | `maxOutputTokens: 3000` per model call; `maxRetries: 0`. Roleway may make one fresh SDK attempt only for its narrowly detected unfinished-introduction case. |
+| Time | `runAgentRequest` shares a 240-second generation deadline across attempts. Each SDK attempt also has a 240-second OpenRouter or 45-second other-provider timeout. The route's `maxDuration` is 300 seconds. |
+
+The repair attempt reuses the original prompt plus a repair instruction, the same reader, and the remaining deadline. It does not resume the previous attempt's in-memory SDK messages. Retrieved tool-call/result messages inform later steps within an attempt; Roleway stores progress labels and the final answer/proposals, not a replayable SDK tool transcript.
+
+### Provider adapters and the browser stream
+
+OpenAI uses `createOpenAI(...).chat(model)`; OpenRouter and validated OpenAI-compatible endpoints use that same chat adapter with a different `baseURL`. Anthropic uses `createAnthropic(...)(model)` and Gemini uses `createGoogleGenerativeAI(...)(model)`. These adapters translate the SDK's tool schemas and messages into the provider protocol. The key remains server-side, requests do not follow redirects, and compatible endpoints are validated before use.
+
+The provider stream and the browser stream are separate. `streamAgentResponse` consumes SDK tool-input events, extracts partial `message` text with `parsePartialJson`, and calls `onText`. [`route.ts`](../apps/web/src/app/api/agent/chat/route.ts) wraps Roleway events with `createUIMessageStream` / `createUIMessageStreamResponse`: `data-started` carries conversation/run IDs, `data-progress` carries step labels, `data-answer` replaces the displayed answer text, and `data-result` carries the saved conversation URL. [`live-chat.tsx`](../apps/web/src/features/agent/live-chat.tsx) consumes those parts through `useChat` and refreshes or navigates on completion. It does not send the entire client transcript as authoritative model context; the server reloads owned history.
+
+The `sendAgentMessage` Server Action calls the same `runAgentRequest`. Its `generateAgentResponse` fallback delegates to `streamAgentResponse` when the reader is supplied, with a no-op text callback. Thus it uses the same model/read loop without streaming answer updates to the browser.
+
+Settings → Test connection is a separate `generateAssistantOutput` request for a small structured draft. It does not use this conversation pipeline or verify product writes. Older low-level provider adapters remain unit-tested, but application conversations use the read-enabled SDK path.
 
 ## Features available today
 
@@ -79,13 +143,40 @@ Explore has nine read-and-draft starting points:
 
 Explore has no write or send action. Follow-up text, interview preparation, fit explanations, and application plans stay in the transcript for the person to review and use.
 
-## Context and provider call
+## How context reaches the model
 
-`requireSearchContext()` establishes the signed-in owner and active Workspace. New conversations started from a Workspace or Opportunity keep that scope; direct Agent conversations can read across the person's Workspaces. Existing conversations retain their saved scope. The server rechecks ownership when loading a conversation, connection, or target.
+[`run-request.ts`](../apps/web/src/features/agent/run-request.ts) calls `requireSearchContext()` to establish the owner and available Workspaces. New conversations resolve Account or Workspace scope from their starting point; existing conversations reuse their saved scope. Connection ownership, conversation ownership, and focused-Opportunity ownership are checked before generation.
 
-The request reads Career Profile basics and preferences, Workspace metadata, active Opportunities and tasks, Inbox Jobs, scheduled interviews, contacts, document metadata, recent messages, and recent proposal states. It caps Opportunities and tasks at 100 each; Jobs, interviews, contacts, and documents at 60 each; messages at 12; and proposal history at 20. The focused Opportunity is fetched independently, even when it falls outside the 100-record snapshot. Read tools can search paginated Opportunities, Jobs and documents, retrieve listing/document text, read notes/activity through a verified Opportunity parent, and recover earlier conversation messages. Career Profile contains the existing stored basics and preferences; there is no separate structured Career Evidence store. Approved documents can supply further evidence; drafts must not be treated as approved facts. Missing or truncated material must be disclosed.
+```mermaid
+flowchart TD
+    Auth["requireSearchContext + saved conversation<br/>Owner, Workspace IDs, conversation ID"] --> Snapshot["Initial Supabase snapshot<br/>Profile, records, history, proposals"]
+    Auth --> Focus["Independent focused-Opportunity read<br/>Bounded Job description"]
+    Auth --> Reader["createAgentReadContext closure<br/>Fixed owner and query scope"]
+    Snapshot --> Prompt["prompt string<br/>Guidance + history JSON +<br/>contextPayload JSON + current request"]
+    Focus --> Prompt
+    Clock["Server time, browser timezone,<br/>page and current message"] --> Prompt
+    Policy["agentSystemPolicy"] --> SDK["ToolLoopAgent<br/>instructions + prompt + tools"]
+    Prompt --> SDK
+    Reader -->|"search_records and read_context"| SDK
+    SDK --> First["First provider request"]
+    SDK --> Later["Later steps also receive<br/>model-requested tool results"]
+```
 
-The server includes the current time, browser timezone, conversation scope, and page context. It decrypts the chosen key server-side and calls OpenAI, Anthropic, Gemini, OpenRouter, or a validated public HTTPS OpenAI-compatible endpoint. AI SDK streams a structured answer (`message` plus at most four `proposals`); Zod validates it, note content is sanitized, and proposal targets are checked before `complete_agent_run` saves the assistant message and review cards. A short unfinished introduction gets one bounded repair attempt.
+
+| Initial context | Selection and bounds |
+| --- | --- |
+| Career Profile and preferences | Account-wide stored basics, target roles, technologies, location/remote preferences, compensation, and exclusions. |
+| Workspaces | Metadata for the server-resolved scope. Archived Workspaces are excluded by the context boundary. |
+| Opportunities and tasks | Up to 100 active Opportunities and 100 outstanding tasks. Non-focused Job descriptions are omitted. |
+| Focused Opportunity | Loaded independently, even outside the 100-record snapshot; includes up to 12,000 characters of plain-text Job description. |
+| Jobs, interviews, contacts, documents | Up to 60 each: Inbox Jobs, scheduled interviews, contacts ordered by follow-up date, and document metadata. Document bodies require a read tool. |
+| Conversation | Latest 12 messages, reversed into chronological order, each capped at 6,000 characters. This is embedded in the prompt as JSON. |
+| Proposals | Latest 20 summaries/states; argument details are included only for entries among the latest four that pass schema validation. |
+| Request context | Personal guidance, current server time, browser timezone, saved scope/page, current message, and explicit descriptions of context limits. |
+
+On-demand reads can search Opportunities/Jobs/documents, retrieve Job or document source text, read notes/activity through an owned Opportunity, and page earlier messages in the current conversation. The callbacks capture `userId`, `workspaceIds`, and `conversationId`; the model cannot override them. Reads use authenticated Supabase queries and RLS. The model gets tool results, not database credentials.
+
+This is explicit database retrieval with bounded context, not a vector/embedding retrieval pipeline. Career Profile has no separate structured Career Evidence store. Approved documents can supply further evidence; drafts are not approved facts. Retrieved content and personal guidance remain untrusted data and cannot override the system policy or approval boundary.
 
 ## What approval can do
 
