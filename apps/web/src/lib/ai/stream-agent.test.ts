@@ -4,7 +4,7 @@ import { createAgentReadContext } from "@/features/agent/read-context";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { streamAgentResponse } from "./stream-agent";
 
-const reply = { message: "A **streamed** answer.", proposals: [] };
+const reply = { message: "A **streamed** answer.", proposals: [], clarification: null };
 function streamResponse(value: unknown, finishReason = "tool_calls", toolName = "roleway_agent") {
   const args = JSON.stringify(value);
   const chunks = [
@@ -54,6 +54,19 @@ describe("Agent provider streaming", () => {
   });
   it("rejects malformed proposals even after partial answer text is streamed", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(streamResponse({ message: "Draft", proposals: [{ tool: "create_task", targetId: null }] })));
+    await expect(streamAgentResponse({ provider: "openai", model: "fixture", base_url: null }, "key", "prompt", () => {})).rejects.toThrow();
+  });
+  it.each(["", "I need to clarify the due date before proposing the task."])("turns clarification into a concrete question and withholds contradictory proposals (%s)", async message => {
+    const proposal = { tool: "create_task", targetId: "7f3cd827-39d5-456a-b3c7-a724d68c1459", summary: "Prepare examples", title: "Prepare examples", body: null, name: null, objective: null, dueAt: null };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(streamResponse({ message, clarification: "due_date", proposals: [proposal] })));
+    const updates: string[] = [];
+    const result = await streamAgentResponse({ provider: "openai", model: "fixture", base_url: null }, "key", "Due at 8 on Friday", text => updates.push(text));
+    expect(result.output.proposals).toEqual([]);
+    expect(result.output.message).toContain("What exact date and time do you mean?");
+    expect(updates.at(-1)).toBe(result.output.message);
+  });
+  it("rejects a provider that omits the required clarification decision", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(streamResponse({ message: "Ready", proposals: [] })));
     await expect(streamAgentResponse({ provider: "openai", model: "fixture", base_url: null }, "key", "prompt", () => {})).rejects.toThrow();
   });
   it("rejects an output-limit ending even when its JSON is valid", async () => {

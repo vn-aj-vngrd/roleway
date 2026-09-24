@@ -122,6 +122,15 @@ async function evaluate(
     );
     return { output: result.output, calls };
   } catch (error) {
+    const boundaryErrors = ["Multiple response calls are not supported", "Invalid provider tool output", "Provider response reached its output limit", "Provider response too large"];
+    const validation: unknown[] = [];
+    let cause: unknown = error;
+    for (let depth = 0; depth < 5 && cause && typeof cause === "object"; depth++) {
+      const issues = "issues" in cause ? cause.issues : null;
+      if (Array.isArray(issues)) validation.push(...issues.map(issue => ({ code: issue.code, path: issue.path })));
+      if (cause instanceof AggregateError) validation.push(...cause.errors.map(issue => ({ connectionCode: issue?.code })));
+      cause = "cause" in cause ? cause.cause : null;
+    }
     const diagnostic =
       error && typeof error === "object"
         ? {
@@ -135,7 +144,7 @@ async function evaluate(
                 : undefined,
           }
         : { name: "Error" };
-    console.info(JSON.stringify({ case: name, diagnostic }));
+    console.info(JSON.stringify({ case: name, diagnostic, validation, boundary: error instanceof Error && boundaryErrors.includes(error.message) ? error.message : undefined }));
     // Provider exceptions may embed request headers. Never log or rethrow them.
     throw new Error(
       `Live evaluation ${name} failed at the provider boundary (${Date.now() - start}ms).`,
@@ -161,10 +170,13 @@ describe.skipIf(!key)("live Agent quality using synthetic data", () => {
     expect(output.proposals).toEqual([]);
     expect(output.message).toMatch(/\?/);
   });
-  it("clarifies an ambiguous due date before proposing", async () => {
+  it.each([
+    "Due at 8 on Friday; I have not specified morning/evening or which Friday. Ask before choosing.",
+    "Due Friday at 8.",
+  ])("clarifies an ambiguous due date before proposing: %s", async dueDate => {
     const { output } = await evaluate(
       "ambiguous-date",
-      `Create a task titled Prepare examples for Opportunity ${opportunity}. Due at 8 on Friday; I have not specified morning/evening or which Friday. Ask before choosing.`,
+      `Create a task titled Prepare examples for Opportunity ${opportunity}. ${dueDate}`,
     );
     expect(output.proposals).toEqual([]);
     expect(output.message).toMatch(/\?/);

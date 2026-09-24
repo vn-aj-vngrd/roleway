@@ -29,7 +29,7 @@ The public guide at `/help/agent-create` explains setup, all four Create flows, 
 | Next Action | Exact Opportunity/Workspace, title, optional due date | Updated Next Action |
 | Note | Exact Opportunity/Workspace and note text | Opportunity note |
 
-The model gathers details through conversation; schema validation and database authorization guard execution. Date interpretation receives the browser timezone and current server time. Ask about ambiguous time references. A missing optional date is represented as null, not invented.
+The model gathers details through conversation; schema validation and database authorization guard execution. Each generated answer includes a required clarification decision. When the model identifies a missing or ambiguous detail, the server supplies a concrete question and discards accompanying proposals before persistence. Date interpretation receives the browser timezone and current server time. Ask about ambiguous time references. A declined optional date is represented as null; an unresolved requested date requires clarification.
 
 Explore offers Today/follow-ups, Workspaces, Opportunities, Inbox Jobs, tasks, interviews, contacts, document inventory, and Career Profile/fit. It can prepare follow-up text, interview questions, document sections, fit explanations and application plans in the transcript. Users copy these drafts and perform external actions themselves.
 

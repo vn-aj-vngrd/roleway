@@ -4,7 +4,8 @@ import { createAnthropic } from "@ai-sdk/anthropic";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { parsePartialJson, ToolLoopAgent, isStepCount, hasToolCall, tool } from "ai";
 import type { AgentReadTools } from "@/features/agent/read-context";
-import { agentResponseSchema } from "@roleway/schemas";
+import { agentGenerationSchema } from "@roleway/schemas";
+import { resolveAgentAnswer } from "@/features/agent/answer-quality";
 import { agentSystemPolicy, safeCompatibleBaseUrl, type AiConnection } from "./providers";
 
 export async function streamAgentResponse(connection: AiConnection, apiKey: string, prompt: string, onText: (text: string) => void, signal?: AbortSignal, readTools?: AgentReadTools) {
@@ -36,7 +37,7 @@ export async function streamAgentResponse(connection: AiConnection, apiKey: stri
       ...readTools,
       roleway_agent: tool({
         description: "Return the complete grounded answer and reviewable proposals. This ends the turn; it does not execute changes.",
-        inputSchema: agentResponseSchema,
+        inputSchema: agentGenerationSchema,
       }),
     },
     stopWhen: [isStepCount(5), hasToolCall("roleway_agent")],
@@ -65,10 +66,10 @@ export async function streamAgentResponse(connection: AiConnection, apiKey: stri
       }
     }
     if (part.type === "tool-call" && part.toolName === "roleway_agent") output = part.input;
-    if (part.type === "tool-error") throw new Error("Invalid provider tool output");
+    if (part.type === "tool-error") throw new Error("Invalid provider tool output", { cause: part.error });
   }
   if (await result.finishReason === "length") throw new Error("Provider response reached its output limit");
-  const parsed = agentResponseSchema.parse(output);
+  const parsed = resolveAgentAnswer(agentGenerationSchema.parse(output));
   if (parsed.message !== lastText) onText(parsed.message);
   const usage = await result.totalUsage;
   return { output: parsed, inputTokens: usage.inputTokens, outputTokens: usage.outputTokens };
