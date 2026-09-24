@@ -2,7 +2,7 @@
 
 import { Check, ChevronRight, Circle, LoaderCircle, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import type { RunProgress } from "./stream-types";
 
 export function formatRunDuration(milliseconds: number) {
@@ -24,12 +24,15 @@ export function RunTimeline({ startedAt, endedAt, pending = false, failed = fals
   model?: string;
 }) {
   const router = useRouter();
+  const [refreshing, startRefresh] = useTransition();
   const [elapsed, setElapsed] = useState(0);
   useEffect(() => {
-    if (!recovering || !pending) return;
-    const timer = window.setInterval(() => router.refresh(), 3000);
-    return () => window.clearInterval(timer);
-  }, [recovering, pending, router]);
+    if (!recovering || !pending || refreshing) return;
+    // Wait for each RSC refresh to commit. Overlapping refreshes can repeatedly
+    // abort a slow response, leaving a completed run stuck on "Working".
+    const timer = window.setTimeout(() => startRefresh(() => router.refresh()), 3000);
+    return () => window.clearTimeout(timer);
+  }, [recovering, pending, refreshing, router]);
   useEffect(() => {
     if (!pending) return;
     const timer = window.setInterval(() => setElapsed(Date.now() - Date.parse(startedAt)), 1000);

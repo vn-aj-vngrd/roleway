@@ -8,7 +8,9 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:agent:integration": "vitest run --config vitest.integration.config.ts",
+    "test:agent:live": "vitest run --config vitest.evals.config.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "4.0.59",

@@ -170,7 +170,9 @@ function AgentRunDetails({ run, steps, endedAt }: { run: Run; steps: Step[]; end
 function ApprovalCard({ proposal, opportunity, workspace, createdWorkspaceId }: { createdWorkspaceId: string | undefined; proposal: Proposal; opportunity: Opportunity | undefined; workspace: string | undefined }) {
   const feedback = creationFeedback[proposal.tool_name];
   const details = proposalDetails(proposal, opportunity);
-  const savedTitle = proposal.status === "applied" ? String(proposal.arguments.name ?? proposal.arguments.title ?? toolLabel(proposal.tool_name)) : toolLabel(proposal.tool_name);
+  const resultTitle = proposal.tool_name === "create_workspace" ? proposal.arguments.name
+    : proposal.tool_name === "create_task" || proposal.tool_name === "set_next_action" ? proposal.arguments.title : null;
+  const savedTitle = proposal.status === "applied" ? String(resultTitle ?? toolLabel(proposal.tool_name)) : toolLabel(proposal.tool_name);
   if (proposal.status === "applied" && ["create_workspace", "create_task", "set_next_action"].includes(proposal.tool_name)) {
     const titleIndex = details.findIndex(([label]) => ["Workspace", "Task", "Next Action"].includes(label));
     if (titleIndex >= 0) details.splice(titleIndex, 1);
@@ -183,7 +185,7 @@ function ApprovalCard({ proposal, opportunity, workspace, createdWorkspaceId }: 
     {proposal.status === "proposed" ? <footer>
       <form action={decideAgentProposal}><input type="hidden" name="proposalId" value={proposal.id} /><input type="hidden" name="decision" value="reject" /><SubmitButton className="button ghost" pendingLabel="Rejecting…">Reject</SubmitButton></form>
       <form action={decideAgentProposal}><input type="hidden" name="proposalId" value={proposal.id} /><input type="hidden" name="decision" value="approve" /><SubmitButton pendingLabel={feedback?.pending ?? "Saving…"}>Approve change</SubmitButton></form>
-    </footer> : <div className="agent-approval-outcome" tabIndex={-1}><span className={`agent-proposal-status ${proposal.status}`}><Check aria-hidden="true" />{proposal.status === "applied" ? feedback?.success ?? "Saved" : proposal.status === "rejected" ? "Rejected" : proposal.status === "failed" ? "Could not apply" : proposal.status}</span>{proposal.status === "applied" ? proposal.tool_name === "create_workspace" ? <Link className="button primary" href={createdWorkspaceId ? `/settings/workspaces/${createdWorkspaceId}` : "/settings/workspaces"}>{createdWorkspaceId ? "Open Workspace" : "View Workspaces"}<ArrowUpRight aria-hidden="true" /></Link> : <form action={openAgentResult}><input type="hidden" name="proposalId" value={proposal.id} /><SubmitButton pendingLabel="Opening…">{feedback?.open ?? "Open Opportunity"}</SubmitButton></form> : null}</div>}
+    </footer> : <div className="agent-approval-outcome" tabIndex={-1}><span className={`agent-proposal-status ${proposal.status}`}><Check aria-hidden="true" />{proposal.status === "applied" ? feedback?.success ?? "Saved" : proposal.status === "rejected" ? "Rejected" : proposal.status === "failed" ? "Could not apply" : proposal.status === "superseded" ? "Replaced by a revised proposal" : proposal.status}</span>{proposal.status === "applied" ? proposal.tool_name === "create_workspace" ? <Link className="button primary" href={createdWorkspaceId ? `/settings/workspaces/${createdWorkspaceId}` : "/settings/workspaces"}>{createdWorkspaceId ? "Open Workspace" : "View Workspaces"}<ArrowUpRight aria-hidden="true" /></Link> : <form action={openAgentResult}><input type="hidden" name="proposalId" value={proposal.id} /><SubmitButton pendingLabel="Opening…">{feedback?.open ?? "Open Opportunity"}</SubmitButton></form> : null}</div>}
   </section>;
 }
 

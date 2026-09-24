@@ -9,6 +9,8 @@ import { requireSearchContext } from "@/features/projects/context";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { recordSystemEvent } from "@/lib/observability";
 import { richTextToPlainText, sanitizeRichText } from "@/lib/rich-text";
+import { isUnfinishedIntroduction, answerRepairInstruction } from "./answer-quality";
+import { createAgentReadContext, opportunityContextFields, type AgentOpportunity } from "./read-context";
 import { agentContextPage, agentContextPages } from "./scope";
 import type { AgentStreamEvent } from "./stream-types";
 
@@ -25,13 +27,6 @@ const sendSchema = z.object({
 function conversationTitle(message: string) {
   const normalized = message.replace(/\s+/g, " ").trim();
   return normalized.length <= 68 ? normalized : `${normalized.slice(0, 67).trimEnd()}…`;
-}
-
-// Catch a short introductory paragraph with no promised content or approval card.
-// This is deliberately narrow: short greetings and clarification questions are valid.
-function isUnfinishedIntroduction(output: { message: string; proposals: unknown[] }) {
-  const message = output.message.trim();
-  return output.proposals.length === 0 && message.length <= 600 && !message.includes("\n") && message.endsWith(":");
 }
 
 export async function runAgentRequest(formData: FormData, emit?: (event: AgentStreamEvent) => void, signal?: AbortSignal) {
@@ -126,10 +121,13 @@ export async function runAgentRequest(formData: FormData, emit?: (event: AgentSt
     if (linkError) throw new Error("run_save_failed");
     emit?.({ type: "started", conversationId, runId: run.id });
     await progress(10, "Reading Career Profile and Workspace context", "active");
+    const reader = createAgentReadContext({ supabase: auth.supabase, userId: auth.user.id, workspaceIds: scopeProjectIds, conversationId, onRead: (label, position, status) => progress(20 + position, label, status) });
+    const focusedOpportunity = focusOpportunityId ? await reader.opportunity(focusOpportunityId) : null;
+    if (focusOpportunityId && !focusedOpportunity) throw new Error("focused_opportunity_unavailable");
     const [profileResult, preferencesResult, opportunitiesResult, tasksResult, jobsResult, interviewsResult, contactsResult, documentsResult, historyResult, guidanceResult, proposalHistoryResult] = await Promise.all([
       auth.supabase.from("profiles").select("full_name, headline, summary").eq("user_id", auth.user.id).maybeSingle(),
       auth.supabase.from("career_preferences").select("target_titles, preferred_technologies, allowed_locations, remote_preference, minimum_compensation, currency, excluded_criteria").eq("user_id", auth.user.id).maybeSingle(),
-      auth.supabase.from("opportunities").select("id, project_id, reference_number, stage, priority, next_action, next_action_due_at, updated_at, jobs(company, title, description, location, compensation, remote_policy)").eq("user_id", auth.user.id).in("project_id", scopeProjectIds).neq("stage", "closed").order("updated_at", { ascending: false }).limit(100),
+      auth.supabase.from("opportunities").select(opportunityContextFields).eq("user_id", auth.user.id).in("project_id", scopeProjectIds).neq("stage", "closed").order("updated_at", { ascending: false }).limit(100),
       auth.supabase.from("tasks").select("id, project_id, opportunity_id, title, status, priority, due_at").eq("user_id", auth.user.id).in("project_id", scopeProjectIds).in("status", ["todo", "doing"]).order("due_at", { ascending: true, nullsFirst: false }).limit(100),
       auth.supabase.from("jobs").select("id, project_id, company, title, location, inbox_state, inbox_review_at, imported_at").eq("user_id", auth.user.id).in("project_id", scopeProjectIds).neq("inbox_state", "tracked").order("imported_at", { ascending: false }).limit(60),
       auth.supabase.from("interviews").select("id, project_id, opportunity_id, interview_type, starts_at, status, interviewers").eq("user_id", auth.user.id).in("project_id", scopeProjectIds).eq("status", "scheduled").order("starts_at", { ascending: true }).limit(60),
@@ -137,13 +135,14 @@ export async function runAgentRequest(formData: FormData, emit?: (event: AgentSt
       auth.supabase.from("documents").select("id, project_id, opportunity_id, title, kind, status, updated_at").eq("user_id", auth.user.id).in("project_id", scopeProjectIds).order("updated_at", { ascending: false }).limit(60),
       auth.supabase.from("agent_messages").select("role, content, created_at").eq("conversation_id", conversationId).order("created_at", { ascending: false }).limit(12),
       auth.supabase.from("agent_preferences").select("guidance").eq("user_id", auth.user.id).maybeSingle(),
-      auth.supabase.from("agent_proposals").select("tool_name, target_id, destination_project_id, summary, status, arguments").eq("conversation_id", conversationId).eq("user_id", auth.user.id).order("created_at", { ascending: false }).limit(20),
+      auth.supabase.from("agent_proposals").select("id, tool_name, target_id, destination_project_id, summary, status, arguments").eq("conversation_id", conversationId).eq("user_id", auth.user.id).order("created_at", { ascending: false }).limit(20),
     ]);
 
     if ([profileResult, preferencesResult, opportunitiesResult, tasksResult, jobsResult, interviewsResult, contactsResult, documentsResult, historyResult, guidanceResult, proposalHistoryResult].some((result) => result.error)) {
       throw new Error("context_read_failed");
     }
-    const opportunities = (opportunitiesResult.data ?? []).map((opportunity) => {
+    const snapshot = (opportunitiesResult.data ?? []) as unknown as AgentOpportunity[];
+    const opportunities = [...(focusedOpportunity ? [focusedOpportunity] : []), ...snapshot.filter(item => item.id !== focusOpportunityId)].map((opportunity) => {
       const jobs = opportunity.jobs as unknown as { company?: string; title?: string; description?: string; location?: string; compensation?: string; remote_policy?: string } | null;
       return {
         ...opportunity,
@@ -166,7 +165,7 @@ export async function runAgentRequest(formData: FormData, emit?: (event: AgentSt
       currentTime: new Date().toISOString(),
       timeZone: parsed.data.timeZone,
       scope: { mode: scopeMode, workspaceId: scopeMode === "workspace" ? conversationProjectId : null, page: agentContextPages[contextPage] },
-      contextLimits: "Bounded snapshots: 100 active Opportunities/outstanding tasks, 60 Inbox Jobs/scheduled interviews/contacts/documents, 12 recent messages. Archived Workspaces and completed tasks/interviews are excluded. Exact fields are included for the four latest valid proposals; ask for clarification when older proposal details are absent. Document bodies, activity history and full career evidence are not included. Only the focused Opportunity includes a Job description.",
+      contextLimits: "Bounded snapshots: 100 active Opportunities/outstanding tasks, 60 Inbox Jobs/scheduled interviews/contacts/documents, 12 recent messages. Archived Workspaces and completed tasks/interviews are excluded. Exact fields are included for the four latest valid proposals; ask for clarification when older proposal details are absent. Use search_records and read_context for document bodies, Job descriptions, notes, activity, profile facts and earlier messages. Only the focused Opportunity includes a Job description initially. There is no separate structured Career Evidence store; approved documents can supply further evidence. At most six read calls are permitted across this run, each bounded to 24,000 characters.",
       recentProposals: (proposalHistoryResult.data ?? []).map(({ arguments: args, ...summary }, index) => {
         const details = index < 4 ? agentProposalSchema.safeParse(args) : null;
         return { ...summary, details: details?.success ? { ...details.data, body: details.data.body ? sanitizeRichText(details.data.body) : null } : null };
@@ -209,14 +208,14 @@ export async function runAgentRequest(formData: FormData, emit?: (event: AgentSt
             emit({ type: "progress", data: { id: "20", label: "Receiving the answer", status: "active" } });
           }
           emit({ type: "answer", text });
-        }, generationSignal)
-      : generateAgentResponse(provider, apiKey, requestPrompt, generationSignal);
+        }, generationSignal, reader.tools)
+      : generateAgentResponse(provider, apiKey, requestPrompt, generationSignal, reader.tools);
     let result = await generate(prompt);
     if (isUnfinishedIntroduction(result.output)) {
       generationSignal.throwIfAborted();
       await progress(20, "Completing the answer", "active");
       emit?.({ type: "answer", text: "" });
-      const retry = await generate(`${prompt}\n\nResponse requirement: The previous attempt ended with an introduction and omitted the answer. Return a complete, self-contained response in the message field, including any content you introduce. For a greeting, a brief greeting and a question are sufficient. Do not invent missing context.`);
+      const retry = await generate(`${prompt}\n\n${answerRepairInstruction}`);
       result = {
         ...retry,
         inputTokens: result.inputTokens == null || retry.inputTokens == null ? undefined : result.inputTokens + retry.inputTokens,
@@ -231,11 +230,20 @@ export async function runAgentRequest(formData: FormData, emit?: (event: AgentSt
     await progress(30, "Validating the answer and proposed changes", "active");
 
     failureCode = "invalid_provider_output";
+    const availableTargets = new Map<string, Pick<AgentOpportunity, "id" | "stage" | "next_action" | "next_action_due_at">>([...opportunities.map(item => [item.id, item] as const), ...reader.opportunities]);
+    const replacedIds = new Set<string>();
     const validProposals = result.output.proposals.flatMap((proposal) => {
       const checked = agentProposalSchema.safeParse({ ...proposal, body: proposal.body ? sanitizeRichText(proposal.body) : null });
       if (!checked.success) throw new Error("invalid_proposal");
-      if (checked.data.targetId && !opportunities.some((opportunity) => opportunity.id === checked.data.targetId)) throw new Error("invalid_proposal_target");
-      const target = opportunities.find((opportunity) => opportunity.id === checked.data.targetId);
+      if (checked.data.targetId && !availableTargets.has(checked.data.targetId)) throw new Error("invalid_proposal_target");
+      const target = checked.data.targetId ? availableTargets.get(checked.data.targetId) : undefined;
+      if (target?.stage === "closed") throw new Error("closed_proposal_target");
+      const replacementId = checked.data.supersedesProposalId;
+      if (replacementId) {
+        const previous = (proposalHistoryResult.data ?? []).find(item => item.id === replacementId);
+        if (!previous || previous.status !== "proposed" || previous.tool_name !== checked.data.tool || replacedIds.has(replacementId)) throw new Error("invalid_proposal_revision");
+        replacedIds.add(replacementId);
+      }
       return [{ ...checked.data, expectedNextAction: checked.data.tool === "set_next_action" && target
         ? { title: target.next_action, dueAt: target.next_action_due_at } : null }];
     });
@@ -257,12 +265,14 @@ export async function runAgentRequest(formData: FormData, emit?: (event: AgentSt
     emit?.({ type: "progress", data: { id: "error", label: signal?.aborted ? "Request interrupted" : "Run failed safely", status: "failed" } });
     await admin.from("agent_run_steps").update({ status: "failed" }).eq("run_id", run.id).eq("status", "active");
     if (userMessage) await admin.from("agent_messages").update({ run_id: run.id }).eq("id", userMessage.id).eq("user_id", auth.user.id);
-    const code = error instanceof Error && error.name === "TimeoutError" ? "provider_timeout" : error instanceof z.ZodError || error instanceof SyntaxError ? "invalid_provider_output" : failureCode;
+    const providerStatus = error && typeof error === "object" && "statusCode" in error ? error.statusCode : null;
+    const emptyProviderStream = error instanceof Error && error.name === "AI_ToolChoiceViolationError" && "finishReason" in error && error.finishReason === "other";
+    const code = providerStatus === 429 ? "provider_rate_limited" : providerStatus === 503 || emptyProviderStream ? "provider_unavailable" : error instanceof Error && error.name === "TimeoutError" ? "provider_timeout" : error instanceof z.ZodError || error instanceof SyntaxError ? "invalid_provider_output" : failureCode;
     await admin.from("ai_runs").update({ status: "failed", error_message: "Agent could not complete this run." }).eq("id", run.id).eq("user_id", auth.user.id);
     await admin.from("agent_run_steps").insert({ user_id: auth.user.id, project_id: conversationProjectId, conversation_id: conversationId, run_id: run.id, label: "Agent run failed safely", status: "failed", position: 1 });
     await recordSystemEvent({ category: "ai", code, userId: auth.user.id, metadata: { provider: connection.provider, model: connection.model } });
     revalidatePath("/agent");
-    const message = code === "provider_timeout" ? "The model took too long to respond. Your message is saved; retry or choose a faster model in Settings." : "Agent could not complete that request. Your message is saved; try again.";
+    const message = code === "provider_rate_limited" ? "Your AI provider has reached its limit. Your message is saved; wait or choose another connection in Settings." : code === "provider_unavailable" ? "Your AI provider is temporarily unavailable. Your message is saved; try later or choose another connection in Settings." : code === "provider_timeout" ? "The model took too long to respond. Your message is saved; retry or choose a faster model in Settings." : "Agent could not complete that request. Your message is saved; try again.";
     return `/agent?conversation=${conversationId}&error=${encodeURIComponent(message)}`;
   }
 

@@ -23,7 +23,7 @@ For SMTP provisioning, auth template updates, or email delivery failures, follow
 
 `Browser journeys` is manually dispatched against the selected branch. Configure the GitHub `e2e` environment with E2E_SUPABASE_URL, E2E_SUPABASE_ANON_KEY, E2E_SUPABASE_SERVICE_ROLE_KEY, and E2E_AI_CREDENTIAL_ENCRYPTION_KEY. Use an isolated Supabase project with the repository migrations applied. Tests create disposable users and clean them up. The default suite exercises password signup/login and needs CAPTCHA disabled only in that isolated test project. For testing existing application workflows against a CAPTCHA-enabled project, run `E2E_AUTH_MODE=admin pnpm --filter @roleway/web test:e2e`: its fixture creates and authenticates only `e2e-*@roleway.test` users through the Admin API, leaves production CAPTCHA enabled, and verifies deletion is denied without a valid challenge. That mode does not prove public signup or password login. Do not expose these secrets to untrusted PR code or publish browser traces containing sessions.
 
-The ordinary CI build uses placeholders and runs without production credentials. It cannot prove remote database or real-provider integration. Live AI verification additionally requires an authorized BYO-provider connection and must cover generation, approval, persisted mutation, rejection, and failure recovery. `agent-live.spec.ts` opts in with `ROLEWAY_TEST_OPENROUTER_KEY`, uses the selected Nemotron free model and synthetic records, and disables traces/screenshots to protect the key. Run it separately from ordinary E2E; without the key it is explicitly skipped. OpenRouter calls time out after 240 seconds; other provider calls retain their 45-second limit. AI pages allow 300 seconds for the request and persistence, within Vercel Fluid Compute limits. A free-provider queue may still exceed this bound.
+The ordinary CI build uses placeholders and runs without production credentials. It cannot prove remote database or real-provider integration. Live AI verification additionally requires an authorized BYO-provider connection and must cover generation, approval, persisted mutation, rejection, and failure recovery. `agent-live.spec.ts` opts in with `ROLEWAY_RUN_LIVE_AGENT=1` and `ROLEWAY_TEST_OPENROUTER_KEY`, uses the selected Nemotron free model and synthetic records, and disables traces/screenshots to protect the key. Run it separately from ordinary E2E; without the key it is explicitly skipped. OpenRouter calls time out after 240 seconds; other provider calls retain their 45-second limit. AI pages allow 300 seconds for the request and persistence, within Vercel Fluid Compute limits. A free-provider queue may still exceed this bound.
 
 ## Recovery
 
@@ -33,3 +33,16 @@ The ordinary CI build uses placeholders and runs without production credentials.
 - Database unavailable: restore project connectivity before interpreting authenticated E2E failures as application defects.
 
 Pinned release tooling follows Relay, including its compatible Conventional Commits preset. Upgrade analyzer, notes generator, and preset together and run `pnpm test:workflow`.
+
+
+### Agent context and revision rollout
+
+Apply `20260924144440_agent_proposal_revisions.sql` before the application release. It preserves legacy proposals without a revision id and serializes approvals/revisions by conversation. Validate `supabase/tests/agent_transactions.sql` on a disposable database first; local success is not hosted activation.
+
+Run `pnpm --filter @roleway/web test:agent:live` separately with `ROLEWAY_TEST_OPENROUTER_KEY` in the local environment. The default is the existing free OpenRouter model; override `ROLEWAY_TEST_MODEL` explicitly to compare models (provider charges may apply). The suite uses synthetic context, never private account data, and reports per-case latency/token usage. It fails fast when no key is configured. This evaluates model behavior and read-tool use; the separate `agent-live.spec.ts` verifies real authenticated persistence and approval. A passing model does not certify other models/providers.
+
+The default browser gate uses the development server. For production-build testing, build first and set `E2E_WEB_SERVER_COMMAND="pnpm start"`, using an HTTPS test origin: production CSP upgrades insecure redirects, so plain HTTP localhost can produce TLS failures on anonymous protected-route prefetches. Keep those environment failures separate from product failures. Long authenticated fixtures allow six minutes for their multi-route workflows.
+
+Authenticated read-tool integration: `pnpm --filter @roleway/web test:agent:integration` creates one disposable account, exercises real joined searches and source reads, verifies Workspace exclusion, and deletes the fixture. It makes no provider calls.
+
+To evaluate native adapters, set `ROLEWAY_TEST_PROVIDER` to `openai`, `anthropic`, `gemini`, or `openai-compatible`, plus `ROLEWAY_TEST_AI_KEY` and an explicit `ROLEWAY_TEST_MODEL`; compatible endpoints also need `ROLEWAY_TEST_BASE_URL`. Omitted provider defaults to OpenRouter. The evaluator stops on the first failure so outages/rate limits do not trigger the rest of the matrix.

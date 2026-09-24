@@ -6,7 +6,7 @@ vi.mock("@/lib/ai/stream-agent", () => ({ streamAgentResponse: vi.fn() }));
 const fixtures = vi.hoisted(() => ({
   generate: vi.fn(), rpc: vi.fn(), updates: [] as Array<{ table: string; values: Record<string, unknown> }>,
   opportunities: [] as Array<{ id: string; next_action: string | null; next_action_due_at: string | null }>,
-  contextError: false, recordEvent: vi.fn(), contextRows: {} as Record<string, unknown>, filters: [] as Array<[string, string, unknown]>, orders: [] as Array<[string, string, unknown]>,
+  focused: null as Record<string, unknown> | null, contextError: false, recordEvent: vi.fn(), contextRows: {} as Record<string, unknown>, filters: [] as Array<[string, string, unknown]>, orders: [] as Array<[string, string, unknown]>,
 }));
 const owner = "11111111-1111-4111-8111-111111111111";
 const workspace = "22222222-2222-4222-8222-222222222222";
@@ -38,7 +38,7 @@ const client = {
       upsert: () => query,
       insert: () => { operation="insert"; return query; },
       update: (values: Record<string, unknown>) => { fixtures.updates.push({table,values}); return query; },
-      single: async () => result(), maybeSingle: async () => result(),
+      single: async () => result(), maybeSingle: async () => table === "opportunities" ? { data: fixtures.focused, error: null } : result(),
       then: (resolve: (value: ReturnType<typeof result>) => unknown) => Promise.resolve(result()).then(resolve),
     };
     return query;
@@ -55,7 +55,7 @@ beforeEach(() => {
   vi.mocked(streamAgentResponse).mockReset();
   fixtures.recordEvent.mockClear();
   fixtures.contextRows={};fixtures.filters=[];fixtures.orders=[];
-  fixtures.opportunities=[];
+  fixtures.opportunities=[];fixtures.focused=null;
   fixtures.contextError=false;fixtures.updates.length=0;
   fixtures.generate.mockReset().mockResolvedValue({output:{message:"A grounded answer",proposals:[]},inputTokens:10,outputTokens:20});
   fixtures.rpc.mockReset().mockResolvedValue({error:null});
@@ -292,4 +292,37 @@ describe("Agent Workspace scope", () => {
     expect(fixtures.filters).toContainEqual(["tasks", "project_id", [workspace, otherWorkspace]]);
     expect(fixtures.generate.mock.calls[0]![2]).toContain('"mode":"account"');
   });
+});
+
+
+describe("Focused context and explicit revisions", () => {
+  it("loads a selected Opportunity outside the 100-record snapshot", async () => {
+    fixtures.focused = { id: record, project_id: workspace, stage: "interested", next_action: null, next_action_due_at: null, jobs: {company: "Older company", title: "Engineer", description: "Unique focused source"} };
+    fixtures.opportunities = [];
+    fixtures.generate.mockResolvedValueOnce({output:{message:"Review",proposals:[{tool:"create_task",summary:"Prepare",targetId:record,title:"Prepare",body:null,dueAt:null,name:null,objective:null}]}});
+    const data = new FormData(); data.set("connectionId",record); data.set("opportunityId",record); data.set("message","Prepare a task");
+    expect(await runAgentRequest(data)).toBe(`/agent?conversation=${record}`);
+    expect(fixtures.generate.mock.calls[0]?.[2]).toContain("Unique focused source");
+    expect(fixtures.rpc).toHaveBeenCalledWith("complete_agent_run", expect.anything());
+  });
+  it("rejects an unavailable focus before generation", async () => {
+    fixtures.contextRows.agent_conversations = {id:record,project_id:workspace,opportunity_id:record,scope_mode:"workspace",context_page:"agent"};
+    const data = new FormData(); data.set("connectionId",record); data.set("conversationId",record); data.set("message","Prepare");
+    expect(await runAgentRequest(data)).toContain("error=");
+    expect(fixtures.generate).not.toHaveBeenCalled();
+  });
+  it.each(["rejected", "applied", "superseded"])("rejects a correction of a %s proposal", async status => {
+    fixtures.contextRows.agent_proposals = [{id:record,tool_name:"create_workspace",status}];
+    fixtures.generate.mockResolvedValueOnce({output:{message:"Review",proposals:[{tool:"create_workspace",summary:"Revised",supersedesProposalId:record,targetId:null,title:null,body:null,dueAt:null,name:"New",objective:"Search"}]}});
+    await expect(request()).rejects.toThrow("error=");
+    expect(fixtures.rpc).not.toHaveBeenCalled();
+  });
+});
+
+
+it.each([[429,"provider_rate_limited","reached%20its%20limit"],[503,"provider_unavailable","temporarily%20unavailable"]] as const)("explains provider %s failures without exposing response data", async (statusCode, code, message) => {
+  fixtures.generate.mockRejectedValueOnce(Object.assign(new Error("private-provider-content"),{statusCode}));
+  await expect(request()).rejects.toThrow(message);
+  expect(fixtures.recordEvent).toHaveBeenCalledWith(expect.objectContaining({code}));
+  expect(JSON.stringify(fixtures.recordEvent.mock.calls)).not.toContain("private-provider-content");
 });

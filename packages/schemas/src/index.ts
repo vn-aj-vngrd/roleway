@@ -57,6 +57,7 @@ export type ToolPermission = z.infer<typeof toolPermissionSchema>;
 export const agentToolSchema = z.enum(["create_workspace", "create_task", "set_next_action", "create_note"]);
 export const agentProposalSchema = z.object({
   tool: agentToolSchema,
+  supersedesProposalId: z.string().uuid().nullable().optional(),
   summary: z.string().trim().min(1).max(500),
   targetId: z.string().uuid().nullable(),
   title: z.string().trim().max(180).nullable(),
@@ -77,3 +78,22 @@ export const agentResponseSchema = z.object({
 export type AgentTool = z.infer<typeof agentToolSchema>;
 export type AgentProposal = z.infer<typeof agentProposalSchema>;
 export type AgentResponse = z.infer<typeof agentResponseSchema>;
+
+// Provider-only turn state. Persisted answers retain the existing response contract.
+export const agentGenerationSchema = agentResponseSchema.extend({
+  message: z.string().trim().max(12_000),
+  clarification: z.enum(["workspace_name", "workspace_objective", "opportunity", "title", "note", "due_date_choice", "due_date"])
+    .nullable()
+    .describe("Choose the first missing or ambiguous detail before proposing a change. Use due_date for an ambiguous date/time, due_date_choice if the user has not chosen whether to set a date. Use null only when no clarification is needed. The server asks the question and discards proposals whenever this is non-null."),
+}).superRefine((output, context) => {
+  if (output.clarification === null && !output.message) context.addIssue({ code: "custom", path: ["message"], message: "An answer is required when no clarification is requested." });
+});
+export type AgentGeneration = z.infer<typeof agentGenerationSchema>;
+
+
+export const agentSearchInputSchema = z.object({
+  kind: z.enum(["opportunities", "jobs", "documents"]), query: z.string().max(100), offset: z.number().int().min(0).max(1200),
+});
+export const agentReadInputSchema = z.object({
+  kind: z.enum(["opportunity", "job", "document", "career_profile", "conversation"]), id: z.string().uuid().nullable(), offset: z.number().int().min(0).max(1200),
+});
