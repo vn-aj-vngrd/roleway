@@ -86,7 +86,7 @@ sequenceDiagram
 ```
 
 
-The diagram follows a valid read or terminal call. Invalid arguments, provider errors, aborts, multiple terminal response calls, and truncated output fail the request. Returning a read result does not grant permission to write.
+The diagram follows a valid read or terminal call. One model step can request multiple reads in parallel; they share the same six-read counter. Further calls return a read-limit error without querying the database. Invalid arguments, provider errors, aborts, multiple terminal response calls, and truncated output fail the request. Returning a read result does not grant permission to write.
 
 ### Three SDK tools, four proposal types
 

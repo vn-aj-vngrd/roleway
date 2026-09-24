@@ -227,6 +227,7 @@ export default async function BillingPage({
             )}
           </section>
           <Button
+            className="mt-6"
             variant="outline"
             nativeButton={false}
             render={<Link href="/help/manual-payments" />}
