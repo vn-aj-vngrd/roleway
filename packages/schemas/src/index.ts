@@ -57,6 +57,7 @@ export type ToolPermission = z.infer<typeof toolPermissionSchema>;
 export const agentToolSchema = z.enum(["create_workspace", "create_task", "set_next_action", "create_note"]);
 export const agentProposalSchema = z.object({
   tool: agentToolSchema,
+  supersedesProposalId: z.string().uuid().nullable().optional(),
   summary: z.string().trim().min(1).max(500),
   targetId: z.string().uuid().nullable(),
   title: z.string().trim().max(180).nullable(),
@@ -77,3 +78,11 @@ export const agentResponseSchema = z.object({
 export type AgentTool = z.infer<typeof agentToolSchema>;
 export type AgentProposal = z.infer<typeof agentProposalSchema>;
 export type AgentResponse = z.infer<typeof agentResponseSchema>;
+
+
+export const agentSearchInputSchema = z.object({
+  kind: z.enum(["opportunities", "jobs", "documents"]), query: z.string().max(100), offset: z.number().int().min(0).max(1200),
+});
+export const agentReadInputSchema = z.object({
+  kind: z.enum(["opportunity", "job", "document", "career_profile", "conversation"]), id: z.string().uuid().nullable(), offset: z.number().int().min(0).max(1200),
+});

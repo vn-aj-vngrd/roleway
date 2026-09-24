@@ -39,10 +39,11 @@ Explore offers Today/follow-ups, Workspaces, Opportunities, Inbox Jobs, tasks, i
 
 - Reads are authenticated and account-owned; mutations resolve one exact destination Workspace.
 - Context is bounded: up to 100 active Opportunities and outstanding tasks, 60 Inbox Jobs/scheduled interviews/contacts/documents, 12 recent conversation messages and 20 recent proposal summaries/statuses. A snapshot is not exhaustive account search.
-- Career Profile includes name, headline and summary, plus career preferences. Full career evidence is not loaded.
-- Only a focused Opportunity includes a bounded plain-text Job description. Documents contribute metadata, not their contents. Notes and activity history are not currently read.
+- Career Profile includes name, headline and summary, plus career preferences. There is no separate structured Career Evidence store; approved documents can provide additional evidence through scoped reads.
+- The focused Opportunity is fetched independently of the snapshot cap. Scoped read tools search paginated Opportunities/Jobs/documents and retrieve source text, notes/activity, profile facts and earlier conversation messages. Five model steps per attempt and six read calls total bound the run (including its optional answer repair); each read returns at most 24,000 characters with a truncation flag.
 - Provider answers must identify missing context rather than claim they inspected absent source material. Recent proposal states distinguish proposed, rejected and applied work. The latest four valid proposals also include their exact sanitized fields for corrections; ask again when older details are absent. Contacts with follow-up dates are ordered by due date before the 60-record cap.
 - Provider output is untrusted. Validate proposal arguments, sanitize note content, verify targets, and use the atomic completion/approval database functions.
+- Corrections explicitly reference `supersedesProposalId`. Atomic completion retires only that pending proposal; unrelated proposals remain available. Conversation locks serialize revisions with approvals. Deploy `20260924144440_agent_proposal_revisions.sql` before the application update.
 - Approval rechecks ownership, destination, status, expiry and domain rules. Next Action proposals retain the pre-generation value/date so stale approvals preserve intervening edits.
 - Credentials remain encrypted and server-only. Redacted system events must never include prompts, document text, API keys or provider payloads.
 - All supported providers use the same creation policy. External messages, applications, calendar events and arbitrary URL access are unavailable.
@@ -65,9 +66,9 @@ Explore offers Today/follow-ups, Workspaces, Opportunities, Inbox Jobs, tasks, i
 These are not presented as working controls:
 
 - Creation of Jobs, Opportunities, contacts, interviews, documents and applications. Each needs its own validated proposal and approval transaction that preserves the existing domain side effects and quota checks before being advertised.
-- Exhaustive Explore/search, document-body retrieval, full career evidence, notes and activity-history reads. Add bounded on-demand retrieval before promising complete historical analysis.
+- Exhaustive account analysis beyond the bounded read budget. Retrieved source material and pagination do not imply every record has been inspected.
 - In-progress stream resumption, a dedicated retry control, searchable/paginated history, attachments, reusable prompt templates and external integrations.
-- Multi-turn creation is model-guided, not a persisted deterministic questionnaire. Conversations longer than the recent-message window can require clarification again.
+- Multi-turn creation is model-guided, not a persisted deterministic questionnaire. Older conversation messages can be retrieved on demand; missing or truncated information still requires clarification.
 - The hourly run limit is a count-before-insert check, not an atomic reservation; simultaneous requests can race. Stronger concurrency guarantees require a database-backed reservation.
 
 For this version, finish and verify the bounded Create/Explore flow before expanding the mutation surface. Preserve the explicit approval step.

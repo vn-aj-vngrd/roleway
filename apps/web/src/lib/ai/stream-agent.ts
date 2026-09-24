@@ -2,11 +2,12 @@ import "server-only";
 import { createOpenAI } from "@ai-sdk/openai";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { parsePartialJson, streamText, tool } from "ai";
+import { parsePartialJson, ToolLoopAgent, isStepCount, hasToolCall, tool } from "ai";
+import type { AgentReadTools } from "@/features/agent/read-context";
 import { agentResponseSchema } from "@roleway/schemas";
 import { agentSystemPolicy, safeCompatibleBaseUrl, type AiConnection } from "./providers";
 
-export async function streamAgentResponse(connection: AiConnection, apiKey: string, prompt: string, onText: (text: string) => void, signal?: AbortSignal) {
+export async function streamAgentResponse(connection: AiConnection, apiKey: string, prompt: string, onText: (text: string) => void, signal?: AbortSignal, readTools?: AgentReadTools) {
   // Keep provider requests on the validated endpoint and never follow redirects with credentials.
   const safeFetch: typeof fetch = (input, init) => {
     const body = connection.provider === "openrouter" && typeof init?.body === "string"
@@ -22,23 +23,27 @@ export async function streamAgentResponse(connection: AiConnection, apiKey: stri
       : createOpenAI({ apiKey, ...(baseURL ? { baseURL } : {}), fetch: safeFetch, ...(connection.provider === "openrouter" ? { headers: { "HTTP-Referer": "https://roleway.vanajvanguardia.tech", "X-Title": "Roleway" } } : {}) }).chat(connection.model);
   const deadline = AbortSignal.timeout(connection.provider === "openrouter" ? 240_000 : 45_000);
   const abortSignal = signal ? AbortSignal.any([signal, deadline]) : deadline;
-  const result = streamText({
+  // AI SDK 7 forwards stream settings; its Agent settings type omits this callback.
+  // Keep provider payloads out of the SDK default console.error handler.
+  const streamSafety = { onError: () => {} };
+  const agent = new ToolLoopAgent({
+    ...streamSafety,
     model,
     instructions: agentSystemPolicy,
-    prompt,
     maxOutputTokens: 3000,
     maxRetries: 0,
-    // Provider errors can contain prompts; the caller records only redacted error codes.
-    onError: () => {},
-    abortSignal,
     tools: {
+      ...readTools,
       roleway_agent: tool({
-        description: "Return the complete grounded answer in message and any reviewable proposals. This ends the turn; no continuation follows. This does not execute any changes.",
+        description: "Return the complete grounded answer and reviewable proposals. This ends the turn; it does not execute changes.",
         inputSchema: agentResponseSchema,
       }),
     },
-    toolChoice: { type: "tool", toolName: "roleway_agent" },
+    stopWhen: [isStepCount(5), hasToolCall("roleway_agent")],
+    toolChoice: readTools ? "required" : { type: "tool", toolName: "roleway_agent" },
+    prepareStep: ({ stepNumber }) => stepNumber >= 4 ? { activeTools: ["roleway_agent"], toolChoice: { type: "tool", toolName: "roleway_agent" } } : {},
   });
+  const result = await agent.stream({ prompt, abortSignal });
   let input = "";
   let inputId: string | undefined;
   let lastText = "";

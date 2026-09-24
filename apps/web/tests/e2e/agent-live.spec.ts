@@ -6,7 +6,7 @@ import { createFixtureAccount } from "./auth-fixture";
 // Opt in explicitly: this makes real provider calls and uses only disposable synthetic career data.
 test.use({ trace: "off", screenshot: "off" });
 test("live OpenRouter answer → approval → persisted task", async ({page}) => {
-  test.skip(!process.env.ROLEWAY_TEST_OPENROUTER_KEY, "A live provider key is required.");
+  test.skip(process.env.ROLEWAY_RUN_LIVE_AGENT !== "1" || !process.env.ROLEWAY_TEST_OPENROUTER_KEY, "Set ROLEWAY_RUN_LIVE_AGENT=1 and a live provider key for this separate test.");
   test.setTimeout(600_000);
   page.setDefaultTimeout(30_000);
   const browserErrors: string[] = [];
@@ -30,12 +30,12 @@ test("live OpenRouter answer → approval → persisted task", async ({page}) =>
     await page.getByRole("combobox",{name:"Provider",exact:true}).click();
     await page.getByRole("option",{name:"OpenRouter",exact:true}).click();
     await page.getByLabel("Connection name",{exact:true}).fill("Live audit provider");
-    await page.getByLabel("Model",{exact:true}).fill("nvidia/nemotron-3-ultra-550b-a55b:free");
+    await page.getByLabel("Model",{exact:true}).fill(process.env.ROLEWAY_TEST_MODEL || "nvidia/nemotron-3-ultra-550b-a55b:free");
     await page.getByLabel("API key",{exact:true}).fill(process.env.ROLEWAY_TEST_OPENROUTER_KEY!);
     await page.getByRole("button",{name:"Save connection",exact:true}).click();
     await expect(page.getByText("Live audit provider", {exact:true})).toBeVisible();
     console.info("Live Agent: connection saved");
-    await page.getByRole("button",{name:"Test",exact:true}).click();
+    await page.getByRole("button",{name:"Test Live audit provider",exact:true}).click();
     await expect(page.locator(".connection-row .status-label")).toHaveText("Connected", {timeout:260_000});
     console.info("Live Agent: provider verified");
     await page.goto(`/agent?opportunity=${opportunity.id}`);

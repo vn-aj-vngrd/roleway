@@ -217,11 +217,11 @@ test.describe.serial("critical product journey", () => {
     await agentLauncher.click();
     const agentPopover = page.getByRole("dialog", { name: "Roleway Agent" });
     await expect(
-      agentPopover.getByText("You approve every change"),
+      agentPopover.getByRole("button", { name: "You approve every change", exact: true }),
     ).toBeVisible();
     await expect(
-      agentPopover.getByRole("link", { name: "Set up provider" }),
-    ).toBeVisible();
+      agentPopover.getByRole("button", { name: "Connect provider", exact: true }),
+    ).toHaveAttribute("href", "/settings/ai");
     const popoverBounds = await agentPopover.boundingBox();
     expect(popoverBounds).not.toBeNull();
     expect(popoverBounds!.x).toBeGreaterThanOrEqual(0);
@@ -243,7 +243,7 @@ test.describe.serial("critical product journey", () => {
 
     await page.goto(`/agent?opportunity=${opportunityPath.split("/").at(-1)}`);
     await expect(
-      page.getByRole("heading", { name: "Ask across your search." }),
+      page.getByRole("heading", { name: "Ask about Product engineering." }),
     ).toBeVisible();
     await expect(
       page.getByRole("link", { name: "Set up connection" }),

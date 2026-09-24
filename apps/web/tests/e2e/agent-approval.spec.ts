@@ -95,6 +95,8 @@ test("stale Next Action approval preserves manual edits and explains recovery", 
 
 
 test("all four Create actions save once, show progress and open their results", async ({ page }) => {
+  // Four persisted workflows, cross-Workspace navigation, reloads, and capacity recovery.
+  test.setTimeout(360_000);
   const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } });
   let userId = "";
   const errors: string[] = [];

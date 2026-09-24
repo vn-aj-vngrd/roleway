@@ -7,6 +7,8 @@ import { createFixtureAccount } from "./auth-fixture";
 test("Agent formats Markdown and keeps composer controls usable across sizes and themes", async ({
   page,
 }) => {
+  // Includes full chat, mobile themes, streaming handoff, and provider Settings journeys.
+  test.setTimeout(360_000);
   page.setDefaultTimeout(15_000);
   const admin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -366,6 +368,16 @@ test("Agent formats Markdown and keeps composer controls usable across sizes and
     await new Promise<void>(resolve => handoffServer.listen(0, "127.0.0.1", resolve));
     const handoffAddress = handoffServer.address();
     if (!handoffAddress || typeof handoffAddress === "string") throw new Error("Handoff server unavailable");
+    // A slow RSC response must finish before another recovery poll replaces it.
+    // The previous fixed 3s interval continually aborted this 4s response.
+    await page.route("**/agent?**", async route => {
+      const url = new URL(route.request().url());
+      if (url.searchParams.get("conversation") === handoff.data.id && route.request().headers()["rsc"] === "1") {
+        const response = await route.fetch();
+        await new Promise(resolve => setTimeout(resolve, 4000));
+        await route.fulfill({ response });
+      } else await route.continue();
+    });
     try {
       await page.goto("/documents");
       await page.getByRole("button", { name: "Open Roleway Agent", exact: true }).press("Enter");
@@ -389,6 +401,7 @@ test("Agent formats Markdown and keeps composer controls usable across sizes and
     } finally {
       handoffResponse?.end();
       await page.unroute("**/api/agent/chat");
+      await page.unroute("**/agent?**");
       handoffServer.closeAllConnections();
       await new Promise<void>(resolve => handoffServer.close(() => resolve()));
     }

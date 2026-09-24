@@ -89,4 +89,43 @@ end;
 $$;
 select pg_temp.assert(not has_function_privilege('authenticated','public.complete_agent_run(uuid,jsonb,integer,integer)','execute'),'Clients cannot forge provider results');
 select pg_temp.assert(not has_function_privilege('anon','public.decide_agent_proposal(uuid,text)','execute'),'Anonymous callers cannot decide proposals');
+do $$
+<<revisions>>
+declare
+  owner_id uuid := gen_random_uuid(); project_id uuid; conversation_id uuid;
+  first_run uuid; revised_run uuid; original_id uuid; unrelated_id uuid; revised_id uuid;
+  proposal jsonb; failed boolean := false; before_messages bigint;
+begin
+  insert into auth.users(id,email,email_confirmed_at) values(owner_id,'agent-revision-'||owner_id||'@roleway.test',now());
+  perform set_config('request.jwt.claim.sub',owner_id::text,true);
+  select active_project_id into project_id from public.profiles where user_id=owner_id;
+  insert into public.agent_conversations(user_id,project_id,title) values(owner_id,project_id,'Revision test') returning id into conversation_id;
+  insert into public.ai_runs(user_id,project_id,conversation_id,task_type,provider,model,status)
+  values(owner_id,project_id,conversation_id,'conversation','openai','fixture','generating') returning id into first_run;
+  proposal := jsonb_build_object('tool','create_workspace','summary','Original','targetId',null,'name','Original','objective','Focused search','title',null,'body',null,'dueAt',null);
+  perform public.complete_agent_run(first_run,jsonb_build_object('message','Review original','proposals',jsonb_build_array(proposal,proposal||'{"summary":"Unrelated","name":"Unrelated"}'::jsonb)),null,null);
+  select id into original_id from public.agent_proposals where run_id=first_run and summary='Original';
+  select id into unrelated_id from public.agent_proposals where run_id=first_run and summary='Unrelated';
+  insert into public.ai_runs(user_id,project_id,conversation_id,task_type,provider,model,status)
+  values(owner_id,project_id,conversation_id,'conversation','openai','fixture','generating') returning id into revised_run;
+  proposal := proposal || jsonb_build_object('name','Corrected','summary','Corrected','supersedesProposalId',original_id);
+  perform public.complete_agent_run(revised_run,jsonb_build_object('message','Review correction','proposals',jsonb_build_array(proposal)),null,null);
+  select id into revised_id from public.agent_proposals where run_id=revised_run;
+  perform pg_temp.assert((select status='superseded' from public.agent_proposals where id=original_id),'Original must be superseded');
+  perform pg_temp.assert((select status='proposed' from public.agent_proposals where id=unrelated_id),'Unrelated proposal must remain available');
+  perform pg_temp.assert((select status='awaiting_approval' from public.ai_runs where id=first_run),'Unrelated proposal keeps original run awaiting approval');
+  perform pg_temp.assert(public.decide_agent_proposal(original_id,'approve') is null,'Superseded proposal must not apply');
+  perform pg_temp.assert((select count(*)=1 from public.search_projects where user_id=owner_id),'Correction must not create a Workspace');
+  -- A second revision of the retired original fails atomically, without saving an answer.
+  select count(*) into before_messages from public.agent_messages where user_id=owner_id;
+  insert into public.ai_runs(user_id,project_id,conversation_id,task_type,provider,model,status)
+  values(owner_id,project_id,conversation_id,'conversation','openai','fixture','generating') returning id into revised_run;
+  begin
+    perform public.complete_agent_run(revised_run,jsonb_build_object('message','Invalid correction','proposals',jsonb_build_array(proposal)),null,null);
+  exception when others then failed := true; end;
+  perform pg_temp.assert(failed,'Retired revision target must be rejected');
+  perform pg_temp.assert((select count(*)=before_messages from public.agent_messages where user_id=owner_id),'Invalid revision must roll back answer');
+  perform pg_temp.assert((select status='proposed' from public.agent_proposals where id=revised_id),'Valid correction must stay pending');
+end;
+$$;
 rollback;
