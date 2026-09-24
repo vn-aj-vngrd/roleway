@@ -149,6 +149,9 @@ test("all four Create actions save once, show progress and open their results", 
         await card.getByRole("button", { name: "Approve change", exact: true }).click();
       }
       await expect(card.getByText(entry.success, { exact: true })).toBeVisible();
+      // Unused model fields must not replace the saved action's actual title.
+      const savedTitle = entry.tool === "create_workspace" ? "Created search" : entry.tool === "create_note" ? "Add note" : "Prepare examples";
+      await expect(card.locator(".agent-result-title")).toHaveText(savedTitle);
       await page.unroute("**/agent?**");
       await page.getByRole("button", { name: "Dismiss notification", exact: true }).click();
       await expect(page.locator(".agent-inline-state")).toHaveCount(0);
@@ -156,6 +159,7 @@ test("all four Create actions save once, show progress and open their results", 
       await page.reload();
       await expect(page.locator(".agent-inline-state")).toHaveCount(0);
       await expect(card.getByText(entry.success, { exact: true })).toBeVisible();
+      await expect(card.locator(".agent-result-title")).toHaveText(savedTitle);
       expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
       await expect(card).toBeInViewport();
       const openControl = entry.tool === "create_workspace" ? card.getByRole("link", { name: entry.open, exact: true }) : card.getByRole("button", { name: entry.open, exact: true });

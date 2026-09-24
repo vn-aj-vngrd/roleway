@@ -170,7 +170,9 @@ function AgentRunDetails({ run, steps, endedAt }: { run: Run; steps: Step[]; end
 function ApprovalCard({ proposal, opportunity, workspace, createdWorkspaceId }: { createdWorkspaceId: string | undefined; proposal: Proposal; opportunity: Opportunity | undefined; workspace: string | undefined }) {
   const feedback = creationFeedback[proposal.tool_name];
   const details = proposalDetails(proposal, opportunity);
-  const savedTitle = proposal.status === "applied" ? String(proposal.arguments.name ?? proposal.arguments.title ?? toolLabel(proposal.tool_name)) : toolLabel(proposal.tool_name);
+  const resultTitle = proposal.tool_name === "create_workspace" ? proposal.arguments.name
+    : proposal.tool_name === "create_task" || proposal.tool_name === "set_next_action" ? proposal.arguments.title : null;
+  const savedTitle = proposal.status === "applied" ? String(resultTitle ?? toolLabel(proposal.tool_name)) : toolLabel(proposal.tool_name);
   if (proposal.status === "applied" && ["create_workspace", "create_task", "set_next_action"].includes(proposal.tool_name)) {
     const titleIndex = details.findIndex(([label]) => ["Workspace", "Task", "Next Action"].includes(label));
     if (titleIndex >= 0) details.splice(titleIndex, 1);
