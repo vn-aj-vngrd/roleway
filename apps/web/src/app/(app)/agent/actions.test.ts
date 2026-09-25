@@ -5,7 +5,7 @@ vi.mock("@/lib/ai/stream-agent", () => ({ streamAgentResponse: vi.fn() }));
 
 const fixtures = vi.hoisted(() => ({
   generate: vi.fn(), rpc: vi.fn(), updates: [] as Array<{ table: string; values: Record<string, unknown> }>,
-  opportunities: [] as Array<{ id: string; next_action: string | null; next_action_due_at: string | null }>,
+  opportunities: [] as Array<{ id: string; project_id?: string; next_action: string | null; next_action_due_at: string | null }>,
   focused: null as Record<string, unknown> | null, contextError: false, recordEvent: vi.fn(), contextRows: {} as Record<string, unknown>, filters: [] as Array<[string, string, unknown]>, orders: [] as Array<[string, string, unknown]>,
 }));
 const owner = "11111111-1111-4111-8111-111111111111";
@@ -346,6 +346,17 @@ describe("Interview and contact creation boundaries", () => {
     expect(fixtures.rpc).toHaveBeenCalledWith("complete_agent_run", expect.anything());
     fixtures.rpc.mockClear();
     fixtures.generate.mockResolvedValue({ output: { message: "Review", proposals: [{ ...proposal, workspaceId: owner }] } });
+    await expect(request()).rejects.toThrow("error=Agent");
+    expect(fixtures.rpc).not.toHaveBeenCalledWith("complete_agent_run", expect.anything());
+  });
+  it("validates a linked contact against its already scoped Opportunity", async () => {
+    fixtures.opportunities = [{ id: record, project_id: workspace, next_action: null, next_action_due_at: null }];
+    const proposal = { ...baseCreation, tool: "create_contact", targetId: record, workspaceId: workspace, contact: contactDetails };
+    fixtures.generate.mockResolvedValue({ output: { message: "Review", proposals: [proposal] } });
+    await expect(request()).rejects.toThrow(`redirect:/agent?conversation=${record}`);
+    expect(fixtures.rpc).toHaveBeenCalledWith("complete_agent_run", expect.anything());
+    fixtures.rpc.mockClear();
+    fixtures.generate.mockResolvedValue({ output: { message: "Review", proposals: [{ ...proposal, workspaceId: "44444444-4444-4444-8444-444444444444" }] } });
     await expect(request()).rejects.toThrow("error=Agent");
     expect(fixtures.rpc).not.toHaveBeenCalledWith("complete_agent_run", expect.anything());
   });
