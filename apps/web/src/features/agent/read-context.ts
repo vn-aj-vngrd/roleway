@@ -4,6 +4,9 @@ import { agentSearchInputSchema, agentReadInputSchema } from "@roleway/schemas";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { richTextToPlainText } from "@/lib/rich-text";
 
+// The initial snapshot needs metadata only; full source text is read on demand.
+export const opportunitySnapshotFields =
+  "id, project_id, reference_number, stage, priority, next_action, next_action_due_at, updated_at, jobs(company, title, location, compensation, remote_policy)";
 export const opportunityContextFields =
   "id, project_id, reference_number, stage, priority, next_action, next_action_due_at, updated_at, jobs(company, title, description, location, compensation, remote_policy)";
 export type AgentOpportunity = {

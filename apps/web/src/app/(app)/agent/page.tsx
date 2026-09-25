@@ -3,7 +3,8 @@ import { agentContextPage, agentContextPages, type AgentContextPage } from "@/fe
 export const maxDuration = 300;
 
 import { formatConversationAge } from "@/features/agent/message-time";
-import { AgentLiveProvider, AgentStreamForm, AgentTranscript } from "@/features/agent/live-chat";
+import { AgentLiveProvider, AgentStreamForm, AgentTranscript, AgentConversationLink, AgentPersistedMessage } from "@/features/agent/live-chat";
+import { AgentActivityIndicator } from "@/features/agent/session-provider";
 import { RunTimeline } from "@/features/agent/run-timeline";
 import { AgentMarkdown } from "@/features/agent/markdown";
 import { AgentMessageInput, AgentHistoryMenu, AgentNotice, MessageActions, SavedResultFocus } from "@/features/agent/chat-controls";
@@ -24,7 +25,7 @@ type Run = { id: string; provider: string; model: string; status: string; input_
 type Step = { id: string; run_id: string; label: string; status: "pending" | "active" | "completed" | "failed"; position: number; created_at: string };
 type Proposal = { id: string; run_id: string; tool_name: string; target_id: string | null; destination_project_id: string | null; summary: string; arguments: Record<string, unknown>; status: string; created_at: string };
 
-type AgentQuery = { workspace?: string; page?: string; draft?: string; conversation?: string; opportunity?: string; error?: string; decision?: string; record?: string; proposal?: string };
+type AgentQuery = { new?: string; workspace?: string; page?: string; draft?: string; conversation?: string; opportunity?: string; error?: string; decision?: string; record?: string; proposal?: string };
 
 export default async function AgentPage(props: { searchParams: Promise<AgentQuery> }) {
   const searchParams = await props.searchParams;
@@ -78,19 +79,19 @@ export default async function AgentPage(props: { searchParams: Promise<AgentQuer
   const pendingRun = runs.find(run => ["queued", "gathering_context", "generating"].includes(run.status) && Date.now() - Date.parse(run.created_at) < 300_000);
 
   return (
-    <AgentLiveProvider conversationId={activeConversation?.id ?? ""} initialPending={Boolean(pendingRun)} persistedMessageId={messages.at(-1)?.id ?? "empty"}><div className={`agent-native-page ${activeConversation ? "has-conversation" : "is-empty"}`}>
+    <AgentLiveProvider conversationId={activeConversation?.id ?? ""} pendingRunId={pendingRun?.id} draftId={query.new ?? `${query.workspace ?? ""}:${query.opportunity ?? ""}:${query.page ?? ""}:${query.draft ?? ""}:${query.error ?? ""}`} persistedRunIds={messages.flatMap(message => message.role === "agent" && message.run_id ? [message.run_id] : [])}><div className={`agent-native-page ${activeConversation ? "has-conversation" : "is-empty"}`}>
       <header className="agent-native-routebar">
         <AgentHistoryMenu>
           <summary aria-label="Open Agent conversation history"><History aria-hidden="true" /><span>{activeConversation?.title ?? "New conversation"}</span><ChevronDown aria-hidden="true" /></summary>
           <div className="agent-history-popover floating-panel">
-            <div className="agent-history-popover-head"><strong>Conversations</strong><Link href="/agent"><Plus aria-hidden="true" />New</Link></div>
+            <div className="agent-history-popover-head"><strong>Conversations</strong><AgentConversationLink href="/agent" newConversation><Plus aria-hidden="true" />New</AgentConversationLink></div>
             <div className="agent-history-list">
               {conversations.length ? conversations.map((conversation) => {
                 const active = conversation.id === activeConversation?.id;
                 const focus = conversation.opportunity_id ? opportunityMap.get(conversation.opportunity_id) : null;
                 const subtitle = focus?.jobs ? `${focus.jobs.company} · ${focus.jobs.title}` : conversation.scope_mode === "workspace" ? projectMap.get(conversation.project_id)?.name ?? "Workspace" : "All workspaces";
                 return <div className={`agent-history-row ${active ? "active" : ""}`} key={conversation.id}>
-                  <Link href={`/agent?conversation=${conversation.id}`} aria-current={active ? "page" : undefined}><span>{conversation.title}</span><small className="agent-history-meta"><span>{subtitle}</span><span aria-hidden="true">·</span><time dateTime={conversation.updated_at} title={new Date(conversation.updated_at).toUTCString()}>{formatConversationAge(conversation.updated_at)}</time></small></Link>
+                  <AgentConversationLink href={`/agent?conversation=${conversation.id}`} aria-current={active ? "page" : undefined}><span><span className="agent-history-title">{conversation.title}</span><AgentActivityIndicator conversationId={conversation.id} /></span><small className="agent-history-meta"><span>{subtitle}</span><span aria-hidden="true">·</span><time dateTime={conversation.updated_at} title={new Date(conversation.updated_at).toUTCString()}>{formatConversationAge(conversation.updated_at)}</time></small></AgentConversationLink>
                   <form action={archiveAgentConversation}><input type="hidden" name="conversationId" value={conversation.id} /><button aria-label={`Archive ${conversation.title}`} data-tooltip="Archive conversation"><Archive aria-hidden="true" /></button></form>
                 </div>;
               }) : <p className="agent-history-empty">No conversations yet.</p>}
@@ -98,7 +99,7 @@ export default async function AgentPage(props: { searchParams: Promise<AgentQuer
           </div>
         </AgentHistoryMenu>
         <span className="agent-native-scope"><Route aria-hidden="true" />{scopeLabel}{contextPage !== "agent" ? ` · ${agentContextPages[contextPage]}` : ""}</span>
-        <Link className="agent-new-chat" href="/agent"><Plus aria-hidden="true" /><span>New conversation</span></Link>
+        <AgentConversationLink className="agent-new-chat" href="/agent" newConversation><Plus aria-hidden="true" /><span>New conversation</span></AgentConversationLink>
       </header>
 
       {query.proposal && proposals.some(proposal => proposal.id === query.proposal && proposal.status === "applied") ? <SavedResultFocus proposalId={query.proposal} /> : null}
@@ -118,7 +119,7 @@ export default async function AgentPage(props: { searchParams: Promise<AgentQuer
             const runSteps = message.run_id ? steps.filter((step) => step.run_id === message.run_id) : [];
             const runProposals = message.run_id ? proposals.filter((proposal) => proposal.run_id === message.run_id) : [];
             return (
-              <article className={`agent-message ${message.role}`} aria-label={message.role === "user" ? "Your message" : "Agent response"} key={message.id}>
+              <AgentPersistedMessage runId={message.run_id} key={message.id}><article className={`agent-message ${message.role}`} aria-label={message.role === "user" ? "Your message" : "Agent response"} key={message.id}>
                 {run && message.role === "agent" ? <AgentRunDetails run={run} steps={runSteps} endedAt={message.created_at} /> : null}
                 <div className="agent-message-body">
                 <div className="agent-message-content">{message.role === "agent" ? <AgentMarkdown content={message.content} idPrefix={message.id} /> : <p>{message.content}</p>}</div>
@@ -126,12 +127,13 @@ export default async function AgentPage(props: { searchParams: Promise<AgentQuer
                 {(message.role === "agent" ? runProposals : []).map((proposal) => <ApprovalCard createdWorkspaceId={query.proposal === proposal.id && proposal.status === "applied" && projectMap.has(query.record ?? "") ? query.record : undefined} workspace={proposal.destination_project_id ? projectMap.get(proposal.destination_project_id)?.name ?? "Unavailable Workspace" : undefined} proposal={proposal} opportunity={proposal.target_id ? opportunityMap.get(proposal.target_id) : undefined} key={proposal.id} />)}
                 <MessageActions content={message.content} timestamp={message.created_at} />
                 {run && (message.role === "user" && ["failed", "queued", "gathering_context", "generating"].includes(run.status)) ? <AgentRunDetails run={run} steps={runSteps} /> : null}
-              </article>
+              </article></AgentPersistedMessage>
             );
           })}
         </AgentTranscript>
 
         <AgentComposer
+          key={activeConversation?.id ?? query.new ?? "new"}
           conversationId={activeConversation?.id ?? ""}
           connections={readyConnections}
           opportunities={opportunities}
@@ -149,7 +151,7 @@ export default async function AgentPage(props: { searchParams: Promise<AgentQuer
 function AgentComposer({ conversationId, connections, opportunities, focusedOpportunityId, projects, workspaceId, contextPage, draftKey }: { workspaceId: string; contextPage: AgentContextPage; draftKey?: string | undefined; conversationId: string; connections: Connection[]; opportunities: Opportunity[]; focusedOpportunityId: string; projects: Map<string, { name: string; ticketKey: string }> }) {
   if (!connections.length) return <section className="agent-native-composer agent-composer-disabled" aria-label="Connect an AI provider to use Agent"><label className="sr-only" htmlFor="disabled-agent-message">Message Roleway Agent</label><textarea id="disabled-agent-message" disabled placeholder="Connect a provider to ask Agent…" /><footer><span className="agent-context-disclosure"><KeyRound aria-hidden="true" />Your API key is encrypted before storage</span><Link className="agent-setup-link" href="/settings/ai">Set up connection</Link></footer></section>;
   return <AgentStreamForm action={sendAgentMessage} conversationId={conversationId}>
-    <AgentMessageInput key={`${workspaceId}:${contextPage}`} workspaceId={workspaceId} contextPage={contextPage} draftKey={draftKey} workspaces={Array.from(projects, ([id, project]) => ({ id, label: project.name }))} connections={connections} focusedOpportunityId={focusedOpportunityId} fixedFocus={Boolean(conversationId)} opportunities={opportunities.map(opportunity => ({
+    <AgentMessageInput key={`${conversationId}:${workspaceId}:${contextPage}`} workspaceId={workspaceId} contextPage={contextPage} draftKey={draftKey} workspaces={Array.from(projects, ([id, project]) => ({ id, label: project.name }))} connections={connections} focusedOpportunityId={focusedOpportunityId} fixedFocus={Boolean(conversationId)} opportunities={opportunities.map(opportunity => ({
       id: opportunity.id,
       workspaceId: opportunity.project_id,
       label: `${projects.get(opportunity.project_id)?.name ?? "Workspace"} · ${formatOpportunityTicket(projects.get(opportunity.project_id)?.ticketKey ?? "RW", opportunity.reference_number)} · ${opportunity.jobs?.company} · ${opportunity.jobs?.title}`,
@@ -164,7 +166,7 @@ function AgentRunDetails({ run, steps, endedAt }: { run: Run; steps: Step[]; end
   return <RunTimeline recovering={active} pending={active && !stale} statusUnknown={stale} startedAt={run.created_at} endedAt={endedAt ?? steps.find(step => step.status === "failed")?.created_at}
     failed={run.status === "failed"} awaitingApproval={run.status === "awaiting_approval"}
     steps={visibleSteps.map(step => ({ id: step.id, label: step.label, status: step.status === "pending" ? "active" : step.status }))}
-    model={`${run.provider} · ${run.model}${run.input_tokens || run.output_tokens ? ` · ${run.input_tokens ?? 0} in / ${run.output_tokens ?? 0} out` : ""}`} />;
+    model={{ provider: run.provider, name: run.model, inputTokens: run.input_tokens, outputTokens: run.output_tokens }} />;
 }
 
 function ApprovalCard({ proposal, opportunity, workspace, createdWorkspaceId }: { createdWorkspaceId: string | undefined; proposal: Proposal; opportunity: Opportunity | undefined; workspace: string | undefined }) {

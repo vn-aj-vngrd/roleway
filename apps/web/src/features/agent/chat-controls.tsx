@@ -106,7 +106,7 @@ export function AgentMessageInput({
   const id = useId();
   const { pending: formPending } = useFormStatus();
   const live = useAgentLive();
-  const pending = formPending || Boolean(live?.pending);
+  const pending = formPending || Boolean(live?.pending || live?.navigating);
   useEffect(() => {
     if (live?.submission) { setMessage(""); setOpen(false); setPicker(null); }
   }, [live?.submission]);
@@ -368,16 +368,16 @@ export function AgentMessageInput({
             type="submit"
             size="icon"
             disabled={pending || !message.trim()}
-            aria-label={pending ? "Agent is working" : "Send to Agent"}
+            aria-label={live?.navigating ? "Loading conversation" : pending ? "Agent is working" : "Send to Agent"}
             data-tooltip={
-              pending ? "Agent is working…" : "Send message (Enter)"
+              live?.navigating ? "Loading conversation…" : pending ? "Agent is working…" : "Send message (Enter)"
             }
           >
             {pending ? <Spinner /> : <ArrowUp aria-hidden="true" />}
           </Button>
         </div>
         <span className="sr-only" role="status">
-          {pending ? "Agent is working…" : ""}
+          {pending && !live?.navigating ? "Agent is working…" : ""}
         </span>
       </footer>
     </div>

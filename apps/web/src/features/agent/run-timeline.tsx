@@ -1,6 +1,7 @@
 "use client";
 
-import { Check, ChevronRight, Circle, LoaderCircle, X } from "lucide-react";
+import { ArrowDownToLine, ArrowUpFromLine, Check, ChevronRight, Circle, Cpu, X } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import type { RunProgress } from "./stream-types";
@@ -21,7 +22,7 @@ export function RunTimeline({ startedAt, endedAt, pending = false, failed = fals
   failed?: boolean;
   awaitingApproval?: boolean;
   steps: RunProgress[];
-  model?: string;
+  model?: { provider: string; name: string; inputTokens: number | null; outputTokens: number | null };
 }) {
   const router = useRouter();
   const [refreshing, startRefresh] = useTransition();
@@ -42,7 +43,7 @@ export function RunTimeline({ startedAt, endedAt, pending = false, failed = fals
   const current = [...steps].reverse().find(step => step.status === "active");
   return <><details className="agent-work-timeline">
     <summary>
-      {pending ? <LoaderCircle className="agent-working-spinner" aria-hidden="true" /> : null}
+      {pending ? <Spinner className="agent-working-spinner" aria-hidden="true" /> : null}
       <span>{statusUnknown ? "Run status unavailable" : pending ? "Working" : "Worked"}{!statusUnknown && duration !== undefined ? ` for ${formatRunDuration(duration)}` : ""}</span>
       {failed ? <span className="agent-work-failed">· Failed</span> : null}
       <ChevronRight aria-hidden="true" />
@@ -54,7 +55,13 @@ export function RunTimeline({ startedAt, endedAt, pending = false, failed = fals
       </p>)}
       {statusUnknown ? <p>No completion was recorded. You can send a new request.</p> : null}
       {awaitingApproval ? <p>Proposed changes are waiting for your approval.</p> : null}
-      {model ? <p className="agent-run-model">{model}</p> : null}
+      {model ? <div className="agent-run-usage" aria-label="Model and token usage">
+        <div className="agent-run-identity"><Cpu aria-hidden="true" /><span><span className="agent-run-provider">{model.provider}</span><span className="agent-run-name">{model.name}</span></span></div>
+        <dl className="agent-run-tokens">
+          {model.inputTokens !== null ? <div><dt><ArrowUpFromLine aria-hidden="true" />Input tokens</dt><dd>{model.inputTokens.toLocaleString("en-US")}</dd></div> : null}
+          {model.outputTokens !== null ? <div><dt><ArrowDownToLine aria-hidden="true" />Output tokens</dt><dd>{model.outputTokens.toLocaleString("en-US")}</dd></div> : null}
+        </dl>
+      </div> : null}
     </div>
-  </details>{pending && current ? <p className="agent-working-current" role="status">{current.label}</p> : null}</>;
+  </details>{pending ? <p className="agent-working-current" role="status">{current?.label ?? "Preparing the response…"}</p> : null}</>;
 }

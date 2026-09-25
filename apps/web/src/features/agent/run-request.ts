@@ -10,7 +10,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { recordSystemEvent } from "@/lib/observability";
 import { richTextToPlainText, sanitizeRichText } from "@/lib/rich-text";
 import { isUnfinishedIntroduction, answerRepairInstruction } from "./answer-quality";
-import { createAgentReadContext, opportunityContextFields, type AgentOpportunity } from "./read-context";
+import { createAgentReadContext, opportunitySnapshotFields, type AgentOpportunity } from "./read-context";
 import { agentContextPage, agentContextPages } from "./scope";
 import type { AgentStreamEvent } from "./stream-types";
 
@@ -127,7 +127,7 @@ export async function runAgentRequest(formData: FormData, emit?: (event: AgentSt
     const [profileResult, preferencesResult, opportunitiesResult, tasksResult, jobsResult, interviewsResult, contactsResult, documentsResult, historyResult, guidanceResult, proposalHistoryResult] = await Promise.all([
       auth.supabase.from("profiles").select("full_name, headline, summary").eq("user_id", auth.user.id).maybeSingle(),
       auth.supabase.from("career_preferences").select("target_titles, preferred_technologies, allowed_locations, remote_preference, minimum_compensation, currency, excluded_criteria").eq("user_id", auth.user.id).maybeSingle(),
-      auth.supabase.from("opportunities").select(opportunityContextFields).eq("user_id", auth.user.id).in("project_id", scopeProjectIds).neq("stage", "closed").order("updated_at", { ascending: false }).limit(100),
+      auth.supabase.from("opportunities").select(opportunitySnapshotFields).eq("user_id", auth.user.id).in("project_id", scopeProjectIds).neq("stage", "closed").order("updated_at", { ascending: false }).limit(100),
       auth.supabase.from("tasks").select("id, project_id, opportunity_id, title, status, priority, due_at").eq("user_id", auth.user.id).in("project_id", scopeProjectIds).in("status", ["todo", "doing"]).order("due_at", { ascending: true, nullsFirst: false }).limit(100),
       auth.supabase.from("jobs").select("id, project_id, company, title, location, inbox_state, inbox_review_at, imported_at").eq("user_id", auth.user.id).in("project_id", scopeProjectIds).neq("inbox_state", "tracked").order("imported_at", { ascending: false }).limit(60),
       auth.supabase.from("interviews").select("id, project_id, opportunity_id, interview_type, starts_at, status, interviewers").eq("user_id", auth.user.id).in("project_id", scopeProjectIds).eq("status", "scheduled").order("starts_at", { ascending: true }).limit(60),
