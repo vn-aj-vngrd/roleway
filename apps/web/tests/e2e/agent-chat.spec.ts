@@ -157,7 +157,22 @@ test("Agent formats Markdown and keeps composer controls usable across sizes and
           ),
         ).toBe(true);
         await expect(page.getByRole("link", { name: "Creation guide", exact: true })).toHaveCount(0);
-        await page.goto("/agent");
+        const newConversation = page.locator(".agent-new-chat");
+        await expect(newConversation).toBeEnabled();
+        await page.route("**/agent?new=**", async route => {
+          const response = await route.fetch();
+          await new Promise(resolve => setTimeout(resolve, 500));
+          await route.fulfill({ response });
+        });
+        await newConversation.click();
+        await expect(page.locator(".agent-conversation-loading")).toHaveText("Starting new conversation…");
+        await expect(newConversation).toBeDisabled();
+        await expect(page.locator(".agent-empty-state")).toBeVisible();
+        await page.unroute("**/agent?new=**");
+        await expect(newConversation).toBeDisabled();
+        await history.click();
+        await expect(menu.getByRole("link", { name: "New conversation", exact: true })).toBeDisabled();
+        await input.focus();
         await page.getByRole("button", { name: "Agent Opportunity focus", exact: true }).click();
         const focusPanel = page.locator(".agent-capability-popover");
         await expect(focusPanel).toContainText("Conversation focus");

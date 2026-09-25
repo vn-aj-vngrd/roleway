@@ -14217,7 +14217,7 @@ html:has(.app-shell) {
   gap: 5px;
   font-size: 13px;
 }
-.agent-history-popover-head a:hover {
+.agent-history-popover-head a:hover:not([aria-disabled="true"]) {
   color: var(--ink);
   background: var(--surface);
 }
@@ -14348,8 +14348,13 @@ html:has(.app-shell) {
   font-size: 13px;
   font-weight: 520;
 }
-.agent-new-chat:hover {
+.agent-new-chat:hover:not([aria-disabled="true"]) {
   background: var(--surface);
+}
+.agent-new-chat[aria-disabled="true"],
+.agent-history-popover-head a[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: default;
 }
 .agent-new-chat svg {
   width: 14px;
