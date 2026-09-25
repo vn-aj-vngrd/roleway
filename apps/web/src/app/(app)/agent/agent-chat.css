@@ -417,12 +417,13 @@
   overscroll-behavior: contain;
   padding-block: 32px 20px;
 }
-/* Live messages already form a conversation before its saved route arrives. */
+/* Keep the same anchor before sending, while streaming, and after saving. */
+.agent-native-page.is-empty .agent-native-composer,
 .agent-native-page.has-conversation .agent-native-composer,
 .agent-native-page:has(.agent-transcript) .agent-native-composer {
   position: relative;
   inset: auto;
-  margin: 0 auto 18px;
+  margin: 0 auto 24px;
 }
 .agent-message.user .agent-message-actions {
   justify-content: flex-end;
@@ -447,6 +448,7 @@
   .agent-message-actions { --agent-actions-enter: 0ms; --agent-actions-exit: 0ms; }
 }
 @media (max-width: 760px) {
+  .agent-native-page.is-empty .agent-native-composer,
   .agent-native-page.has-conversation .agent-native-composer,
   .agent-native-page:has(.agent-transcript) .agent-native-composer {
     margin: 0 12px 12px;
@@ -562,6 +564,14 @@
 .agent-nav-activity i { width: 7px; height: 7px; border-radius: 50%; background: var(--primary); }
 .agent-nav-activity.needs-attention i { background: var(--danger); }
 .agent-history-row a > span:first-child { display: flex; gap: 8px; align-items: center; }
+.agent-history-row > a:has(.agent-nav-activity) { position: relative; padding-right: 32px; }
+.agent-history-row .agent-nav-activity {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  margin: 0;
+  transform: translateY(-50%);
+}
 .app-shell .nav-link { position: relative; }
 .app-shell[data-sidebar="compact"] .sidebar .nav-link > .agent-nav-activity,
 .mobile-nav .nav-link > .agent-nav-activity {

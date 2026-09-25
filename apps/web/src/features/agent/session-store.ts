@@ -1,5 +1,6 @@
 import { Chat } from "@ai-sdk/react";
-import { DefaultChatTransport, type ChatTransport } from "ai";
+import type { ChatTransport } from "ai";
+import { AgentChatTransport } from "./streaming-transport";
 import type { AgentUIMessage } from "./stream-types";
 
 export type AgentSession = {
@@ -17,7 +18,7 @@ export type AgentSession = {
   resultHref: string;
 };
 
-const transport = new DefaultChatTransport<AgentUIMessage>({
+const transport = new AgentChatTransport({
   api: "/api/agent/chat",
   prepareSendMessagesRequest: ({ body }) => ({ body: body ?? {} }),
 });
