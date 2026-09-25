@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { UIMessageChunk } from "ai";
 import { progressiveAnswers } from "./streaming-transport";
 
@@ -42,7 +42,7 @@ describe("progressive Agent answers", () => {
 
   it("replaces repairs without appending the rejected draft", async () => {
     const output = await collect([answer("Draft answer"), answer(""), answer("New answer"), answer("Which date?")]);
-    expect(output.some(chunk => textOf(chunk) === "")).toBe(true);
+    expect(output.map(textOf)).not.toContain("Draft answerNew answer");
     expect(textOf(output.at(-1)!)).toBe("Which date?");
   });
 
@@ -53,7 +53,36 @@ describe("progressive Agent answers", () => {
 
   it("flushes remaining text when animation becomes disabled", async () => {
     let calls = 0;
-    const output = await collect([answer("A long incoming answer")], () => ++calls < 3);
+    const output = await collect([answer("A long incoming answer")], () => ++calls < 2);
     expect(output.map(textOf)).toEqual(["A lo", "A long incoming answer"]);
+  });
+  it("coalesces a backlog of cumulative snapshots instead of replaying each one", async () => {
+    vi.useFakeTimers();
+    try {
+      const text = "Fast provider answer. ".repeat(500);
+      const chunks = Array.from({ length: 100 }, (_, index) => answer(text.slice(0, Math.ceil(text.length * (index + 1) / 100))));
+      const done = collect([...chunks, { type: "finish" }]);
+      await vi.advanceTimersByTimeAsync(1500);
+      const output = await done;
+      expect(output.length).toBeLessThan(80);
+      expect(textOf(output.at(-2)!)).toBe(text);
+      expect(output.at(-1)).toEqual({ type: "finish" });
+    } finally { vi.useRealTimers(); }
+  });
+
+  it("cancels the upstream reader and removes scheduled animation", async () => {
+    vi.useFakeTimers();
+    try {
+      let cancelled = false;
+      const reader = new ReadableStream<UIMessageChunk>({
+        start(controller) { controller.enqueue(answer("A long answer still arriving")); },
+        cancel() { cancelled = true; },
+      }).pipeThrough(progressiveAnswers(() => true)).getReader();
+      await reader.read();
+      await reader.cancel("left chat");
+      await vi.advanceTimersByTimeAsync(100);
+      expect(cancelled).toBe(true);
+      expect(vi.getTimerCount()).toBe(0);
+    } finally { vi.useRealTimers(); }
   });
 });
