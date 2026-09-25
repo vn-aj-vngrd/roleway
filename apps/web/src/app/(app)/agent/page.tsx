@@ -166,7 +166,7 @@ function AgentRunDetails({ run, steps, endedAt }: { run: Run; steps: Step[]; end
   return <RunTimeline recovering={active} pending={active && !stale} statusUnknown={stale} startedAt={run.created_at} endedAt={endedAt ?? steps.find(step => step.status === "failed")?.created_at}
     failed={run.status === "failed"} awaitingApproval={run.status === "awaiting_approval"}
     steps={visibleSteps.map(step => ({ id: step.id, label: step.label, status: step.status === "pending" ? "active" : step.status }))}
-    model={`${run.provider} · ${run.model}${run.input_tokens || run.output_tokens ? ` · ${run.input_tokens ?? 0} in / ${run.output_tokens ?? 0} out` : ""}`} />;
+    model={{ provider: run.provider, name: run.model, inputTokens: run.input_tokens, outputTokens: run.output_tokens }} />;
 }
 
 function ApprovalCard({ proposal, opportunity, workspace, createdWorkspaceId }: { createdWorkspaceId: string | undefined; proposal: Proposal; opportunity: Opportunity | undefined; workspace: string | undefined }) {

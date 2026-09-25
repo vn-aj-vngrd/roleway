@@ -144,8 +144,8 @@ test("Agent keeps background conversations, shows loading, and acknowledges comp
         ...ownership,
         conversation_id: first.id,
         connection_id: connection.data.id,
-        provider: "openai",
-        model: "fixture",
+        provider: "openrouter",
+        model: "deepseek/deepseek-v4.1-flash",
         task_type: "conversation",
         status: "generating",
       })
@@ -168,6 +168,11 @@ test("Agent keeps background conversations, shows loading, and acknowledges comp
       data: { conversationId: first.id, runId: run.data.id },
       transient: true,
     });
+    write({
+      type: "data-progress", id: "work",
+      data: { id: "work", label: "Context loaded", status: "completed" },
+    });
+    await expect(page.getByRole("status").filter({ hasText: "Preparing the response…" })).toBeVisible();
     write({
       type: "data-progress",
       id: "work",
@@ -224,11 +229,16 @@ test("Agent keeps background conversations, shows loading, and acknowledges comp
     await expect(
       page.getByRole("heading", { name: "Insights", exact: true }),
     ).toBeVisible();
+    const savedStep = await admin.from("agent_run_steps").insert({
+      ...ownership, conversation_id: first.id, run_id: run.data.id,
+      position: 10, label: "Read Career Profile and Workspace context", status: "completed",
+    });
+    if (savedStep.error) throw savedStep.error;
     const complete = await admin.rpc("complete_agent_run", {
       input_run_id: run.data.id,
       input_output: { message: "Background answer is ready", proposals: [] },
-      input_tokens: 10,
-      output_tokens: 20,
+      input_tokens: 3968,
+      output_tokens: 289,
     });
     if (complete.error) throw complete.error;
     write({
@@ -283,6 +293,39 @@ test("Agent keeps background conversations, shows loading, and acknowledges comp
     await expect(
       page.getByLabel("Message Roleway Agent", { exact: true }),
     ).not.toHaveAttribute("readonly", "");
+    const responseMessage = page.getByRole("article", { name: "Agent response", exact: true }).filter({ hasText: "Background answer is ready" });
+    await responseMessage.locator("summary").click();
+    const usage = responseMessage.getByLabel("Model and token usage");
+    await expect(usage).toContainText("deepseek/deepseek-v4.1-flash");
+    await expect(usage).toContainText("3,968");
+    await expect(usage).toContainText("289");
+    for (const theme of ["light", "dark"]) {
+      await page.evaluate(value => { document.documentElement.dataset.theme = value; }, theme);
+      for (const width of [1440, 390]) {
+        await page.setViewportSize({ width, height: 900 });
+        await responseMessage.hover();
+        const row = responseMessage.locator(".agent-work-steps > p").first();
+        const icon = await row.locator("svg").boundingBox();
+        const label = await row.locator("span").boundingBox();
+        expect(Math.abs(icon!.y + icon!.height / 2 - label!.y - label!.height / 2)).toBeLessThan(1);
+        expect(await usage.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+        await page.screenshot({ path: `/tmp/roleway-agent-polish-${theme}-${width}.png` });
+      }
+    }
+    const copy = responseMessage.getByRole("button", { name: "Copy message", exact: true });
+    await copy.focus();
+    await expect(copy).toHaveCSS("opacity", "1");
+    await expect(copy).toHaveCSS("transition-duration", "0.2s");
+    await page.getByLabel("Message Roleway Agent", { exact: true }).focus();
+    await page.mouse.move(0, 0);
+    await expect(copy).toHaveCSS("opacity", "0");
+    await expect(copy).toHaveCSS("transition-duration", "0.14s");
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await expect(copy).toHaveCSS("transition-duration", "0s");
+    await copy.focus();
+    await expect(copy).toHaveCSS("transition-duration", "0s");
+    await expect(copy).toHaveCSS("opacity", "1");
     expect(errors).toEqual([]);
   } finally {
     response?.end();
