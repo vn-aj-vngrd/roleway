@@ -24,7 +24,7 @@ test("Agent approves interviews and contacts with exact details and verified Ope
     if (connection.error) throw connection.error;
     const cases = [
       { tool: "create_interview", title: "Technical", targetId: opportunity.data.id, interview: { interviewType: "Technical", startsAt: "2027-01-15T14:00:00+08:00", timezone: "Asia/Manila", durationMinutes: 60, meetingUrl: "https://example.com/meeting", interviewers: "Hiring team" }, contact: null, success: "Interview created", open: "Open interview" },
-      { tool: "create_contact", title: "Jane Recruiter", targetId: opportunity.data.id, interview: null, contact: { name: "Jane Recruiter", relationship: "recruiter", role: "Talent partner", company: "Record fixture", email: "jane@example.com", phone: null, profileUrl: null, notes: "Discussed the role", followUpAt: "2027-01-14T06:00:00Z" }, success: "Contact created", open: "Open contact" },
+      { tool: "create_contact", title: "Jane Recruiter", targetId: opportunity.data.id, interview: null, contact: { name: "Jane Recruiter", relationship: "recruiter", role: "Talent partner", company: "Record fixture", email: "jane@example.com", phone: null, profileUrl: null, notes: "Discussed the role", followUpAt: "2027-01-14T14:00:00+08:00" }, success: "Contact created", open: "Open contact" },
       { tool: "create_contact", title: "Alex Network", targetId: null, interview: null, contact: { name: "Alex Network", relationship: "contact", role: null, company: null, email: "alex@example.com", phone: null, profileUrl: null, notes: null, followUpAt: null }, success: "Contact created", open: "Open contact" },
     ];
     for (const [index, entry] of cases.entries()) {
@@ -41,6 +41,7 @@ test("Agent approves interviews and contacts with exact details and verified Ope
         for (const theme of ["light", "dark"]) {
           await page.evaluate(theme => { document.documentElement.dataset.theme = theme; }, theme);
           await expect(card).toContainText(entry.title);
+          if (entry.contact?.followUpAt) await expect(card).toContainText("2027-01-14 14:00:00 (UTC+08:00)");
           if (entry.interview) {
             await expect(card).toContainText("Asia/Manila");
             await expect(card).toContainText("60 minutes");

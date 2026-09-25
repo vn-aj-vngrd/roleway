@@ -203,7 +203,7 @@ function proposalDetails(proposal: Proposal, opportunity?: Opportunity): Array<[
   }
   if (proposal.tool_name === "create_contact" && contact.success) {
     const value = contact.data;
-    return [["Opportunity", proposal.target_id ? target : "Workspace contact"], ["Name", value.name], ["Relationship", value.relationship.replaceAll("_", " ")], ["Role", value.role ?? "Not provided"], ["Company", value.company ?? "Not provided"], ["Email", value.email ?? "Not provided"], ["Phone", value.phone ?? "Not provided"], ["Profile URL", value.profileUrl ?? "Not provided"], ["Notes", value.notes ?? "None"], ["Follow-up", value.followUpAt ? new Date(value.followUpAt).toISOString() : "No follow-up date"]];
+    return [["Opportunity", proposal.target_id ? target : "Workspace contact"], ["Name", value.name], ["Relationship", value.relationship.replaceAll("_", " ")], ["Role", value.role ?? "Not provided"], ["Company", value.company ?? "Not provided"], ["Email", value.email ?? "Not provided"], ["Phone", value.phone ?? "Not provided"], ["Profile URL", value.profileUrl ?? "Not provided"], ["Notes", value.notes ?? "None"], ["Follow-up", value.followUpAt ? value.followUpAt.replace("T", " ").replace(/(Z|[+-]\d{2}:\d{2})$/, offset => offset === "Z" ? " (UTC)" : ` (UTC${offset})`) : "No follow-up date"]];
   }
   if (proposal.tool_name === "create_workspace") return [["Workspace", String(args.name ?? "Untitled")], ["Objective", String(args.objective ?? "Focused job search")]];
   if (proposal.tool_name === "create_task") return [["Opportunity", target], ["Task", String(args.title ?? "Untitled")], ["Due", args.dueAt ? new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(String(args.dueAt))) : "No due date"]];
