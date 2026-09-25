@@ -79,7 +79,7 @@ export default async function AgentPage(props: { searchParams: Promise<AgentQuer
   const pendingRun = runs.find(run => ["queued", "gathering_context", "generating"].includes(run.status) && Date.now() - Date.parse(run.created_at) < 300_000);
 
   return (
-    <AgentLiveProvider conversationId={activeConversation?.id ?? ""} pendingRunId={pendingRun?.id} draftId={query.new ?? `${query.workspace ?? ""}:${query.opportunity ?? ""}:${query.page ?? ""}:${query.draft ?? ""}:${query.error ?? ""}`} persistedRunIds={messages.flatMap(message => message.role === "agent" && message.run_id ? [message.run_id] : [])}><div className={`agent-native-page ${activeConversation ? "has-conversation" : "is-empty"}`}>
+    <AgentLiveProvider canResetDraft={Boolean(query.workspace || query.opportunity || query.page || query.draft || query.error || query.decision)} conversationId={activeConversation?.id ?? ""} pendingRunId={pendingRun?.id} draftId={query.new ?? `${query.workspace ?? ""}:${query.opportunity ?? ""}:${query.page ?? ""}:${query.draft ?? ""}:${query.error ?? ""}`} persistedRunIds={messages.flatMap(message => message.role === "agent" && message.run_id ? [message.run_id] : [])}><div className={`agent-native-page ${activeConversation ? "has-conversation" : "is-empty"}`}>
       <header className="agent-native-routebar">
         <AgentHistoryMenu>
           <summary aria-label="Open Agent conversation history"><History aria-hidden="true" /><span>{activeConversation?.title ?? "New conversation"}</span><ChevronDown aria-hidden="true" /></summary>

@@ -428,6 +428,15 @@ test("Agent formats Markdown and keeps composer controls usable across sizes and
       handoffServer.closeAllConnections();
       await new Promise<void>(resolve => handoffServer.close(() => resolve()));
     }
+    for (const query of [`workspace=${ownership.project_id}&page=home`, "error=Try%20again"]) {
+      await page.goto(`/agent?${query}`);
+      await expect(page.locator(".agent-new-chat")).toBeEnabled();
+      await page.locator(".agent-new-chat").click();
+      await expect(page.locator(".agent-empty-state")).toBeVisible();
+      await expect(page.locator(".agent-new-chat")).toBeDisabled();
+      await expect(page.locator(".agent-native-scope")).toHaveText("All workspaces");
+      await expect(page.locator(".agent-inline-state[role=alert]")).toHaveCount(0);
+    }
     await page.goto(`/agent?workspace=${ownership.project_id}&page=home`);
     // The real authenticated stream route must persist failures without exposing provider details.
     await input.fill("Check the saved connection safely");

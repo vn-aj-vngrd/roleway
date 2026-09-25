@@ -27,8 +27,8 @@ const LiveContext = createContext<{
 
 export function useAgentLive() { return useContext(LiveContext); }
 
-export function AgentLiveProvider({ children, pendingRunId, persistedRunIds, conversationId, draftId }: {
-  children: ReactNode; pendingRunId: string | undefined; persistedRunIds: string[]; conversationId: string; draftId: string;
+export function AgentLiveProvider({ children, pendingRunId, persistedRunIds, conversationId, draftId, canResetDraft = false }: {
+  children: ReactNode; pendingRunId: string | undefined; persistedRunIds: string[]; conversationId: string; draftId: string; canResetDraft?: boolean;
 }) {
   const router = useRouter();
   const store = useAgentSessions();
@@ -52,7 +52,7 @@ export function AgentLiveProvider({ children, pendingRunId, persistedRunIds, con
   }, [store, session, conversationId, draftId, navigating]);
   return <LiveContext.Provider value={{
     pending: session.pending || recovering, navigating, navigationLabel,
-    isEmptyConversation: !conversationId && !session.submission && !messages.length && !session.pending,
+    isEmptyConversation: !canResetDraft && !conversationId && !session.submission && !messages.length && !session.pending,
     navigate: (href, newConversation = false) => {
       setNavigationLabel(newConversation ? "Starting new conversation" : "Loading conversation");
       store.leave(session);
