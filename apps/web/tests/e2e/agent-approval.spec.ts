@@ -50,7 +50,7 @@ test("stale Next Action approval preserves manual edits and explains recovery", 
       }
       await page.getByRole("button", { name: "Show Agent actions", exact: true }).click();
       await expect(page.getByRole("listbox", { name: "Agent actions" })).toBeVisible();
-      await expect(page.getByRole("listbox", { name: "Agent actions" }).getByRole("option")).toHaveCount(13);
+      await expect(page.getByRole("listbox", { name: "Agent actions" }).getByRole("option")).toHaveCount(15);
       await expect(page.locator(".agent-capability-popover")).toHaveCSS("transform", "none");
       const panel = await page.locator(".agent-capability-popover").boundingBox();
       const composer = await page.locator(".agent-native-composer").boundingBox();
@@ -60,7 +60,7 @@ test("stale Next Action approval preserves manual edits and explains recovery", 
       await input.press("Escape");
       await expect(page.getByRole("listbox", { name: "Agent actions" })).toBeHidden();
       await input.fill("/");
-      await expect(page.getByRole("listbox", { name: "Agent actions" }).getByRole("option")).toHaveCount(13);
+      await expect(page.getByRole("listbox", { name: "Agent actions" }).getByRole("option")).toHaveCount(15);
       await input.fill("/create task");
       await expect(page.getByRole("listbox", { name: "Agent actions" }).getByRole("option")).toHaveCount(1);
       await input.press("Enter");
@@ -94,7 +94,7 @@ test("stale Next Action approval preserves manual edits and explains recovery", 
 });
 
 
-test("all four Create actions save once, show progress and open their results", async ({ page }) => {
+test("the original four Create actions save once, show progress and open their results", async ({ page }) => {
   // Four persisted workflows, cross-Workspace navigation, reloads, and capacity recovery.
   test.setTimeout(360_000);
   const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } });

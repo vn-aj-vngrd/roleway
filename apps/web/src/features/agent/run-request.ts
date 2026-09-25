@@ -232,21 +232,29 @@ export async function runAgentRequest(formData: FormData, emit?: (event: AgentSt
     failureCode = "invalid_provider_output";
     const availableTargets = new Map<string, Pick<AgentOpportunity, "id" | "stage" | "next_action" | "next_action_due_at">>([...opportunities.map(item => [item.id, item] as const), ...reader.opportunities]);
     const replacedIds = new Set<string>();
-    const validProposals = result.output.proposals.flatMap((proposal) => {
+    const validProposals = [];
+    for (const proposal of result.output.proposals) {
       const checked = agentProposalSchema.safeParse({ ...proposal, body: proposal.body ? sanitizeRichText(proposal.body) : null });
       if (!checked.success) throw new Error("invalid_proposal");
       if (checked.data.targetId && !availableTargets.has(checked.data.targetId)) throw new Error("invalid_proposal_target");
       const target = checked.data.targetId ? availableTargets.get(checked.data.targetId) : undefined;
       if (target?.stage === "closed") throw new Error("closed_proposal_target");
+      if (checked.data.tool === "create_contact") {
+        if (!checked.data.workspaceId || !scopeProjectIds.includes(checked.data.workspaceId)) throw new Error("invalid_proposal_workspace");
+        if (checked.data.targetId) {
+          const { data: destination } = await auth.supabase.from("opportunities").select("project_id").eq("id", checked.data.targetId).eq("user_id", auth.user.id).single();
+          if (destination?.project_id !== checked.data.workspaceId) throw new Error("invalid_proposal_workspace");
+        }
+      }
       const replacementId = checked.data.supersedesProposalId;
       if (replacementId) {
         const previous = (proposalHistoryResult.data ?? []).find(item => item.id === replacementId);
         if (!previous || previous.status !== "proposed" || previous.tool_name !== checked.data.tool || replacedIds.has(replacementId)) throw new Error("invalid_proposal_revision");
         replacedIds.add(replacementId);
       }
-      return [{ ...checked.data, expectedNextAction: checked.data.tool === "set_next_action" && target
-        ? { title: target.next_action, dueAt: target.next_action_due_at } : null }];
-    });
+      validProposals.push({ ...checked.data, expectedNextAction: checked.data.tool === "set_next_action" && target
+        ? { title: target.next_action, dueAt: target.next_action_due_at } : null });
+    }
     await progress(30, "Validated the answer and proposed changes", "completed");
     for (const [index, proposal] of validProposals.entries()) {
       await progress(40 + index, `Prepared ${proposal.tool.replaceAll("_", " ")} · approval required`, "completed");

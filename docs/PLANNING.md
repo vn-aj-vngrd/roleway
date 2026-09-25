@@ -171,3 +171,7 @@ The E2E suite must use a disposable account and verify normal-user admin denial 
 ## Plans and administration
 
 [Plans, billing, and storage](PRICING_AND_BILLING.md) owns capacity accounting, tier availability, manual payment reconciliation, and activation. PostgreSQL enforces account quotas across direct API, app, and Agent writes. Admin content inspection is read-only, limited to core record types, and audited. Plan & billing lives in account Settings; public Help provides admin-managed articles. [Help Center maintenance](HELP_CENTER.md) owns topic coverage, guide formatting, and content rollout.
+
+### Agent creation
+
+Agent offers Workspace, Task, Next Action, Note, Interview, and Contact under Create. It gathers missing details and presents an exact proposal; only explicit approval saves records. Interviews reuse scheduling and preparation behavior. Contacts belong to a confirmed Workspace and may link to an Opportunity. Neither action sends messages or calendar invitations. See [the Agent contract](ROLEWAY-AGENT.md) for fields, scope, duplicate handling, and approval rules.

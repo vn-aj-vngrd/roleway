@@ -1,3 +1,4 @@
+import { agentInterviewSchema, agentContactSchema } from "@roleway/schemas";
 import { agentContextPage, agentContextPages, type AgentContextPage } from "@/features/agent/scope";
 // OpenRouter free models may queue for minutes; leave time for bounded calls and persistence.
 export const maxDuration = 300;
@@ -193,7 +194,17 @@ function ApprovalCard({ proposal, opportunity, workspace, createdWorkspaceId }: 
 
 function proposalDetails(proposal: Proposal, opportunity?: Opportunity): Array<[string, string]> {
   const args = proposal.arguments;
+  const interview = agentInterviewSchema.safeParse(args.interview);
+  const contact = agentContactSchema.safeParse(args.contact);
   const target = opportunity?.jobs ? `${opportunity.jobs.company} · ${opportunity.jobs.title}` : "Unavailable Opportunity";
+  if (proposal.tool_name === "create_interview" && interview.success) {
+    const value = interview.data;
+    return [["Opportunity", target], ["Interview", value.interviewType], ["Starts", new Intl.DateTimeFormat("en", { dateStyle: "full", timeStyle: "short", timeZone: value.timezone }).format(new Date(value.startsAt))], ["Timezone", value.timezone], ["Duration", `${value.durationMinutes} minutes`], ["Meeting URL", value.meetingUrl ?? "Not provided"], ["Interviewers", value.interviewers ?? "Not provided"], ["Also saves", "Preparation task; eligible Opportunity moves to Interview. No calendar invite is sent."]];
+  }
+  if (proposal.tool_name === "create_contact" && contact.success) {
+    const value = contact.data;
+    return [["Opportunity", proposal.target_id ? target : "Workspace contact"], ["Name", value.name], ["Relationship", value.relationship.replaceAll("_", " ")], ["Role", value.role ?? "Not provided"], ["Company", value.company ?? "Not provided"], ["Email", value.email ?? "Not provided"], ["Phone", value.phone ?? "Not provided"], ["Profile URL", value.profileUrl ?? "Not provided"], ["Notes", value.notes ?? "None"], ["Follow-up", value.followUpAt ? new Date(value.followUpAt).toISOString() : "No follow-up date"]];
+  }
   if (proposal.tool_name === "create_workspace") return [["Workspace", String(args.name ?? "Untitled")], ["Objective", String(args.objective ?? "Focused job search")]];
   if (proposal.tool_name === "create_task") return [["Opportunity", target], ["Task", String(args.title ?? "Untitled")], ["Due", args.dueAt ? new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(String(args.dueAt))) : "No due date"]];
   if (proposal.tool_name === "set_next_action") return [["Opportunity", target], ["Next Action", String(args.title ?? "Untitled")], ["Due", args.dueAt ? new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(String(args.dueAt))) : "No due date"]];
@@ -201,10 +212,12 @@ function proposalDetails(proposal: Proposal, opportunity?: Opportunity): Array<[
 }
 
 function toolLabel(tool: string) {
-  return ({ create_workspace: "Create Workspace", create_task: "Create task", set_next_action: "Update Next Action", create_note: "Add note" } as Record<string, string>)[tool] ?? "Change Roleway record";
+  return ({ create_workspace: "Create Workspace", create_task: "Create task", set_next_action: "Update Next Action", create_note: "Add note", create_interview: "Create interview", create_contact: "Create contact" } as Record<string, string>)[tool] ?? "Change Roleway record";
 }
 
 const creationFeedback: Record<string, { pending: string; success: string; open: string }> = {
+  create_interview: { pending: "Creating interview…", success: "Interview created", open: "Open interview" },
+  create_contact: { pending: "Creating contact…", success: "Contact created", open: "Open contact" },
   create_workspace: { pending: "Creating Workspace…", success: "Workspace created", open: "Open Workspace" },
   create_task: { pending: "Creating task…", success: "Task created", open: "Open task" },
   create_note: { pending: "Creating note…", success: "Note created", open: "Open note" },

@@ -84,3 +84,7 @@ The browser suite needs a configured Supabase project and disposable test accoun
 - `supabase/migrations` — authoritative SQL schema, RLS policies, and database functions.
 - `supabase/templates` — Auth email templates.
 - `docs` — product, architecture, operations, and release guidance.
+
+### Agent creation
+
+Agent offers Workspace, Task, Next Action, Note, Interview, and Contact under Create. It gathers missing details and presents an exact proposal; only explicit approval saves records. Interviews reuse scheduling and preparation behavior. Contacts belong to a confirmed Workspace and may link to an Opportunity. Neither action sends messages or calendar invitations. See [the Agent contract](docs/ROLEWAY-AGENT.md) for fields, scope, duplicate handling, and approval rules.

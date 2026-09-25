@@ -9,18 +9,18 @@ This is the implementation contract and audit for the current Agent version. For
 3. Use `+`, the `/` button, or type `/` at the start of the composer to discover Create and Explore. Both buttons open the same composer-width popover above the input. Typing filters commands; arrows and Enter select; Escape dismisses. Selection fills a prompt for review; Send starts the conversation.
 4. For Create, ask one missing question at a time. Reuse supplied information, clarify ambiguous targets and dates, and show an exact proposal once the required details are present.
 5. Approve or reject the proposal. Only successful database application means a record was created. Continuing the conversation is not approval.
-6. After approval, show Creating Workspace…, Creating task…, Creating note…, or Setting Next Action… while saving. Confirm the specific saved result and offer Open. Task, note and Next Action controls verify the applied proposal and destination, switch Workspace, and open the relevant Opportunity section. Newly created Workspaces link to their settings page; older history without the creation-result URL links to the Workspace list.
+6. After approval, show Creating Workspace…, Creating task…, Creating note…, Creating interview…, Creating contact…, or Setting Next Action… while saving. Confirm the specific saved result and offer Open. Task, note and Next Action controls verify the applied proposal and destination, switch Workspace, and open the relevant Opportunity section. Interview and contact results verify the saved record and destination before opening the interview dossier or contact editor. Newly created Workspaces link to their settings page; older history without the creation-result URL links to the Workspace list.
 7. Resume from durable history. Messages show local calendar dates/times and copy controls beneath rounded message bubbles. Mobile retains the same actions and approval flow.
 
 **Complete when:** a person can discover an action, answer naturally without a creation form, review the destination and details, approve once, and find exactly one resulting record after reload.
 
 ## Help Center
 
-The public guide at `/help/agent-create` explains setup, all four Create flows, approval, corrections and recovery. It remains accessible through Help & support. The forward migration `20260917051125_agent_creation_help.sql` inserts it into the existing admin-editable Help Center; deploy that migration with the Agent interface. Existing editorial content is preserved if the slug already exists.
+The public guide at `/help/agent-create` explains setup, all six Create flows, approval, corrections and recovery. It remains accessible through Help & support. The forward migration `20260917051125_agent_creation_help.sql` inserts it into the existing admin-editable Help Center; deploy that migration with the Agent interface. Existing editorial content is preserved if the slug already exists. The forward migration `20260925044930_agent_create_interviews_contacts.sql` expands the guide with Interview and Contact instructions, updates known obsolete capability wording, and retains other editorial content.
 
 ## Current capability boundary
 
-`apps/web/src/features/agent/capabilities.ts` owns the discoverable prompt catalog. Provider policy is in `apps/web/src/lib/ai/providers.ts`; shared schemas allow only the four mutation tools below. Database approval functions remain the execution authority.
+`apps/web/src/features/agent/capabilities.ts` owns the discoverable prompt catalog. Provider policy is in `apps/web/src/lib/ai/providers.ts`; shared schemas allow only the six mutation tools below. Database approval functions remain the execution authority.
 
 | Create | Information to gather | Result after approval |
 | --- | --- | --- |
@@ -28,6 +28,8 @@ The public guide at `/help/agent-create` explains setup, all four Create flows, 
 | Task | Exact Opportunity/Workspace, title, optional due date | Opportunity task |
 | Next Action | Exact Opportunity/Workspace, title, optional due date | Updated Next Action |
 | Note | Exact Opportunity/Workspace and note text | Opportunity note |
+| Interview | Exact Opportunity, type, start instant, confirmed timezone, duration; optional meeting URL/interviewers | Interview plus existing preparation/stage/notification workflow |
+| Contact | Destination Workspace, name, relationship; optional Opportunity and contact details | Workspace contact, optionally linked to an Opportunity |
 
 The model gathers details through conversation; schema validation and database authorization guard execution. Each generated answer includes a required clarification decision. When the model identifies a missing or ambiguous detail, the server supplies a concrete question and discards accompanying proposals before persistence. Date interpretation receives the browser timezone and current server time. Ask about ambiguous time references. A declined optional date is represented as null; an unresolved requested date requires clarification.
 
@@ -102,3 +104,11 @@ For this version, finish and verify the bounded Create/Explore flow before expan
 - Workspace capacity failures use the shared plan-limit explanation and preserve the proposal for retry. Success redirects anchor the saved card into view on long mobile chats.
 
 - Follow-up verification: all four approval → persisted record → Open browser journeys passed at desktop/mobile sizes, including reload, visible result controls, cross-Workspace navigation, Workspace capacity rejection and retry, and one saved record per creation. Stale Next Action recovery also passed. All 122 unit tests passed, including the nine Explore context paths and result authorization checks. The live-provider browser test remains skipped because its opt-in key is absent.
+
+## Interview and contact approval
+
+`create_interview` uses `targetId` for the Opportunity and a nested `interview` payload (`interviewType`, `startsAt`, `durationMinutes`, `timezone`, `meetingUrl`, `interviewers`). The start must include an explicit UTC offset or Z and a valid named timezone; ambiguous times and missing duration require clarification. Approval calls `schedule_interview`, preserving preparation tasks, eligible stage movement, activity and notification triggers. No calendar invitation is sent.
+
+`create_contact` requires a destination `workspaceId` and nested `contact` payload (`name`, `relationship`, `role`, `company`, `email`, `phone`, `profileUrl`, `notes`, `followUpAt`). `targetId` is an optional Opportunity in that same Workspace. Unknown optional fields are null. Contact follow-ups appear in the existing Home workflow. No message is sent.
+
+The server restricts destinations to the conversation scope. PostgreSQL rechecks owner, active Workspace, optional Opportunity relationship and proposal age at approval. Exact duplicate interviews (same Opportunity, start and type, excluding cancelled events) and likely duplicate contacts (same Workspace and email, or name plus company) are rejected with a recoverable explanation. Review an existing record or correct and replace the proposal. Repeated approval cannot create another record. Applied record IDs are stored for verified Open actions. Existing proposal payloads remain compatible; the four-proposal-per-answer limit is unchanged.

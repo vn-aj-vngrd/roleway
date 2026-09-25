@@ -43,6 +43,8 @@ export const toolPermissions = {
   research_company: "read",
   create_task: "internal_write",
   create_note: "internal_write",
+  create_interview: "internal_write",
+  create_contact: "internal_write",
   update_fit_analysis: "internal_write",
   create_document_draft: "internal_write",
   create_resume_version: "reviewable_artifact",

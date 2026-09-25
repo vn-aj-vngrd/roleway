@@ -1,6 +1,6 @@
 # How Roleway Agent works
 
-Roleway Agent answers questions from a bounded snapshot and scoped, on-demand reads of the signed-in person's Account or one Workspace. It can draft text and propose four internal changes. A proposal becomes a record only after the person approves it and the database applies it. The application remains useful when no AI provider is connected.
+Roleway Agent answers questions from a bounded snapshot and scoped, on-demand reads of the signed-in person's Account or one Workspace. It can draft text and propose six internal changes. A proposal becomes a record only after the person approves it and the database applies it. The application remains useful when no AI provider is connected.
 
 ## What a person sees
 
@@ -43,7 +43,7 @@ The stream is feedback, not proof of a saved answer or applied change. On interr
 | Model integration | `apps/web/src/lib/ai/stream-agent.ts` uses `ai` `ToolLoopAgent` with `@ai-sdk/openai`, `@ai-sdk/anthropic`, and `@ai-sdk/google`; `providers.ts` contains shared policy and the non-streaming Server Action path |
 | Approval action   | `apps/web/src/app/(app)/agent/actions.ts` calls the authenticated decision function and opens verified results                                                                                                |
 | Credentials       | `apps/web/src/lib/ai/secrets.ts` encrypts provider keys with Node crypto; Settings tests the connection through `generateAssistantOutput`                                                                     |
-| Contracts         | `packages/schemas` defines the four allowed proposal types and validates the model response with Zod; `packages/core` contains general shared workflow rules                                                  |
+| Contracts         | `packages/schemas` defines the six allowed proposal types and validates the model response with Zod; `packages/core` contains general shared workflow rules                                                  |
 | Persistence       | Supabase client and SQL migrations in `supabase/migrations`; PostgreSQL functions save completed runs and decide proposals                                                                                    |
 
 The dependency versions are in [`STACK.md`](../STACK.md). The Create and Explore catalog is in `apps/web/src/features/agent/capabilities.ts`; the detailed behavior contract is [`ROLEWAY-AGENT.md`](ROLEWAY-AGENT.md).
@@ -88,7 +88,7 @@ sequenceDiagram
 
 The diagram follows a valid read or terminal call. One model step can request multiple reads in parallel; they share the same six-read counter. Further calls return a read-limit error without querying the database. Invalid arguments, provider errors, aborts, multiple terminal response calls, and truncated output fail the request. Returning a read result does not grant permission to write.
 
-### Three SDK tools, four proposal types
+### Three SDK tools, six proposal types
 
 | Model-visible SDK tool | Input | What runs on the server |
 | --- | --- | --- |
@@ -96,9 +96,9 @@ The diagram follows a valid read or terminal call. One model step can request mu
 | `read_context` | `{ kind, id, offset }`; Opportunity, Job, document, Career Profile, or conversation | `tool({ inputSchema: agentReadInputSchema, execute })` reads source text or history using the same fixed scope. |
 | `roleway_agent` | `{ message, proposals, clarification }` via `agentGenerationSchema` | No `execute` function. This is the terminal structured answer. Roleway parses it and resolves clarification before saving. |
 
-The four names inside `proposals`—`create_workspace`, `create_task`, `set_next_action`, and `create_note`—are **data in the terminal tool's arguments**, not four SDK tools. The model cannot directly invoke their database mutations. A `create_task` proposal requests an approval card; only a later user approval can execute it.
+The six names inside `proposals`—`create_workspace`, `create_task`, `set_next_action`, `create_note`, `create_interview`, and `create_contact`—are **data in the terminal tool's arguments**, not six SDK tools. The model cannot directly invoke their database mutations. A `create_task` proposal requests an approval card; only a later user approval can execute it.
 
-`clarification` is a required nullable decision naming the first missing detail. When non-null, `resolveAgentAnswer` replaces the model's prose with a concrete question and discards all accompanying proposals. When null, the answer must be non-empty. The persisted contract is `{ message, proposals }`; the provider-only `clarification` field is not stored in that response. Each proposal has `tool`, `summary`, nullable `targetId`, `title`, `body`, `dueAt`, `name`, `objective`, and optional `supersedesProposalId`; Zod enforces the fields required by each type. At most four proposals are allowed.
+`clarification` is a required nullable decision naming the first missing detail. When non-null, `resolveAgentAnswer` replaces the model's prose with a concrete question and discards all accompanying proposals. When null, the answer must be non-empty. The persisted contract is `{ message, proposals }`; the provider-only `clarification` field is not stored in that response. Each proposal has `tool`, `summary`, nullable `targetId`, `title`, `body`, `dueAt`, `name`, `objective`, optional `supersedesProposalId`, `workspaceId`, `interview`, and `contact` payloads; Zod enforces the fields required by each type. At most four proposals are allowed.
 
 ### Loop and request limits
 
@@ -125,7 +125,7 @@ Settings → Test connection is a separate `generateAssistantOutput` request for
 
 ## Features available today
 
-Create exposes exactly four proposal types, listed below. The model asks for missing details one question at a time and can revise a proposal after a correction. Each proposal has its own approval decision. A correction includes `supersedesProposalId`; completion atomically retires that exact owned, pending proposal and saves the replacement. Unrelated proposals remain available. Approval and completion lock the conversation so a simultaneous approval/revision cannot apply a retired version.
+Create exposes exactly six proposal types, listed below. The model asks for missing details one question at a time and can revise a proposal after a correction. Each proposal has its own approval decision. A correction includes `supersedesProposalId`; completion atomically retires that exact owned, pending proposal and saves the replacement. Unrelated proposals remain available. Approval and completion lock the conversation so a simultaneous approval/revision cannot apply a retired version.
 
 Explore has nine read-and-draft starting points:
 
@@ -186,6 +186,8 @@ This is explicit database retrieval with bounded context, not a vector/embedding
 | `create_task`      | Exact Opportunity and task title; date optional   | Creates an Opportunity task |
 | `set_next_action`  | Exact Opportunity and action title; date optional | Updates its Next Action     |
 | `create_note`      | Exact Opportunity and note body                   | Creates an Opportunity note |
+| `create_interview` | Opportunity, type, start instant, timezone, duration | Calls the existing interview scheduling workflow |
+| `create_contact` | Workspace, name, relationship; optional Opportunity/details | Creates a Workspace contact |
 
 ```mermaid
 flowchart LR
@@ -194,11 +196,11 @@ flowchart LR
     C -->|Reject| D[Rejected; no product write]
     C -->|Approve| E[PostgreSQL decision function]
     E --> F{Owner, Workspace, status, expiry, and current state valid?}
-    F -->|Yes| G[One product write; proposal applied]
+    F -->|Yes| G[Atomic product changes; proposal applied]
     F -->|No| H[Expired or failed; no product write]
 ```
 
-Approval uses the signed-in user's database session. The transaction locks the proposal, checks ownership and its destination Workspace, and prevents repeat application. Proposals expire after seven days. A Next Action approval also compares the value and due date captured when the proposal was made, so it cannot overwrite a later manual edit. Agent cannot create Jobs, Opportunities, applications, contacts, interviews, or documents; it cannot submit applications, send messages, or contact employers. Explore drafts remain text for the person to review and use.
+Approval uses the signed-in user's database session. The transaction locks the proposal, checks ownership and its destination Workspace, and prevents repeat application. Proposals expire after seven days. A Next Action approval also compares the value and due date captured when the proposal was made, so it cannot overwrite a later manual edit. Agent cannot create Jobs, Opportunities, applications, or documents; it cannot submit applications, send messages, or contact employers. Explore drafts remain text for the person to review and use.
 
 ## Data, safety, and failure states
 
@@ -207,3 +209,11 @@ Approval uses the signed-in user's database session. The transaction locks the p
 - The server checks a 30-runs-per-hour limit before starting a run. This count is not an atomic reservation, so simultaneous requests can race.
 - Failed provider calls or invalid output mark the run failed and preserve the user's message for retry. System events record redacted error codes, not prompts, keys, Job descriptions, or provider payloads.
 - A provider fixture proves the application flow, while a live provider test is needed to verify real model behavior. Browser tests use disposable Supabase accounts; `agent-live.spec.ts` requires an opt-in provider key. `pnpm --filter @roleway/web test:agent:live` runs synthetic grounding, missing-information, date, retrieval/injection, history, and multi-turn correction evaluations, recording latency and token usage without credentials. See [`DEPLOYMENT_AND_RELEASES.md`](DEPLOYMENT_AND_RELEASES.md) for that boundary.
+
+## Interview and contact approval
+
+`create_interview` uses `targetId` for the Opportunity and a nested `interview` payload (`interviewType`, `startsAt`, `durationMinutes`, `timezone`, `meetingUrl`, `interviewers`). The start must include an explicit UTC offset or Z and a valid named timezone; ambiguous times and missing duration require clarification. Approval calls `schedule_interview`, preserving preparation tasks, eligible stage movement, activity and notification triggers. No calendar invitation is sent.
+
+`create_contact` requires a destination `workspaceId` and nested `contact` payload (`name`, `relationship`, `role`, `company`, `email`, `phone`, `profileUrl`, `notes`, `followUpAt`). `targetId` is an optional Opportunity in that same Workspace. Unknown optional fields are null. Contact follow-ups appear in the existing Home workflow. No message is sent.
+
+The server restricts destinations to the conversation scope. PostgreSQL rechecks owner, active Workspace, optional Opportunity relationship and proposal age at approval. Exact duplicate interviews (same Opportunity, start and type, excluding cancelled events) and likely duplicate contacts (same Workspace and email, or name plus company) are rejected with a recoverable explanation. Review an existing record or correct and replace the proposal. Repeated approval cannot create another record. Applied record IDs are stored for verified Open actions. Existing proposal payloads remain compatible; the four-proposal-per-answer limit is unchanged.
