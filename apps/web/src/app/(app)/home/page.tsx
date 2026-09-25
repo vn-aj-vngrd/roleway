@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { EmptyState } from "@/components/ui-primitives";
 import { formatOpportunityTicket } from "@roleway/core";
 import { ArrowRight, CalendarClock, CheckCircle2, Circle, Inbox, Plus, Target, UserRound } from "lucide-react";
@@ -20,6 +21,8 @@ type AttentionItem =
   | { kind: "action"; id: string; timestamp: number; dateLabel: string; title: string; meta: string; opportunityId: string }
   | { kind: "contact"; id: string; timestamp: number; dateLabel: string; title: string; meta: string; opportunityId: string | null }
   | { kind: "inbox"; id: string; timestamp: number; dateLabel: string; title: string; meta: string };
+
+export const metadata: Metadata = { title: "Home" };
 
 export default async function HomePage({ searchParams }: { searchParams: Promise<{ welcome?: string; projectCreated?: string; projectArchived?: string; workspaceSaved?: string; error?: string; focus?: string }> }) {
   const [context, query] = await Promise.all([requireSearchContext(), searchParams]);

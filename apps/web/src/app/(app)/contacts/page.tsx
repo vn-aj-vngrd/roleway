@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { CircleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatOpportunityTicket } from "@roleway/core";
@@ -70,6 +71,8 @@ const relationshipOptions = [
   { value: "referral", label: "Referral" },
   { value: "colleague", label: "Former colleague" },
 ];
+
+export const metadata: Metadata = { title: "Contacts" };
 
 export default async function ContactsPage(props: {
   searchParams: Promise<{

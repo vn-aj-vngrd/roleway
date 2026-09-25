@@ -1,9 +1,12 @@
+import type { Metadata } from "next";
 import { restartTour } from "@/app/(app)/tour-actions";
 import { SettingsNav } from "@/components/settings-nav";
 import { SubmitButton } from "@/components/submit-button";
 import { PageHeader } from "@/components/ui-primitives";
 import { requireUser } from "@/lib/supabase/server";
 import { updateProfile } from "../actions";
+
+export const metadata: Metadata = { title: "Profile · Settings" };
 
 export default async function ProfilePage(props: { searchParams: Promise<{ saved?: string; error?: string }> }) {
   const searchParams = await props.searchParams;

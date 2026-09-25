@@ -12,7 +12,7 @@ import { requireUser } from "@/lib/supabase/server";
 import "./landing.css";
 
 export const metadata: Metadata = {
-  title: "Roleway — A focused workspace for your job search",
+  title: { absolute: "Roleway — A focused workspace for your job search" },
   description: "Review promising Jobs, manage Opportunities, prepare applications and interviews, and keep every Next Action clear in one focused workspace.",
   alternates: { canonical: "/" },
   openGraph: {

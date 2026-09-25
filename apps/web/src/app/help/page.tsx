@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Search, ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
@@ -9,6 +10,8 @@ import {
   matchesHelpQuery,
   topicForArticle,
 } from "@/features/help/catalog";
+
+export const metadata: Metadata = { title: "Help Center" };
 
 export default async function HelpPage({
   searchParams,

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -24,6 +25,8 @@ type UserDetail = {
   records: Array<{ id: string; label: string }>;
   record: Record<string, unknown> | null;
 };
+export const metadata: Metadata = { title: "User details · Admin" };
+
 export default async function AdminUserPage({
   params,
   searchParams,

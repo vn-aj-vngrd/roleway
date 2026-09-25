@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { formatOpportunityTicket } from "@roleway/core";
 import { CalendarClock, ExternalLink, Trash2 } from "lucide-react";
 import Link from "next/link";
@@ -25,6 +26,8 @@ type InterviewWorkspace = {
   status: "scheduled" | "completed" | "cancelled";
   opportunities: { id: string; reference_number: number; jobs: { company: string; title: string } | null } | null;
 };
+
+export const metadata: Metadata = { title: "Interview details" };
 
 export default async function InterviewPage(
   props: { params: Promise<{ id: string }>; searchParams: Promise<{ created?: string; saved?: string; error?: string }> }

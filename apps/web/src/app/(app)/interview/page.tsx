@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { CircleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatOpportunityTicket } from "@roleway/core";
@@ -54,6 +55,8 @@ type InterviewRow = {
     jobs: { company: string; title: string } | null;
   } | null;
 };
+
+export const metadata: Metadata = { title: "Interviews" };
 
 export default async function PreparationPage(props: {
   searchParams: Promise<{
