@@ -3,6 +3,7 @@ import { CapacityNotice } from "@/components/capacity-notice";
 import type { PlanSummary } from "@/features/billing/types";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { AgentSessionProvider } from "@/features/agent/session-provider";
 import { AppShell } from "@/components/app-shell";
 import { requireSearchContext } from "@/features/projects/context";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -29,7 +30,7 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
   ]);
 
   return (
-    <AppShell
+    <AgentSessionProvider key={context.user.id}><AppShell
       user={{
         name: context.profile.full_name || context.user.email?.split("@")[0] || "Roleway user",
         email: context.user.email || "",
@@ -44,6 +45,6 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
     >
       {planResult.data ? <CapacityNotice summary={planResult.data as PlanSummary}/> : null}
       {children}
-    </AppShell>
+    </AppShell></AgentSessionProvider>
   );
 }

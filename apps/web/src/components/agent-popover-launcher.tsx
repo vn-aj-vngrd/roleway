@@ -1,17 +1,15 @@
 "use client";
 
-import { ArrowUp, Maximize2, Navigation, Route, ShieldCheck, X } from "lucide-react";
+import { ArrowUp, Maximize2, Navigation, Plus, Route, ShieldCheck, X } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { agentContextHref, agentPageFromPath } from "@/features/agent/scope";
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
+import { useAgentSessions, AgentActivityIndicator } from "@/features/agent/session-provider";
+import { Spinner } from "@/components/ui/spinner";
 import { AgentMarkdown } from "@/features/agent/markdown";
 import { RunTimeline } from "@/features/agent/run-timeline";
-import type { AgentUIMessage } from "@/features/agent/stream-types";
 
-const transport = new DefaultChatTransport<AgentUIMessage>({ api: "/api/agent/chat", prepareSendMessagesRequest: ({ body }) => ({ body: body ?? {} }) });
 import { Button } from "@/components/ui/button";
 
 type AgentBreadcrumb = { label: string; href?: string };
@@ -22,42 +20,15 @@ export function OpenAgentButton({ children, className = "" }: { children: ReactN
 }
 
 export function AgentPopoverLauncher({ pathname, projectId, projectName, breadcrumbs, connection }: { pathname: string; projectId: string; projectName: string; breadcrumbs: AgentBreadcrumb[]; connection: AgentConnection }) {
-  const router = useRouter();
-  const currentPath = useRef(pathname);
-  useEffect(() => { currentPath.current = pathname; }, [pathname]);
+  const store = useAgentSessions();
+  const session = store.get(store.popoverKey);
   const draftKey = useId();
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState("");
-  const conversationId = useRef("");
-  const [conversationHref, setConversationHref] = useState("");
-  const [startedAt, setStartedAt] = useState("");
-  const [endedAt, setEndedAt] = useState<string>();
-  const [failed, setFailed] = useState(false);
-  const receivedResult = useRef(false);
-  const busy = useRef(false);
+  const { messages, error } = useChat({ chat: session.chat });
+  const { pending, failed, startedAt, endedAt } = session;
+  const conversationHref = session.resultHref || (session.conversationId ? `/agent?conversation=${session.conversationId}` : "");
   const transcriptRef = useRef<HTMLDivElement>(null);
-  const { messages, sendMessage, setMessages, clearError, status, error } = useChat<AgentUIMessage>({
-    transport,
-    onData(part) {
-      if (part.type === "data-started") {
-        conversationId.current = part.data.conversationId;
-        setConversationHref(`/agent?conversation=${part.data.conversationId}`);
-      }
-      if (part.type === "data-result") {
-        receivedResult.current = true;
-        setConversationHref(part.data.href);
-        setFailed(part.data.href.includes("error="));
-      }
-    },
-    onFinish() {
-      busy.current = false;
-      setEndedAt(new Date().toISOString());
-      if (!receivedResult.current) setFailed(true);
-      if (currentPath.current === "/agent") router.refresh();
-    },
-    onError() { busy.current = false; setFailed(true); setEndedAt(new Date().toISOString()); },
-  });
-  const pending = status === "submitted" || status === "streaming";
   useEffect(() => {
     const el = transcriptRef.current;
     if (el && el.scrollHeight - el.scrollTop - el.clientHeight < 180) el.scrollTop = el.scrollHeight;
@@ -69,23 +40,17 @@ export function AgentPopoverLauncher({ pathname, projectId, projectName, breadcr
   const workspaceId = ["home", "inbox", "opportunities", "interview", "contacts", "documents"].includes(contextPage) ? projectId : "";
   const baseHref = conversationHref || agentContextHref(workspaceId, contextPage, opportunityId);
   const fullHref = message.trim() ? `${baseHref}${baseHref.includes("?") ? "&" : "?"}draft=${encodeURIComponent(draftKey)}` : baseHref;
-  const contextKey = `${pathname}:${projectId}`;
-  const previousPath = useRef(contextKey);
-  useEffect(() => {
-    if (pathname === "/agent" || pending || previousPath.current === contextKey) return;
-    previousPath.current = contextKey;
-    conversationId.current = "";
-    setConversationHref("");
-    setMessages([]);
-    setFailed(false);
-    clearError();
-  }, [pathname, contextKey, pending, setMessages, clearError]);
   const contextLabel = breadcrumbs.map((item) => item.label).join(" › ") || "Current workspace";
   const suggestions = opportunityId
     ? ["What needs attention here?", "Propose the next action", "Create a useful follow-up task"]
     : ["What needs attention today?", "Summarize this workspace", "Which work has no clear next action?"];
 
   useEffect(() => setOpen(false), [pathname, projectId]);
+  useEffect(() => {
+    if (!open || pathname === "/agent" || (!session.conversationId && !pending)) return;
+    store.view(session, conversationHref || baseHref);
+    return () => store.leave(session);
+  }, [store, session, open, pathname, conversationHref, baseHref, pending]);
   useEffect(() => {
     const openAgent = () => setOpen(true);
     window.addEventListener("roleway:open-agent", openAgent);
@@ -117,6 +82,11 @@ export function AgentPopoverLauncher({ pathname, projectId, projectName, breadcr
       <header>
         <strong>Agent</strong>
         <div className="global-agent-header-actions">
+          <Button variant="ghost" size="icon-sm" type="button" aria-label="New conversation" data-tooltip="New conversation" onClick={() => {
+            store.newPopover();
+            setMessage("");
+            panelRef.current?.querySelector("textarea")?.focus();
+          }}><Plus aria-hidden="true" /></Button>
           <Button variant="ghost" size="icon-sm" nativeButton={false} role="link" render={<Link href={fullHref} onClick={event => {
             if (pending && !conversationHref) { event.preventDefault(); return; }
             if (message.trim()) {
@@ -126,7 +96,7 @@ export function AgentPopoverLauncher({ pathname, projectId, projectName, breadcr
           <Button variant="ghost" size="icon-sm" type="button" aria-label="Close Agent" data-tooltip="Close Agent" onClick={() => { setOpen(false); requestAnimationFrame(() => launcherRef.current?.focus()); }}><X aria-hidden="true" /></Button>
         </div>
       </header>
-      <div className="global-agent-context"><Route aria-hidden="true" /><span>{workspaceId ? projectName : "All workspaces"} · {contextLabel}</span></div>
+      <div className="global-agent-context"><Route aria-hidden="true" /><span>{session.contextLabel || `${workspaceId ? projectName : "All workspaces"} · ${contextLabel}`}</span></div>
       <div className="global-agent-transcript" ref={transcriptRef} aria-label="Agent conversation">
         {!messages.length ? <div className="global-agent-welcome">
           <h2>What can I help with?</h2>
@@ -143,21 +113,18 @@ export function AgentPopoverLauncher({ pathname, projectId, projectName, breadcr
             </>}
           </article>;
         })}
-        {pending && messages.at(-1)?.role === "user" ? <p role="status" className="muted">Working…</p> : null}
+        {pending && messages.at(-1)?.role === "user" ? <p role="status" className="global-agent-pending"><Spinner aria-hidden="true" />Working…</p> : null}
         {failed || error ? <p role="alert">The request could not finish. {conversationHref ? <Link href={conversationHref}>Open the conversation to recover.</Link> : "Try again."}</p> : null}
         {conversationHref && !pending && !failed && !error ? <Link className="global-agent-review" href={conversationHref}>Open full conversation</Link> : null}
       </div>
       <form onSubmit={event => {
         event.preventDefault();
-        if (!connection || !message.trim() || pending || busy.current) return;
-        busy.current = true;
-        receivedResult.current = false;
-        setFailed(false);
-        setStartedAt(new Date().toISOString());
-        setEndedAt(undefined);
+        if (!connection || !message.trim() || pending) return;
         const text = message.trim();
         setMessage("");
-        void sendMessage({ text }, { body: { message: text, conversationId: conversationId.current, connectionId: connection.id, opportunityId, workspaceId, contextPage, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone } }).catch(() => { busy.current = false; });
+        if (!session.conversationId) session.contextLabel = `${workspaceId ? projectName : "All workspaces"} · ${contextLabel}`;
+        store.view(session, baseHref);
+        store.submit(session, { message: text, connectionId: connection.id, opportunityId, workspaceId, contextPage, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone });
       }}>
         <label className="sr-only" htmlFor="global-agent-message">Ask Roleway Agent</label>
         <textarea id="global-agent-message" required maxLength={4000} disabled={!connection || pending} value={message} onChange={event => setMessage(event.target.value)} onKeyDown={event => {
@@ -172,6 +139,6 @@ export function AgentPopoverLauncher({ pathname, projectId, projectName, breadcr
         </footer>
       </form>
     </div> : null}
-    <Button ref={launcherRef} className="global-agent-launch" variant="outline" type="button" aria-label={`${open ? "Close" : "Open"} Roleway Agent`} aria-haspopup="dialog" aria-expanded={open} aria-controls="global-agent-popover" onClick={() => setOpen((current) => !current)}><Navigation aria-hidden="true" /><span>Agent</span></Button>
+    <Button ref={launcherRef} className="global-agent-launch" variant="outline" type="button" aria-label={`${open ? "Close" : "Open"} Roleway Agent`} aria-haspopup="dialog" aria-expanded={open} aria-controls="global-agent-popover" onClick={() => setOpen((current) => !current)}><Navigation aria-hidden="true" /><span>Agent</span><AgentActivityIndicator /></Button>
   </div>;
 }

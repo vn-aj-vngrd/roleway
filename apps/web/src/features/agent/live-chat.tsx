@@ -1,19 +1,23 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
-import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useTransition, type ReactNode, type ComponentProps } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Spinner } from "@/components/ui/spinner";
+import { useAgentSessions } from "./session-provider";
 import { AgentMarkdown } from "./markdown";
 import { RunTimeline } from "./run-timeline";
 import type { AgentUIMessage, RunProgress } from "./stream-types";
 
-const transport = new DefaultChatTransport<AgentUIMessage>({ api: "/api/agent/chat", prepareSendMessagesRequest: ({ body }) => ({ body: body ?? {} }) });
 const LiveContext = createContext<{
   pending: boolean;
+  navigating: boolean;
+  navigate: (href: string) => void;
   submit: (data: FormData) => void;
   submission: number;
   messages: AgentUIMessage[];
+  runId: string;
   startedAt: string;
   error: string | undefined;
   endedAt: string | undefined;
@@ -21,61 +25,60 @@ const LiveContext = createContext<{
 
 export function useAgentLive() { return useContext(LiveContext); }
 
-export function AgentLiveProvider({ children, initialPending = false, persistedMessageId, conversationId }: { children: ReactNode; initialPending?: boolean; persistedMessageId: string; conversationId: string }) {
+export function AgentLiveProvider({ children, pendingRunId, persistedRunIds, conversationId, draftId }: {
+  children: ReactNode; pendingRunId: string | undefined; persistedRunIds: string[]; conversationId: string; draftId: string;
+}) {
   const router = useRouter();
-  const [submission, setSubmission] = useState(0);
-  const [startedAt, setStartedAt] = useState("");
-  const [endedAt, setEndedAt] = useState<string>();
-  const href = useRef<string | null>(null);
-  const savedConversationId = useRef<string | null>(null);
-  const [incomplete, setIncomplete] = useState(false);
-  const busy = useRef(false);
-  const { messages, sendMessage, setMessages, clearError, status, error } = useChat<AgentUIMessage>({
-    transport,
-    onData(part) {
-      if (part.type === "data-result") href.current = part.data.href;
-      if (part.type === "data-started") {
-        savedConversationId.current = part.data.conversationId;
-        // Makes a saved in-flight conversation recoverable if the browser disconnects.
-        window.history.replaceState(null, "", `/agent?conversation=${part.data.conversationId}`);
-      }
-    },
-    onFinish() {
-      setEndedAt(new Date().toISOString());
-      if (href.current) {
-        if (window.location.pathname + window.location.search === href.current) router.refresh();
-        else router.replace(href.current, { scroll: false });
-      } else setIncomplete(true);
-      busy.current = false;
-    },
-    onError() { busy.current = false; setEndedAt(new Date().toISOString()); },
-  });
-  useEffect(() => { setMessages([]); }, [persistedMessageId, setMessages]);
-  const previousConversationId = useRef(conversationId);
+  const store = useAgentSessions();
+  const session = store.get(conversationId || `draft:${draftId}`, conversationId);
+  const { messages, error } = useChat({ chat: session.chat });
+  const [navigating, startNavigation] = useTransition();
+  const recovering = Boolean(pendingRunId && (pendingRunId !== session.runId || !session.endedAt));
+  const persisted = Boolean(session.runId && persistedRunIds.includes(session.runId));
+  const refreshedRun = useRef("");
   useEffect(() => {
-    if (previousConversationId.current === conversationId) return;
-    previousConversationId.current = conversationId;
-    if (savedConversationId.current === conversationId) return;
-    savedConversationId.current = null;
-    setMessages([]);
-    clearError();
-    setIncomplete(false);
-  }, [conversationId, setMessages, clearError]);
-  const pending = initialPending || status === "submitted" || status === "streaming";
-  function submit(data: FormData) {
-    if (busy.current || initialPending) return;
-    const text = String(data.get("message") ?? "").trim();
-    if (!text) return;
-    busy.current = true;
-    setSubmission(value => value + 1);
-    href.current = null;
-    setStartedAt(new Date().toISOString());
-    setEndedAt(undefined);
-    setIncomplete(false);
-    setMessages([]);
-    void sendMessage({ text }, { body: { ...Object.fromEntries(data), ...(savedConversationId.current ? { conversationId: savedConversationId.current } : {}) } }).catch(() => { busy.current = false; });
-  }
-  return <LiveContext.Provider value={{ pending, submit, submission, messages, startedAt, endedAt, error: error || incomplete ? "The connection was interrupted. Reload this conversation to check whether the answer was saved." : undefined }}>{children}</LiveContext.Provider>;
+    // A cached route may predate background completion. Fetch saved output and approval cards once.
+    if (navigating || session.pending || !session.resultHref || session.failed || persisted || !session.runId || refreshedRun.current === session.runId) return;
+    refreshedRun.current = session.runId;
+    router.refresh();
+  }, [router, session, session.pending, session.resultHref, session.failed, session.runId, persisted, navigating]);
+  useEffect(() => {
+    if (navigating) return;
+    store.view(session, window.location.pathname + window.location.search);
+    return () => store.leave(session);
+  }, [store, session, conversationId, draftId, navigating]);
+  return <LiveContext.Provider value={{
+    pending: session.pending || recovering, navigating,
+    navigate: href => {
+      store.leave(session);
+      startNavigation(() => router.push(href, { scroll: false }));
+    },
+    submit: data => {
+      if (navigating || recovering) return;
+      store.submit(session, Object.fromEntries(data));
+    },
+    submission: session.submission,
+    messages: persisted ? [] : messages.slice(session.messageOffset),
+    runId: session.runId,
+    startedAt: session.startedAt,
+    endedAt: session.endedAt,
+    error: error || session.failed ? "The request could not finish. Reload this conversation to check whether an answer was saved, or try again." : undefined,
+  }}>{children}</LiveContext.Provider>;
+}
+
+export function AgentConversationLink({ newConversation = false, href, ...props }: ComponentProps<typeof Link> & { newConversation?: boolean }) {
+  const live = useAgentLive();
+  return <Link {...props} href={href} onNavigate={event => {
+    if (!live) return;
+    event.preventDefault();
+    live.navigate(newConversation ? `/agent?new=${crypto.randomUUID()}` : String(href));
+  }} />;
+}
+
+export function AgentPersistedMessage({ runId, children }: { runId: string | null; children: ReactNode }) {
+  const live = useAgentLive();
+  if (runId && live?.runId === runId && live.messages.length) return null;
+  return children;
 }
 
 export function AgentStreamForm({ children, action, conversationId }: { children: ReactNode; action: (data: FormData) => void; conversationId: string }) {
@@ -97,6 +100,7 @@ export function AgentTranscript({ children, emptyState, hasConversation }: { chi
   useEffect(() => {
     if (root.current && stickToBottom.current) root.current.scrollTop = root.current.scrollHeight;
   }, [live?.messages, children]);
+  if (live?.navigating) return <div className="agent-conversation-loading" role="status"><Spinner aria-hidden="true" /><span>Loading conversation…</span></div>;
   if (!hasConversation && !live?.messages.length) return emptyState;
   const assistant = live?.messages.filter(message => message.role === "assistant").at(-1);
   const answer = assistant?.parts.find(part => part.type === "data-answer");

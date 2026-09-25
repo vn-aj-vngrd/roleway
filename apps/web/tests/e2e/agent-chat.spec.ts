@@ -283,6 +283,7 @@ test("Agent formats Markdown and keeps composer controls usable across sizes and
       const transcriptNode = await page.locator(".agent-transcript").elementHandle();
       const run = await admin.from("ai_runs").insert({ ...ownership, conversation_id: conversation.data.id, connection_id: connection.data.id, provider: "openai", model: "fixture", task_type: "conversation", status: "generating" }).select("id").single();
       if (run.error) throw run.error;
+      write({ type: "data-started", data: { conversationId: conversation.data.id, runId: run.data.id }, transient: true });
       const complete = await admin.rpc("complete_agent_run", { input_run_id: run.data.id, input_output: { message: "## Start here\n\nPrepare **one concrete example**.", proposals: [] }, input_tokens: 10, output_tokens: 20 });
       if (complete.error) throw complete.error;
       write({ type: "data-result", data: { href: `/agent?conversation=${conversation.data.id}` }, transient: true });
@@ -326,11 +327,12 @@ test("Agent formats Markdown and keeps composer controls usable across sizes and
     await page.goto("/home");
     await page.getByRole("button", { name: "Open Roleway Agent", exact: true }).press("Enter");
     await page.screenshot({ path: "/tmp/roleway-mini-agent-empty.png", animations: "disabled" });
+    let miniSubmission = 0;
     await page.route("**/api/agent/chat", route => route.fulfill({
       contentType: "text/event-stream",
       headers: { "x-vercel-ai-ui-message-stream": "v1" },
       body: [
-        { type: "start", messageId: "mini-fixture" },
+        { type: "start", messageId: `mini-fixture-${++miniSubmission}` },
         { type: "data-started", data: { conversationId: conversation.data.id, runId: "fixture" }, transient: true },
         { type: "data-progress", id: "read", data: { id: "read", label: "Read Workspace context", status: "completed" } },
         { type: "data-answer", id: "answer", data: { text: "## Your next step\n\nPrepare **one example** before the interview." } },
@@ -348,6 +350,11 @@ test("Agent formats Markdown and keeps composer controls usable across sizes and
       await expect(mini.getByRole("link", { name: "Open full Agent" })).toHaveAttribute("href", `/agent?conversation=${conversation.data.id}`);
       expect(new URL(page.url()).pathname).toBe("/home");
       expect(await mini.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
+      await mini.getByRole("textbox", { name: "Ask Roleway Agent" }).fill("Which example should I use?");
+      await mini.getByRole("button", { name: "Send message", exact: true }).click();
+      await expect(mini.locator(".agent-message.user")).toHaveCount(2);
+      await expect(mini.getByText("Help me prepare", { exact: true })).toBeVisible();
+      await expect(mini.locator(".agent-message.agent")).toHaveCount(2);
       await page.screenshot({ path: "/tmp/roleway-mini-agent-answer.png", animations: "disabled" });
     } finally { await page.unroute("**/api/agent/chat"); }
     await mini.getByRole("button", { name: "Close Agent", exact: true }).click();
@@ -385,6 +392,7 @@ test("Agent formats Markdown and keeps composer controls usable across sizes and
         expect(route.request().postDataJSON()).toMatchObject({ workspaceId: ownership.project_id, contextPage: "documents" });
         return route.continue({ url: `http://127.0.0.1:${handoffAddress.port}/stream` });
       });
+      await mini.getByRole("button", { name: "New conversation", exact: true }).click();
       await mini.getByRole("textbox", { name: "Ask Roleway Agent" }).fill("Review my documents");
       await mini.getByRole("button", { name: "Send message", exact: true }).click();
       await expect(mini.getByRole("link", { name: "Open full Agent" })).toHaveAttribute("href", `/agent?conversation=${handoff.data.id}`);
