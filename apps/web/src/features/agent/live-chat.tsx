@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { Spinner } from "@/components/ui/spinner";
 import { useAgentSessions } from "./session-provider";
 import { AgentMarkdown } from "./markdown";
+import { MessageActions } from "./message-actions";
 import { RunTimeline } from "./run-timeline";
 import type { AgentUIMessage, RunProgress } from "./stream-types";
 
@@ -120,10 +121,17 @@ export function AgentTranscript({ children, emptyState, hasConversation }: { chi
     stickToBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
   }}>
     {children}
-    {live?.messages.filter(message => message.role === "user").map(message => <article className="agent-message user" aria-label="Your message" key={message.id}><div className="agent-message-body"><div className="agent-message-content"><p>{message.parts.flatMap(part => part.type === "text" ? [part.text] : []).join("")}</p></div></div></article>)}
+    {live?.messages.filter(message => message.role === "user").map(message => {
+      const content = message.parts.flatMap(part => part.type === "text" ? [part.text] : []).join("");
+      return <article className="agent-message user" aria-label="Your message" key={message.id}>
+        <div className="agent-message-body"><div className="agent-message-content"><p>{content}</p></div></div>
+        <MessageActions content={content} timestamp={live.startedAt} />
+      </article>;
+    })}
     {live?.messages.length ? <article className="agent-message agent" aria-label="Agent response" aria-busy={live.pending}>
-      <RunTimeline startedAt={live.startedAt} endedAt={live.endedAt} pending={live.pending} failed={Boolean(live.error)} steps={steps.length ? steps : [{ id: "start", label: "Starting the request", status: "active" }]} />
-      {answer?.type === "data-answer" ? <div className="agent-message-content agent-streaming-answer"><AgentMarkdown content={answer.data.text} idPrefix="stream" /></div> : null}
+      <RunTimeline startedAt={live.startedAt} endedAt={live.endedAt} pending={live.pending} showCurrentStep={!answer?.data.text} failed={Boolean(live.error)} steps={steps.length ? steps : [{ id: "start", label: "Starting the request", status: "active" }]} />
+      {answer?.type === "data-answer" ? <div className="agent-message-body"><div className="agent-message-content agent-streaming-answer"><AgentMarkdown content={answer.data.text} idPrefix="stream" /></div></div> : null}
+      {answer?.type === "data-answer" ? <MessageActions content={answer.data.text} timestamp={live.endedAt ?? live.startedAt} /> : null}
       {live.error ? <p role="alert">{live.error} <button type="button" className="text-link" onClick={() => window.location.reload()}>Reload conversation</button></p> : null}
     </article> : null}
   </div>;
