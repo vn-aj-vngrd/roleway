@@ -592,3 +592,17 @@
 }
 .global-agent-pending { display: flex; align-items: center; gap: 8px; color: var(--muted); }
 .agent-history-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.agent-native-scope > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.agent-native-scope { max-width: 45%; }
+.agent-native-scope > svg { flex-shrink: 0; }
+.agent-focus-list button[aria-disabled="true"] { cursor: default; }
+@media (max-width: 760px) {
+  .agent-native-routebar .agent-native-scope { display: inline-flex; max-width: 40%; }
+  .agent-native-routebar .agent-new-chat { margin-left: 0; flex-shrink: 0; }
+}
