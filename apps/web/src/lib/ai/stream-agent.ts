@@ -48,6 +48,7 @@ export async function streamAgentResponse(connection: AiConnection, apiKey: stri
   let input = "";
   let inputId: string | undefined;
   let lastText = "";
+  let lastPreviewAt = -Infinity;
   let output: unknown;
   for await (const part of result.stream) {
     if (part.type === "error") throw part.error;
@@ -59,6 +60,11 @@ export async function streamAgentResponse(connection: AiConnection, apiKey: stri
     if (part.type === "tool-input-delta" && part.id === inputId) {
       input += part.delta;
       if (input.length > 120_000) throw new Error("Provider response too large");
+      // Coalesce token bursts before reparsing the growing JSON and sending full-text
+      // previews. Final schema validation and delivery below always remain immediate.
+      const now = performance.now();
+      if (now - lastPreviewAt < 50) continue;
+      lastPreviewAt = now;
       const { value } = await parsePartialJson(input);
       if (value && typeof value === "object" && "message" in value && typeof value.message === "string" && value.message !== lastText) {
         lastText = value.message.slice(0, 30_000);

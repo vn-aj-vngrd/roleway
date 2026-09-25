@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
+vi.mock("ai", async importOriginal => {
+  const actual = await importOriginal<typeof import("ai")>();
+  return { ...actual, parsePartialJson: vi.fn(actual.parsePartialJson) };
+});
+import { parsePartialJson } from "ai";
 import { createAgentReadContext } from "@/features/agent/read-context";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { streamAgentResponse } from "./stream-agent";
@@ -14,10 +19,12 @@ function streamResponse(value: unknown, finishReason = "tool_calls", toolName = 
   ];
   return new Response(chunks.map(chunk => `data: ${JSON.stringify(chunk)}\n\n`).join("") + "data: [DONE]\n\n", { headers: { "Content-Type": "text/event-stream" } });
 }
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); vi.clearAllMocks(); });
 
 describe("Agent provider streaming", () => {
   it.each(["openai", "openrouter"] as const)("streams partial answer text and validates the final %s tool input", async provider => {
+    let now = 0;
+    vi.spyOn(performance, "now").mockImplementation(() => now += 60);
     const fetchMock = vi.fn().mockResolvedValue(streamResponse(reply));
     vi.stubGlobal("fetch", fetchMock);
     const updates: string[] = [];
@@ -32,6 +39,17 @@ describe("Agent provider streaming", () => {
     expect(body.stream).toBe(true);
     expect(body.tool_choice.function.name).toBe("roleway_agent");
     expect(updates.some(text => text.includes('"proposals"'))).toBe(false);
+  });
+  it("coalesces a burst of tiny deltas while delivering the exact final answer", async () => {
+    vi.spyOn(performance, "now").mockReturnValue(0);
+    const output = { ...reply, message: "Grounded answer. ".repeat(200).trim() };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(streamResponse(output)));
+    const updates: string[] = [];
+    const result = await streamAgentResponse({ provider: "openai", model: "fixture", base_url: null }, "key", "prompt", text => updates.push(text));
+    expect(result.output.message).toBe(output.message);
+    expect(updates.at(-1)).toBe(output.message);
+    expect(vi.mocked(parsePartialJson).mock.calls.length).toBeLessThanOrEqual(2);
+    expect(updates.length).toBeLessThanOrEqual(2);
   });
   it("accepts Anthropic streaming tool input", async () => {
     const events = [
