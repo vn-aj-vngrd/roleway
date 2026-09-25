@@ -118,6 +118,11 @@ export function CreateJobButton({
   );
 }
 
+function AgentWorkspaceBreadcrumb({ pathname }: { pathname: string }) {
+  const sessions = useAgentSessions();
+  return <span className="muted">{pathname === "/agent" ? sessions.viewing?.focus?.workspaceLabel ?? "All workspaces" : "All workspaces"}</span>;
+}
+
 function routeBreadcrumbs(pathname: string): BreadcrumbItem[] {
   const segments = pathname.split("/").filter(Boolean);
   if (segments[0] === "opportunities" && segments[1])
@@ -1104,7 +1109,7 @@ export function AppShell({
             <span className="workspace-toolbar-separator" aria-hidden="true" />
             <nav className="workspace-breadcrumb" aria-label="Breadcrumb">
               {isAccountWideRoute ? (
-                <span className="muted">All workspaces</span>
+                <AgentWorkspaceBreadcrumb pathname={pathname} />
               ) : (
                 <Link className="workspace-breadcrumb-project" href="/home">
                   <WorkspaceMark

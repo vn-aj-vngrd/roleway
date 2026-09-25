@@ -4,6 +4,8 @@ import { useChat } from "@ai-sdk/react";
 import { createContext, useContext, useEffect, useRef, useState, useTransition, type ReactNode, type ComponentProps } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Route } from "lucide-react";
+import type { AgentFocus } from "./session-store";
 import { Spinner } from "@/components/ui/spinner";
 import { useAgentSessions } from "./session-provider";
 import { AgentMarkdown } from "./markdown";
@@ -12,6 +14,9 @@ import { RunTimeline } from "./run-timeline";
 import type { AgentUIMessage, RunProgress } from "./stream-types";
 
 const LiveContext = createContext<{
+  focus: AgentFocus | undefined;
+  setFocus: (focus: AgentFocus) => void;
+  fixedFocus: boolean;
   pending: boolean;
   navigating: boolean;
   navigationLabel: string;
@@ -28,12 +33,12 @@ const LiveContext = createContext<{
 
 export function useAgentLive() { return useContext(LiveContext); }
 
-export function AgentLiveProvider({ children, pendingRunId, persistedRunIds, conversationId, draftId, canResetDraft = false }: {
-  children: ReactNode; pendingRunId: string | undefined; persistedRunIds: string[]; conversationId: string; draftId: string; canResetDraft?: boolean;
+export function AgentLiveProvider({ children, pendingRunId, persistedRunIds, conversationId, draftId, canResetDraft = false, focus }: {
+  children: ReactNode; pendingRunId: string | undefined; persistedRunIds: string[]; conversationId: string; draftId: string; canResetDraft?: boolean; focus: AgentFocus;
 }) {
   const router = useRouter();
   const store = useAgentSessions();
-  const session = store.get(conversationId || `draft:${draftId}`, conversationId);
+  const session = store.get(conversationId || `draft:${draftId}`, conversationId, focus);
   const { messages, error } = useChat({ chat: session.chat });
   const [navigating, startNavigation] = useTransition();
   const [navigationLabel, setNavigationLabel] = useState("Loading conversation");
@@ -52,8 +57,11 @@ export function AgentLiveProvider({ children, pendingRunId, persistedRunIds, con
     return () => store.leave(session);
   }, [store, session, conversationId, draftId, navigating]);
   return <LiveContext.Provider value={{
+    focus: session.focus,
+    setFocus: focus => store.setFocus(session, focus),
+    fixedFocus: Boolean(conversationId || session.conversationId),
     pending: session.pending || recovering, navigating, navigationLabel,
-    isEmptyConversation: !canResetDraft && !conversationId && !session.submission && !messages.length && !session.pending,
+    isEmptyConversation: !canResetDraft && !session.focus?.workspaceId && !conversationId && !session.submission && !messages.length && !session.pending,
     navigate: (href, newConversation = false) => {
       setNavigationLabel(newConversation ? "Starting new conversation" : "Loading conversation");
       store.leave(session);
@@ -70,6 +78,19 @@ export function AgentLiveProvider({ children, pendingRunId, persistedRunIds, con
     endedAt: session.endedAt,
     error: error || session.failed ? "The request could not finish. Reload this conversation to check whether an answer was saved, or try again." : undefined,
   }}>{children}</LiveContext.Provider>;
+}
+
+export function AgentScopeLabel({ suffix }: { suffix: string }) {
+  const live = useAgentLive();
+  return <span className="agent-native-scope" aria-live="polite" title={`${live?.focus?.label ?? "All workspaces"}${live?.fixedFocus ? ". Focus is fixed for this conversation. Start a new conversation to change it." : ""}`}>
+    <Route aria-hidden="true" /><span>{live?.focus?.label ?? "All workspaces"}{suffix}</span>
+  </span>;
+}
+
+export function AgentFocusCopy() {
+  const live = useAgentLive();
+  const focus = live?.focus;
+  return <div className="agent-empty-copy"><h1>{focus?.workspaceId ? `Ask about ${focus.workspaceLabel}.` : "Ask across your search."}</h1><p>{focus?.workspaceId ? "Agent reads context from this Workspace and your Career Profile." : "Agent can read context from all of your Workspaces."} It answers questions, prepares drafts, and proposes Workspace-specific changes for your approval.</p></div>;
 }
 
 export function AgentConversationLink({ newConversation = false, href, ...props }: ComponentProps<typeof Link> & { newConversation?: boolean }) {

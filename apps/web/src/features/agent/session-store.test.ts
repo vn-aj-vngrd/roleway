@@ -164,3 +164,46 @@ describe("Agent session continuity", () => {
     expect(signals[0]?.aborted).toBe(true);
   });
 });
+
+
+describe("Agent conversation focus", () => {
+  const all = { workspaceId: "", opportunityId: "", workspaceLabel: "All workspaces", label: "All workspaces" };
+  const selected = { workspaceId: "workspace-one", opportunityId: "", workspaceLabel: "Engineering", label: "Engineering" };
+
+  it("shares draft focus across subscribers and preserves it when returning to the draft", () => {
+    const store = new AgentSessionStore();
+    const changed = vi.fn();
+    store.subscribe(changed);
+    const session = store.get("draft:one", "", all);
+    store.view(session, "/agent");
+    changed.mockClear();
+    store.setFocus(session, selected);
+    expect(store.viewing?.focus).toEqual(selected);
+    expect(store.get("draft:one", "", all).focus).toEqual(selected);
+    expect(changed).toHaveBeenCalledTimes(1);
+    store.setFocus(session, selected);
+    expect(changed).toHaveBeenCalledTimes(1);
+    expect(store.get("draft:new", "", all).focus).toEqual(all);
+  });
+
+  it("locks focus during submission and after the conversation starts, even before route refresh", async () => {
+    const { store, start, finish } = fixture();
+    const session = store.get("draft:one", "", selected);
+    const started = start("draft:one", "saved-one");
+    store.setFocus(session, all);
+    expect(session.focus).toEqual(selected);
+    const { stream } = await started;
+    await finish(stream, "saved-one");
+    store.setFocus(session, all);
+    expect(session.focus).toEqual(selected);
+    expect(store.get("saved-one").focus).toEqual(selected);
+  });
+
+  it("initializes saved scope when expanding a floating conversation", () => {
+    const store = new AgentSessionStore();
+    const session = store.get("saved-one", "saved-one");
+    expect(store.get("saved-one", "saved-one", selected)).toBe(session);
+    store.setFocus(session, all);
+    expect(session.focus).toEqual(selected);
+  });
+});

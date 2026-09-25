@@ -3,7 +3,15 @@ import type { ChatTransport } from "ai";
 import { AgentChatTransport } from "./streaming-transport";
 import type { AgentUIMessage } from "./stream-types";
 
+export type AgentFocus = {
+  workspaceId: string;
+  opportunityId: string;
+  workspaceLabel: string;
+  label: string;
+};
+
 export type AgentSession = {
+  focus: AgentFocus | undefined;
   chat: Chat<AgentUIMessage>;
   conversationId: string;
   contextLabel: string;
@@ -65,11 +73,15 @@ export class AgentSessionStore {
     return this.sessions.get(key);
   }
 
-  get(key: string, conversationId = ""): AgentSession {
+  get(key: string, conversationId = "", focus?: AgentFocus): AgentSession {
     const existing = this.sessions.get(key);
-    if (existing) return existing;
+    if (existing) {
+      existing.focus ??= focus;
+      return existing;
+    }
     const session: AgentSession = {
       conversationId,
+      focus,
       contextLabel: "",
       runId: "",
       pending: false,
@@ -107,6 +119,13 @@ export class AgentSessionStore {
     };
     this.sessions.set(key, session);
     return session;
+  }
+
+  setFocus(session: AgentSession, focus: AgentFocus) {
+    if (session.conversationId || session.pending) return;
+    if (session.focus?.workspaceId === focus.workspaceId && session.focus?.opportunityId === focus.opportunityId) return;
+    session.focus = focus;
+    this.emit();
   }
 
   view(session: AgentSession, href: string) {

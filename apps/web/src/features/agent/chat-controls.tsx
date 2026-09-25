@@ -76,8 +76,10 @@ export function AgentMessageInput({
   draftKey,
 }: ComposerProps) {
   const [connectionId, setConnectionId] = useState(connections[0]?.id ?? "");
-  const [scopeId, setScopeId] = useState(workspaceId);
-  const [focusId, setFocusId] = useState(focusedOpportunityId);
+  const live = useAgentLive();
+  const scopeId = live?.focus?.workspaceId ?? workspaceId;
+  const focusId = live?.focus?.opportunityId ?? focusedOpportunityId;
+  const focusLocked = fixedFocus || Boolean(live?.fixedFocus);
   const connection = connections.find((item) => item.id === connectionId);
   const focusLabel =
     opportunities.find((item) => item.id === focusId)?.label ??
@@ -105,7 +107,6 @@ export function AgentMessageInput({
   const focusList = useRef<HTMLDivElement>(null);
   const id = useId();
   const { pending: formPending } = useFormStatus();
-  const live = useAgentLive();
   const pending = formPending || Boolean(live?.pending || live?.navigating);
   useEffect(() => {
     if (live?.submission) { setMessage(""); setOpen(false); setPicker(null); }
@@ -136,6 +137,15 @@ export function AgentMessageInput({
   useEffect(() => {
     if (picker) focusList.current?.querySelector<HTMLButtonElement>('[aria-pressed="true"]')?.focus();
   }, [picker]);
+
+  function selectFocus(nextWorkspaceId: string, nextOpportunityId = "") {
+    if (pending || focusLocked || (scopeId === nextWorkspaceId && focusId === nextOpportunityId)) return;
+    const workspaceLabel = workspaces.find(item => item.id === nextWorkspaceId)?.label ?? "All workspaces";
+    live?.setFocus({ workspaceId: nextWorkspaceId, opportunityId: nextOpportunityId, workspaceLabel,
+      label: opportunities.find(item => item.id === nextOpportunityId)?.label ?? workspaceLabel });
+    setPicker(null);
+    input.current?.focus();
+  }
 
   function choose(index: number) {
     const item = items[index];
@@ -214,16 +224,16 @@ export function AgentMessageInput({
           </div>
         </ComposerPanel>
       ) : null}
-      {focusOpen && !pending ? (
-        <ComposerPanel title="Conversation focus" description="Choose all Workspaces, one Workspace, or an Opportunity." onClose={() => { setPicker(null); input.current?.focus(); }}>
+      {focusOpen && !pending && !focusLocked ? (
+        <ComposerPanel title="Conversation focus" description="Choose all Workspaces, one Workspace, or an Opportunity. Focus is fixed after your first message." onClose={() => { setPicker(null); input.current?.focus(); }}>
           <div ref={focusList} id={`${id}-focus`} className="agent-capability-list agent-focus-list" aria-label="Conversation focus options">
             {[{ id: "", label: "All workspaces" }, ...workspaces].map(item => (
-              <button type="button" key={`workspace-${item.id}`} aria-pressed={!focusId && scopeId === item.id} onClick={() => { setScopeId(item.id); setFocusId(""); setPicker(null); input.current?.focus(); }}>
+              <button type="button" key={`workspace-${item.id}`} aria-pressed={!focusId && scopeId === item.id} aria-disabled={!focusId && scopeId === item.id} onClick={() => selectFocus(item.id)}>
                 <span>{item.label}</span>{!focusId && scopeId === item.id ? <Check aria-hidden="true" /> : null}
               </button>
             ))}
             {opportunities.filter(item => !scopeId || item.workspaceId === scopeId).map(item => (
-              <button type="button" key={item.id} aria-pressed={focusId === item.id} onClick={() => { setScopeId(item.workspaceId); setFocusId(item.id); setPicker(null); input.current?.focus(); }}>
+              <button type="button" key={item.id} aria-pressed={focusId === item.id} aria-disabled={focusId === item.id} onClick={() => selectFocus(item.workspaceId, item.id)}>
                 <span>{item.label}</span>{focusId === item.id ? <Check aria-hidden="true" /> : null}
               </button>
             ))}
@@ -308,9 +318,9 @@ export function AgentMessageInput({
             type="button"
             variant="ghost"
             size="icon"
-            disabled={pending || fixedFocus}
+            disabled={pending || focusLocked}
             aria-label="Agent Opportunity focus"
-            data-tooltip={fixedFocus ? `Conversation focus: ${focusLabel}` : `Focus: ${focusLabel}`}
+            data-tooltip={focusLocked ? `Focus: ${focusLabel}. Start a new conversation to change it.` : `Focus: ${focusLabel}`}
             aria-expanded={focusOpen}
             aria-controls={`${id}-focus`}
             onClick={() => { setOpen(false); setPicker(focusOpen ? null : "focus"); }}
@@ -341,6 +351,7 @@ export function AgentMessageInput({
                 Agent reads your Career Profile and {scopeId ? "the selected Workspace" : "your Workspaces"} after you send a request.
               </p>
               <p>
+                {focusLocked ? "Focus is fixed for this conversation. Start a new conversation to change it. " : "Focus is fixed after your first message. "}
                 You approve every internal change. Agent cannot submit
                 applications or contact employers.
               </p>

@@ -35,6 +35,9 @@ test("Agent formats Markdown and keeps composer controls usable across sizes and
       user_id: userId,
       project_id: profile.data.active_project_id,
     };
+    const workspaceResult = await admin.from("search_projects").select("name").eq("id", ownership.project_id).single();
+    if (workspaceResult.error) throw workspaceResult.error;
+    const workspaceName = workspaceResult.data.name;
     const connection = await admin
       .from("ai_connections")
       .insert({
@@ -178,8 +181,32 @@ test("Agent formats Markdown and keeps composer controls usable across sizes and
         await expect(focusPanel).toContainText("Conversation focus");
         expect(await focusPanel.evaluate(el => el.clientWidth)).toBe(await page.locator(".agent-message-input").evaluate(el => el.clientWidth));
         expect(await focusPanel.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
-        await page.getByRole("button", { name: "All workspaces", exact: true }).click();
+        const allWorkspaces = page.getByRole("button", { name: "All workspaces", exact: true });
+        await expect(allWorkspaces).toBeDisabled();
+        await allWorkspaces.press("Enter");
+        await expect(focusPanel).toBeVisible();
+        await input.fill("Keep this draft while choosing focus");
+        await page.getByRole("button", { name: "Agent Opportunity focus", exact: true }).click();
+        await page.getByLabel("Conversation focus options").getByRole("button", { name: workspaceName, exact: true }).click();
         await expect(focusPanel).toHaveCount(0);
+        await expect(input).toHaveValue("Keep this draft while choosing focus");
+        await expect(page.locator('input[name="workspaceId"]')).toHaveValue(ownership.project_id);
+        await expect(page.locator(".agent-native-scope")).toHaveText(workspaceName);
+        await expect(page.locator(".agent-native-scope")).toBeVisible();
+        await expect(page.locator(".workspace-breadcrumb")).toContainText(workspaceName);
+        await expect(page.locator(".agent-empty-copy h1")).toHaveText(`Ask about ${workspaceName}.`);
+        await page.screenshot({ path: `/tmp/roleway-focus-${theme}-${width}.png`, animations: "disabled" });
+        await expect(newConversation).toBeEnabled();
+        await page.getByRole("button", { name: "Agent Opportunity focus", exact: true }).click();
+        const selectedWorkspace = page.getByLabel("Conversation focus options").getByRole("button", { name: workspaceName, exact: true });
+        await expect(selectedWorkspace).toBeDisabled();
+        await selectedWorkspace.press("Enter");
+        await expect(focusPanel).toBeVisible();
+        await page.keyboard.press("Escape");
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+        await newConversation.click();
+        await expect(page.locator(".agent-native-scope")).toHaveText("All workspaces");
+        await expect(page.locator(".workspace-breadcrumb")).toContainText("All workspaces");
         const modelMetrics = await page.locator('.agent-model-label').evaluate(el => ({ font: parseFloat(getComputedStyle(el).fontSize), line: parseFloat(getComputedStyle(el).lineHeight) }));
         expect(modelMetrics.line).toBeGreaterThan(modelMetrics.font * 1.3);
         await page.goto(`/agent?conversation=${conversation.data.id}`);
@@ -455,7 +482,9 @@ test("Agent formats Markdown and keeps composer controls usable across sizes and
       await expect(page.locator(".agent-native-scope")).toHaveText("All workspaces");
       await expect(page.locator(".agent-inline-state[role=alert]")).toHaveCount(0);
     }
-    await page.goto(`/agent?workspace=${ownership.project_id}&page=home`);
+    await page.goto("/agent?new=focus-persistence");
+    await page.getByRole("button", { name: "Agent Opportunity focus", exact: true }).click();
+    await page.getByLabel("Conversation focus options").getByRole("button", { name: workspaceName, exact: true }).click();
     // The real authenticated stream route must persist failures without exposing provider details.
     await input.fill("Check the saved connection safely");
     await page.getByRole("button", { name: "Send to Agent", exact: true }).click();
@@ -468,7 +497,12 @@ test("Agent formats Markdown and keeps composer controls usable across sizes and
     const savedContextId = new URL(page.url()).searchParams.get("conversation");
     expect(savedContextId).toBeTruthy();
     const scoped = await admin.from("agent_conversations").select("scope_mode,context_page,project_id").eq("id", savedContextId!).single();
-    expect(scoped.data).toEqual({scope_mode:"workspace",context_page:"home",project_id:ownership.project_id});
+    expect(scoped.data).toEqual({scope_mode:"workspace",context_page:"agent",project_id:ownership.project_id});
+    await expect(page.getByRole("button", { name: "Agent Opportunity focus", exact: true })).toBeDisabled();
+    await page.reload();
+    await expect(page.locator(".agent-native-scope")).toHaveText(workspaceName);
+    await expect(page.locator(".workspace-breadcrumb")).toContainText(workspaceName);
+    await expect(page.getByRole("button", { name: "Agent Opportunity focus", exact: true })).toBeDisabled();
     const changedScope = await admin.from("agent_conversations").update({scope_mode:"account"}).eq("id", savedContextId!);
     expect(changedScope.error?.message).toContain("Start a new conversation");
     await page.goto("/settings/ai");
