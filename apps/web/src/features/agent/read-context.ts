@@ -50,8 +50,15 @@ export function createAgentReadContext({
           "Read limit reached. Answer from available sources and disclose missing context.",
       };
     const position = reads;
-    await onRead?.(label, position, "active");
-    const content = JSON.stringify(await load());
+    // Reading does not depend on the progress write. Settle both before returning
+    // or failing so a late active write cannot overwrite failure recovery.
+    const [progress, source] = await Promise.allSettled([
+      onRead?.(label, position, "active"),
+      load(),
+    ]);
+    if (progress.status === "rejected") throw progress.reason;
+    if (source.status === "rejected") throw source.reason;
+    const content = JSON.stringify(source.value);
     await onRead?.(label, position, "completed");
     return {
       content: content.slice(0, 24_000),

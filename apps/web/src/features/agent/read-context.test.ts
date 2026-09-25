@@ -55,6 +55,22 @@ beforeEach(() => {
 });
 
 describe("Agent authenticated read tools", () => {
+  it("loads context while the active progress step is being persisted", async () => {
+    let finishProgress!: () => void;
+    const pendingProgress = new Promise<void>(resolve => { finishProgress = resolve; });
+    const onRead = vi.fn(async (_label: string, _position: number, status: string) => {
+      if (status === "active") await pendingProgress;
+    });
+    const context = createAgentReadContext({ supabase: client(), userId: owner, workspaceIds: [workspace], conversationId: record, onRead });
+    const pendingRead = context.tools.search_records.execute!({ kind: "documents", query: "", offset: 0 }, options);
+    await Promise.resolve();
+    const startedBeforeProgressSaved = reads.includes("documents");
+    expect(onRead).toHaveBeenCalledTimes(1);
+    finishProgress();
+    await pendingRead;
+    expect(startedBeforeProgressSaved).toBe(true);
+    expect(onRead.mock.calls.map(call => call[2])).toEqual(["active", "completed"]);
+  });
   it("does not read notes or activity for an Opportunity outside scope", async () => {
     rows.opportunities = [{ id: record, user_id: owner, project_id: "other" }];
     const result = await reader().tools.read_context.execute!(
@@ -65,6 +81,29 @@ describe("Agent authenticated read tools", () => {
       content: expect.stringContaining("unavailable"),
     });
     expect(reads).toEqual(["opportunities"]);
+  });
+  it("waits for the progress write before surfacing a concurrent read failure", async () => {
+    let finishProgress!: () => void;
+    const pendingProgress = new Promise<void>(resolve => { finishProgress = resolve; });
+    const onRead = vi.fn(async () => { await pendingProgress; });
+    const supabase = { from: () => { throw new Error("read failed"); } } as unknown as SupabaseClient;
+    const context = createAgentReadContext({ supabase, userId: owner, workspaceIds: [workspace], conversationId: record, onRead });
+    let settled = false;
+    const pendingRead = Promise.resolve(context.tools.search_records.execute!({ kind: "documents", query: "", offset: 0 }, options)).catch(error => {
+      settled = true;
+      return error;
+    });
+    await new Promise(resolve => setTimeout(resolve, 0));
+    expect(settled).toBe(false);
+    finishProgress();
+    expect(await pendingRead).toEqual(new Error("read failed"));
+    expect(onRead).toHaveBeenCalledTimes(1);
+  });
+  it("does not return source content when progress persistence fails", async () => {
+    const onRead = vi.fn().mockRejectedValue(new Error("run_save_failed"));
+    const context = createAgentReadContext({ supabase: client(), userId: owner, workspaceIds: [workspace], conversationId: record, onRead });
+    await expect(context.tools.search_records.execute!({ kind: "documents", query: "", offset: 0 }, options)).rejects.toThrow("run_save_failed");
+    expect(onRead).toHaveBeenCalledTimes(1);
   });
   it("excludes another owner's document even when its id is known", async () => {
     rows.documents = [
