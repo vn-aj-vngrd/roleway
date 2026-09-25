@@ -14,3 +14,24 @@ describe("Agent creation completeness", () => {
     expect(agentProposalSchema.safeParse({ ...workspace, tool, targetId: "33333333-3333-4333-8333-333333333333", title: "Prepare examples", name: null, objective: null, dueAt: null }).success).toBe(true);
   });
 });
+
+const opportunityId = "33333333-3333-4333-8333-333333333333";
+const interview = { interviewType: "Technical", startsAt: "2027-01-15T14:00:00+08:00", durationMinutes: 60, timezone: "Asia/Manila", meetingUrl: null, interviewers: null };
+const contact = { name: "Jane", relationship: "recruiter", company: null, role: null, email: null, phone: null, profileUrl: null, notes: null, followUpAt: null };
+describe("Interview and contact proposals", () => {
+  it("requires an exact interview target and schedule", () => {
+    const proposal = { ...workspace, tool: "create_interview", targetId: opportunityId, interview };
+    expect(agentProposalSchema.safeParse(proposal).success).toBe(true);
+    for (const change of [{ targetId: null }, { interview: null }, { interview: { ...interview, startsAt: "2027-01-15T14:00:00" } }, { interview: { ...interview, durationMinutes: 0 } }, { interview: { ...interview, timezone: "Mars/Olympus" } }, { interview: { ...interview, meetingUrl: "javascript:alert(1)" } }]) {
+      expect(agentProposalSchema.safeParse({ ...proposal, ...change }).success).toBe(false);
+    }
+  });
+  it("requires contact identity and Workspace, with an optional Opportunity", () => {
+    const proposal = { ...workspace, tool: "create_contact", workspaceId: opportunityId, contact };
+    expect(agentProposalSchema.safeParse(proposal).success).toBe(true);
+    expect(agentProposalSchema.safeParse({ ...proposal, targetId: opportunityId }).success).toBe(true);
+    for (const change of [{ workspaceId: null }, { contact: null }, { contact: { ...contact, name: " " } }, { contact: { ...contact, relationship: "unknown" } }, { contact: { ...contact, email: "not-email" } }, { contact: { ...contact, profileUrl: "javascript:alert(1)" } }]) {
+      expect(agentProposalSchema.safeParse({ ...proposal, ...change }).success).toBe(false);
+    }
+  });
+});

@@ -118,3 +118,7 @@ The included Dockerfile and `vercel.json` target the web application. The canoni
 ## License
 
 Roleway is licensed under Apache-2.0. See [`LICENSE`](LICENSE).
+
+### Agent creation
+
+Agent offers Workspace, Task, Next Action, Note, Interview, and Contact under Create. It gathers missing details and presents an exact proposal; only explicit approval saves records. Interviews reuse scheduling and preparation behavior. Contacts belong to a confirmed Workspace and may link to an Opportunity. Neither action sends messages or calendar invitations. See [the Agent contract](docs/ROLEWAY-AGENT.md) for fields, scope, duplicate handling, and approval rules.

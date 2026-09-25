@@ -230,22 +230,26 @@ export async function runAgentRequest(formData: FormData, emit?: (event: AgentSt
     await progress(30, "Validating the answer and proposed changes", "active");
 
     failureCode = "invalid_provider_output";
-    const availableTargets = new Map<string, Pick<AgentOpportunity, "id" | "stage" | "next_action" | "next_action_due_at">>([...opportunities.map(item => [item.id, item] as const), ...reader.opportunities]);
+    const availableTargets = new Map<string, Pick<AgentOpportunity, "id" | "project_id" | "stage" | "next_action" | "next_action_due_at">>([...opportunities.map(item => [item.id, item] as const), ...reader.opportunities]);
     const replacedIds = new Set<string>();
-    const validProposals = result.output.proposals.flatMap((proposal) => {
+    const validProposals = result.output.proposals.map((proposal) => {
       const checked = agentProposalSchema.safeParse({ ...proposal, body: proposal.body ? sanitizeRichText(proposal.body) : null });
       if (!checked.success) throw new Error("invalid_proposal");
       if (checked.data.targetId && !availableTargets.has(checked.data.targetId)) throw new Error("invalid_proposal_target");
       const target = checked.data.targetId ? availableTargets.get(checked.data.targetId) : undefined;
       if (target?.stage === "closed") throw new Error("closed_proposal_target");
+      if (checked.data.tool === "create_contact") {
+        if (!checked.data.workspaceId || !scopeProjectIds.includes(checked.data.workspaceId)) throw new Error("invalid_proposal_workspace");
+        if (target && target.project_id !== checked.data.workspaceId) throw new Error("invalid_proposal_workspace");
+      }
       const replacementId = checked.data.supersedesProposalId;
       if (replacementId) {
         const previous = (proposalHistoryResult.data ?? []).find(item => item.id === replacementId);
         if (!previous || previous.status !== "proposed" || previous.tool_name !== checked.data.tool || replacedIds.has(replacementId)) throw new Error("invalid_proposal_revision");
         replacedIds.add(replacementId);
       }
-      return [{ ...checked.data, expectedNextAction: checked.data.tool === "set_next_action" && target
-        ? { title: target.next_action, dueAt: target.next_action_due_at } : null }];
+      return { ...checked.data, expectedNextAction: checked.data.tool === "set_next_action" && target
+        ? { title: target.next_action, dueAt: target.next_action_due_at } : null };
     });
     await progress(30, "Validated the answer and proposed changes", "completed");
     for (const [index, proposal] of validProposals.entries()) {

@@ -1,3 +1,13 @@
+-- The current public guide covers every supported Create flow and cross-links records.
+do $$ begin
+  if not exists(select 1 from public.help_articles where slug='agent-create' and body like '%## Create an interview%' and body like '%## Create a contact%' and body not like '%Jobs, Opportunities, contacts, interviews, and documents are created through their normal%') then
+    raise exception 'Agent Help Center capabilities are stale';
+  end if;
+  if (select count(*) from public.help_articles where slug in ('interviews-and-preparation','contacts-and-follow-ups') and body like '%## Create with Agent%') <> 2 then
+    raise exception 'Interview and contact guides must link to Agent creation';
+  end if;
+end $$;
+
 -- Reapplying seed migrations must preserve existing editorial content verbatim.
 begin;
 update public.help_articles set

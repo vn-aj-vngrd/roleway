@@ -89,3 +89,7 @@ Users work primarily at a desktop during focused planning and preparation, while
 ## Accessibility & Inclusion
 
 Target WCAG 2.2 AA. Primary flows must work with keyboard and pointer, focus must remain visible, drag-and-drop must have button and keyboard alternatives, and status must never depend on color alone. Dialogs manage focus, motion respects reduced-motion preferences, and mobile preserves Home, status changes, notes, tasks, and preparation workflows.
+
+### Agent creation
+
+Agent offers Workspace, Task, Next Action, Note, Interview, and Contact under Create. It gathers missing details and presents an exact proposal; only explicit approval saves records. Interviews reuse scheduling and preparation behavior. Contacts belong to a confirmed Workspace and may link to an Opportunity. Neither action sends messages or calendar invitations. See [the Agent contract](docs/ROLEWAY-AGENT.md) for fields, scope, duplicate handling, and approval rules.

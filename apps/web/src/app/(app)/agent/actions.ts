@@ -43,12 +43,16 @@ export async function decideAgentProposal(formData: FormData) {
   });
   if (error) {
     await recordSystemEvent({ category: "ai", code: "agent_tool_failed", userId: auth.user.id, metadata: { tool: proposal.tool_name } });
-    const message = capacityError(error, "The change could not be applied. Nothing was changed; review the target and retry.");
+    const duplicateMessage = error.message?.includes("A matching contact already exists") ? "A matching contact already exists in this Workspace. Open Contacts to review it, or reject this proposal and clarify the person’s details." : error.message?.includes("A matching interview already exists") ? "A matching interview already exists. Open Interviews to review it, or reject this proposal and clarify the schedule." : null;
+    const message = duplicateMessage ?? capacityError(error, "The change could not be applied. Nothing was changed; review the target and retry.");
     redirect(`${conversationHref}&error=${encodeURIComponent(message)}`);
   }
 
   revalidatePath("/agent");
   revalidatePath("/home");
+  revalidatePath("/interview");
+  revalidatePath("/contacts");
+  revalidatePath("/notifications");
   revalidatePath("/opportunities");
   if (proposal.target_id) revalidatePath(`/opportunities/${proposal.target_id}`);
   revalidatePath("/settings/workspaces");
@@ -70,8 +74,19 @@ export async function openAgentResult(formData: FormData) {
   const auth = await authenticated();
   if (!id.success) redirect("/agent?error=That%20result%20is%20unavailable.");
   const { data: proposal } = await auth.supabase.from("agent_proposals")
-    .select("conversation_id, tool_name, target_id, destination_project_id")
+    .select("conversation_id, tool_name, target_id, destination_project_id, applied_record_id")
     .eq("id", id.data).eq("user_id", auth.user.id).eq("status", "applied").maybeSingle();
+  if (proposal && ["create_interview", "create_contact"].includes(proposal.tool_name)) {
+    const failure = `/agent?conversation=${proposal.conversation_id}&error=The%20result%20is%20no%20longer%20available.`;
+    if (!proposal.applied_record_id || !proposal.destination_project_id) redirect(failure);
+    const { data: record } = await auth.supabase.from(proposal.tool_name === "create_interview" ? "interviews" : "contacts").select("id")
+      .eq("id", proposal.applied_record_id).eq("user_id", auth.user.id).eq("project_id", proposal.destination_project_id).maybeSingle();
+    if (!record) redirect(failure);
+    const { error } = await auth.supabase.rpc("set_active_search_project", { input_project_id: proposal.destination_project_id });
+    if (error) redirect(failure);
+    revalidatePath("/", "layout");
+    redirect(proposal.tool_name === "create_interview" ? `/interview/${record.id}` : `/contacts?edit=${record.id}`);
+  }
   if (!proposal?.target_id || !proposal.destination_project_id) redirect("/agent?error=That%20result%20is%20unavailable.");
   const { data: target } = await auth.supabase.from("opportunities").select("id")
     .eq("id", proposal.target_id).eq("project_id", proposal.destination_project_id).eq("user_id", auth.user.id).maybeSingle();

@@ -19,6 +19,12 @@ export const answerRepairInstruction =
   "Response requirement: The previous attempt ended with an introduction and omitted the answer. Return a complete, self-contained response in the message field, including any content you introduce. For a greeting, a brief greeting and a question are sufficient. Do not invent missing context.";
 
 const clarificationQuestions: Record<NonNullable<AgentGeneration["clarification"]>, string> = {
+  workspace: "Which Workspace should this contact belong to?",
+  interview_type: "What type of interview is it?",
+  interview_time: "When does the interview start? Please confirm the date, time including AM/PM, and timezone.",
+  interview_duration: "How many minutes will the interview last?",
+  contact_name: "What is the contact’s name?",
+  contact_relationship: "How is this person connected to your search: recruiter, hiring manager, interviewer, referral, former colleague, or networking contact?",
   workspace_name: "What would you like to name this Workspace?",
   workspace_objective: "What is the job-search objective for this Workspace?",
   opportunity: "Which Opportunity should this change belong to?",

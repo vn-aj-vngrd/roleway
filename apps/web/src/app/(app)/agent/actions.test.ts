@@ -5,7 +5,7 @@ vi.mock("@/lib/ai/stream-agent", () => ({ streamAgentResponse: vi.fn() }));
 
 const fixtures = vi.hoisted(() => ({
   generate: vi.fn(), rpc: vi.fn(), updates: [] as Array<{ table: string; values: Record<string, unknown> }>,
-  opportunities: [] as Array<{ id: string; next_action: string | null; next_action_due_at: string | null }>,
+  opportunities: [] as Array<{ id: string; project_id?: string; next_action: string | null; next_action_due_at: string | null }>,
   focused: null as Record<string, unknown> | null, contextError: false, recordEvent: vi.fn(), contextRows: {} as Record<string, unknown>, filters: [] as Array<[string, string, unknown]>, orders: [] as Array<[string, string, unknown]>,
 }));
 const owner = "11111111-1111-4111-8111-111111111111";
@@ -178,8 +178,8 @@ describe("Open Agent result authorization", () => {
 
 
 describe("Creation correction context", () => {
-  it.each(["create_task", "set_next_action", "create_note", "create_workspace"])("preserves exact %s fields even when summaries are generic", async tool => {
-    const args = { tool, targetId: tool === "create_workspace" ? null : record, title: "Keep this exact title", dueAt: "2026-09-20T08:00:00Z", summary: "Ready for review", name: "Focused search", objective: "Find a TypeScript role", body: "<p>Keep this exact note.</p>" };
+  it.each(["create_task", "set_next_action", "create_note", "create_workspace", "create_interview", "create_contact"])("preserves exact %s fields even when summaries are generic", async tool => {
+    const args = { ...(tool === "create_interview" ? { interview: interviewDetails } : tool === "create_contact" ? { workspaceId: workspace, contact: contactDetails } : {}), tool, targetId: tool === "create_workspace" ? null : record, title: "Keep this exact title", dueAt: "2026-09-20T08:00:00Z", summary: "Ready for review", name: "Focused search", objective: "Find a TypeScript role", body: "<p>Keep this exact note.</p>" };
     fixtures.contextRows.agent_proposals = Array.from({ length: 5 }, () => ({ tool_name: tool, summary: "Ready for review", status: "rejected", arguments: args }));
     await expect(request("Asia/Manila", "Keep everything but remove the due date")).rejects.toThrow(`redirect:/agent?conversation=${record}`);
     const prompt = fixtures.generate.mock.calls[0]?.[2] as string;
@@ -325,4 +325,52 @@ it.each([[429,"provider_rate_limited","reached%20its%20limit"],[503,"provider_un
   await expect(request()).rejects.toThrow(message);
   expect(fixtures.recordEvent).toHaveBeenCalledWith(expect.objectContaining({code}));
   expect(JSON.stringify(fixtures.recordEvent.mock.calls)).not.toContain("private-provider-content");
+});
+
+const interviewDetails = { interviewType: "Technical", startsAt: "2027-01-15T14:00:00+08:00", durationMinutes: 60, timezone: "Asia/Manila", meetingUrl: null, interviewers: null };
+const contactDetails = { name: "Jane", relationship: "recruiter", role: null, company: null, email: "jane@example.com", phone: null, profileUrl: null, notes: null, followUpAt: null };
+const baseCreation = { summary: "Review", title: null, body: null, dueAt: null, name: null, objective: null };
+describe("Interview and contact creation boundaries", () => {
+  it("persists an interview proposal without scheduling during generation", async () => {
+    fixtures.opportunities = [{ id: record, next_action: null, next_action_due_at: null }];
+    const proposal = { ...baseCreation, tool: "create_interview", targetId: record, interview: interviewDetails };
+    fixtures.generate.mockResolvedValue({ output: { message: "Review", proposals: [proposal] } });
+    await expect(request()).rejects.toThrow(`redirect:/agent?conversation=${record}`);
+    expect(fixtures.rpc).toHaveBeenCalledWith("complete_agent_run", expect.objectContaining({ input_output: { message: "Review", proposals: [{ ...proposal, expectedNextAction: null }] } }));
+    expect(fixtures.rpc).not.toHaveBeenCalledWith("schedule_interview", expect.anything());
+  });
+  it("accepts a Workspace-only contact and rejects a foreign Workspace", async () => {
+    const proposal = { ...baseCreation, tool: "create_contact", targetId: null, workspaceId: workspace, contact: contactDetails };
+    fixtures.generate.mockResolvedValue({ output: { message: "Review", proposals: [proposal] } });
+    await expect(request()).rejects.toThrow(`redirect:/agent?conversation=${record}`);
+    expect(fixtures.rpc).toHaveBeenCalledWith("complete_agent_run", expect.anything());
+    fixtures.rpc.mockClear();
+    fixtures.generate.mockResolvedValue({ output: { message: "Review", proposals: [{ ...proposal, workspaceId: owner }] } });
+    await expect(request()).rejects.toThrow("error=Agent");
+    expect(fixtures.rpc).not.toHaveBeenCalledWith("complete_agent_run", expect.anything());
+  });
+  it("validates a linked contact against its already scoped Opportunity", async () => {
+    fixtures.opportunities = [{ id: record, project_id: workspace, next_action: null, next_action_due_at: null }];
+    const proposal = { ...baseCreation, tool: "create_contact", targetId: record, workspaceId: workspace, contact: contactDetails };
+    fixtures.generate.mockResolvedValue({ output: { message: "Review", proposals: [proposal] } });
+    await expect(request()).rejects.toThrow(`redirect:/agent?conversation=${record}`);
+    expect(fixtures.rpc).toHaveBeenCalledWith("complete_agent_run", expect.anything());
+    fixtures.rpc.mockClear();
+    fixtures.generate.mockResolvedValue({ output: { message: "Review", proposals: [{ ...proposal, workspaceId: "44444444-4444-4444-8444-444444444444" }] } });
+    await expect(request()).rejects.toThrow("error=Agent");
+    expect(fixtures.rpc).not.toHaveBeenCalledWith("complete_agent_run", expect.anything());
+  });
+  it.each(["create_interview", "create_contact"])("opens only the owned applied %s record", async tool => {
+    fixtures.contextRows.agent_proposals = { tool_name: tool, conversation_id: record, destination_project_id: workspace, applied_record_id: record, target_id: null };
+    const table = tool === "create_interview" ? "interviews" : "contacts";
+    fixtures.contextRows[table] = { id: record };
+    const data = new FormData(); data.set("proposalId", record);
+    await expect(openAgentResult(data)).rejects.toThrow(tool === "create_interview" ? `/interview/${record}` : `/contacts?edit=${record}`);
+    expect(fixtures.filters).toContainEqual([table, "user_id", owner]);
+    expect(fixtures.filters).toContainEqual([table, "project_id", workspace]);
+    fixtures.contextRows[table] = null;
+    fixtures.rpc.mockClear();
+    await expect(openAgentResult(data)).rejects.toThrow("result%20is%20no%20longer%20available");
+    expect(fixtures.rpc).not.toHaveBeenCalled();
+  });
 });

@@ -46,3 +46,7 @@ The default browser gate uses the development server. For production-build testi
 Authenticated read-tool integration: `pnpm --filter @roleway/web test:agent:integration` creates one disposable account, exercises real joined searches and source reads, verifies Workspace exclusion, and deletes the fixture. It makes no provider calls.
 
 To evaluate native adapters, set `ROLEWAY_TEST_PROVIDER` to `openai`, `anthropic`, `gemini`, or `openai-compatible`, plus `ROLEWAY_TEST_AI_KEY` and an explicit `ROLEWAY_TEST_MODEL`; compatible endpoints also need `ROLEWAY_TEST_BASE_URL`. Omitted provider defaults to OpenRouter. The evaluator stops on the first failure so outages/rate limits do not trigger the rest of the matrix.
+
+### Interview and contact Create rollout
+
+Apply `20260925044930_agent_create_interviews_contacts.sql` before releasing this code. It adds two proposal tool names, an applied-record reference, validation for Workspace-only contacts, and approval branches that reuse interview scheduling. It also updates the Agent Create Help Center guide and adds cross-links to the interview/contact guides while preserving unrelated editorial content. No existing record is deleted or reassigned. CI validates `supabase/tests/agent_transactions.sql` and `supabase/tests/agent_create_records.sql`. This migration was applied directly to the configured Roleway Supabase project on 2026-09-25 at the user’s request; authenticated browser approval tests verify that hosted schema. Do not create a local database for this rollout.
