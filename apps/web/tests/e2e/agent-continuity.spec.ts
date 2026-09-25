@@ -294,7 +294,7 @@ test("Agent keeps background conversations, shows loading, and acknowledges comp
       page.getByLabel("Message Roleway Agent", { exact: true }),
     ).not.toHaveAttribute("readonly", "");
     const responseMessage = page.getByRole("article", { name: "Agent response", exact: true }).filter({ hasText: "Background answer is ready" });
-    await responseMessage.locator("summary").click();
+    await responseMessage.locator(".agent-work-trigger").click();
     const usage = responseMessage.getByLabel("Model and token usage");
     await expect(usage).toContainText("deepseek/deepseek-v4.1-flash");
     await expect(usage).toContainText("3,968");

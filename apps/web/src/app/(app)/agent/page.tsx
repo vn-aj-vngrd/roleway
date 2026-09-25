@@ -12,7 +12,7 @@ import { RunTimeline } from "@/features/agent/run-timeline";
 import { AgentMarkdown } from "@/features/agent/markdown";
 import { AgentMessageInput, AgentHistoryMenu, AgentNotice, SavedResultFocus } from "@/features/agent/chat-controls";
 import { formatOpportunityTicket } from "@roleway/core";
-import { Archive, ArrowUpRight, Check, ChevronDown, Circle, History, KeyRound, Navigation, Plus, Route, X } from "lucide-react";
+import { Archive, ArrowUpRight, Check, ChevronDown, Circle, CircleAlert, History, KeyRound, Navigation, Plus, Route } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { SubmitButton } from "@/components/submit-button";
@@ -108,7 +108,7 @@ export default async function AgentPage(props: { searchParams: Promise<AgentQuer
       </header>
 
       {query.proposal && proposals.some(proposal => proposal.id === query.proposal && proposal.status === "applied") ? <SavedResultFocus proposalId={query.proposal} /> : null}
-      {query.error ? <AgentNotice key={query.error} variant="error"><X aria-hidden="true" /><span>{query.error}</span></AgentNotice> : null}
+      {query.error ? <AgentNotice key={query.error} variant="error"><CircleAlert aria-hidden="true" /><span>{query.error}</span></AgentNotice> : null}
       {query.decision === "applied" ? <AgentNotice key={`${query.decision}:${query.proposal}`} variant="success"><Check aria-hidden="true" /><span>Saved successfully. You can open the result below.</span></AgentNotice> : null}
       {query.decision === "unchanged" ? <AgentNotice key={`${query.decision}:${query.proposal}`}><Circle aria-hidden="true" /><span>No change applied. If the proposal expired, ask Agent for a fresh proposal using your current records.</span></AgentNotice> : null}
       {query.decision === "rejected" ? <AgentNotice key={`${query.decision}:${query.proposal}`}><Circle aria-hidden="true" /><span>Proposal rejected. No Roleway record changed.</span></AgentNotice> : null}

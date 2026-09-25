@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowDownToLine, ArrowUpFromLine, Check, ChevronRight, Circle, Cpu, X } from "lucide-react";
+import { Collapsible } from "@base-ui/react/collapsible";
 import { Spinner } from "@/components/ui/spinner";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
@@ -42,13 +43,14 @@ export function RunTimeline({ startedAt, endedAt, pending = false, failed = fals
   }, [pending, startedAt]);
   const duration = pending ? elapsed : endedAt ? Date.parse(endedAt) - Date.parse(startedAt) : undefined;
   const current = [...steps].reverse().find(step => step.status === "active");
-  return <><details className="agent-work-timeline">
-    <summary>
+  return <><Collapsible.Root className="agent-work-timeline">
+    <Collapsible.Trigger className="agent-work-trigger">
       {pending ? <Spinner className="agent-working-spinner" aria-hidden="true" /> : null}
       <span>{statusUnknown ? "Run status unavailable" : pending ? "Working" : "Worked"}{!statusUnknown && duration !== undefined ? ` for ${formatRunDuration(duration)}` : ""}</span>
       {failed ? <span className="agent-work-failed">· Failed</span> : null}
       <ChevronRight aria-hidden="true" />
-    </summary>
+    </Collapsible.Trigger>
+    <Collapsible.Panel className="agent-work-panel" keepMounted>
     <div className="agent-work-steps">
       {steps.map(step => <p key={step.id}>
         {step.status === "completed" ? <Check aria-hidden="true" /> : step.status === "failed" ? <X aria-hidden="true" /> : <Circle aria-hidden="true" />}
@@ -64,5 +66,6 @@ export function RunTimeline({ startedAt, endedAt, pending = false, failed = fals
         </dl>
       </div> : null}
     </div>
-  </details>{pending && showCurrentStep ? <p className="agent-working-current" role="status">{current?.label ?? "Preparing the response…"}</p> : null}</>;
+    </Collapsible.Panel>
+  </Collapsible.Root>{pending && showCurrentStep ? <p className="agent-working-current" role="status">{current?.label ?? "Preparing the response…"}</p> : null}</>;
 }
