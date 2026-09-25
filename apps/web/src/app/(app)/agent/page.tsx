@@ -57,20 +57,26 @@ export default async function AgentPage(props: { searchParams: Promise<AgentQuer
   let runs: Run[] = [];
   let steps: Step[] = [];
   let proposals: Proposal[] = [];
+  let savedFocusedOpportunity: Opportunity | null = null;
   if (activeConversation) {
-    const [messagesResult, runsResult, stepsResult, proposalsResult] = await Promise.all([
+    const [messagesResult, runsResult, stepsResult, proposalsResult, focusedOpportunityResult] = await Promise.all([
       context.supabase.from("agent_messages").select("id, role, content, run_id, created_at").eq("conversation_id", activeConversation.id).order("created_at", { ascending: false }).limit(200),
       context.supabase.from("ai_runs").select("id, provider, model, status, input_tokens, output_tokens, created_at").eq("conversation_id", activeConversation.id).order("created_at", { ascending: false }).limit(100),
       context.supabase.from("agent_run_steps").select("id, run_id, label, status, position, created_at").eq("conversation_id", activeConversation.id).order("position", { ascending: true }).limit(300),
       context.supabase.from("agent_proposals").select("id, run_id, tool_name, target_id, destination_project_id, summary, arguments, status, created_at").eq("conversation_id", activeConversation.id).order("created_at", { ascending: false }).limit(100),
+      activeConversation.opportunity_id && !opportunities.some(item => item.id === activeConversation.opportunity_id)
+        ? context.supabase.from("opportunities").select("id, project_id, reference_number, next_action, jobs(company, title)").eq("id", activeConversation.opportunity_id).eq("user_id", context.user.id).in("project_id", context.projects.map(workspace => workspace.id)).maybeSingle()
+        : Promise.resolve({ data: null }),
     ]);
     messages = ((messagesResult.data ?? []) as Message[]).reverse();
     runs = (runsResult.data ?? []) as Run[];
     steps = (stepsResult.data ?? []) as Step[];
     proposals = (proposalsResult.data ?? []) as Proposal[];
+    savedFocusedOpportunity = focusedOpportunityResult.data as unknown as Opportunity | null;
   }
 
   const opportunityMap = new Map(opportunities.map((opportunity) => [opportunity.id, opportunity]));
+  if (savedFocusedOpportunity) opportunityMap.set(savedFocusedOpportunity.id, savedFocusedOpportunity);
   const projectMap = new Map(context.projects.map((item) => [item.id, { name: item.name, ticketKey: item.ticket_key }]));
   const queryFocus = opportunities.some((opportunity) => opportunity.id === query.opportunity) ? query.opportunity : "";
   const focusedOpportunityId = activeConversation ? activeConversation.opportunity_id ?? "" : queryFocus ?? "";
@@ -82,7 +88,7 @@ export default async function AgentPage(props: { searchParams: Promise<AgentQuer
   const scopeLabel = focusedWorkspaceId ? projectMap.get(focusedWorkspaceId)?.name ?? "Workspace unavailable" : "All workspaces";
 
   const focusedOpportunity = opportunityMap.get(focusedOpportunityId);
-  const focusLabel = focusedOpportunity ? opportunityFocusLabel(focusedOpportunity, projectMap) : scopeLabel;
+  const focusLabel = focusedOpportunity ? opportunityFocusLabel(focusedOpportunity, projectMap) : focusedOpportunityId ? `${scopeLabel} · Opportunity unavailable` : scopeLabel;
   const pendingRun = runs.find(run => ["queued", "gathering_context", "generating"].includes(run.status) && Date.now() - Date.parse(run.created_at) < 300_000);
 
   return (

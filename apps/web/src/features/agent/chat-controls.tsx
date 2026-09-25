@@ -81,7 +81,7 @@ export function AgentMessageInput({
   const focusId = live?.focus?.opportunityId ?? focusedOpportunityId;
   const focusLocked = fixedFocus || Boolean(live?.fixedFocus);
   const connection = connections.find((item) => item.id === connectionId);
-  const focusLabel =
+  const focusLabel = live?.focus?.label ??
     opportunities.find((item) => item.id === focusId)?.label ??
     workspaces.find(item => item.id === scopeId)?.label ?? "All workspaces";
   const [message, setMessage] = useState("");
