@@ -248,7 +248,9 @@ test("Agent formats Markdown and keeps composer controls usable across sizes and
         await expect(copyControl).toHaveCSS("opacity", "1");
         await expect(footer.locator("time")).toHaveCSS("opacity", "1");
         await page.screenshot({ path: `/tmp/roleway-error-${theme}-${width}.png` });
-        await page.goto(`/agent?conversation=${conversation.data.id}`);
+        await page.getByRole("button", { name: "Dismiss notification" }).click();
+        await expect(page.locator(".agent-inline-state[role=alert]")).toHaveCount(0);
+        await expect(page).not.toHaveURL(/error=/);
         await expect(input).toBeVisible();
       }
     }
@@ -286,8 +288,13 @@ test("Agent formats Markdown and keeps composer controls usable across sizes and
       write({ type: "data-progress", id: "10", data: { id: "10", label: "Reading Workspace context", status: "active" } });
       await expect(page.getByRole("status").filter({ hasText: "Reading Workspace context" })).toBeVisible();
       const timeline = page.locator(".agent-work-timeline").last();
-      await timeline.locator("summary").click();
+      await timeline.locator(".agent-work-trigger").click();
       await expect(timeline.locator(".agent-work-steps")).toContainText("Reading Workspace context");
+      await expect(timeline.locator(".agent-work-panel")).toHaveCSS("transition-duration", "0.25s, 0.25s");
+      await timeline.locator(".agent-work-trigger").press("Enter");
+      await expect(timeline.locator(".agent-work-panel")).toBeHidden();
+      await timeline.locator(".agent-work-trigger").press("Space");
+      await expect(timeline.locator(".agent-work-steps")).toBeVisible();
       write({ type: "data-progress", id: "10", data: { id: "10", label: "Read Workspace context", status: "completed" } });
       write({ type: "data-answer", id: "answer", data: { text: "## Start here\n\nPrepare" } });
       await expect(page.getByRole("heading", { name: "Start here" })).toBeVisible();
@@ -307,8 +314,19 @@ test("Agent formats Markdown and keeps composer controls usable across sizes and
       await expect(page.getByText(/^Worked for/)).toBeVisible();
       await expect(page.getByText(/^Working for/)).toHaveCount(0);
       await expect(page.locator(".agent-message-author")).toHaveCount(0);
-      await page.locator(".agent-work-timeline").last().locator("summary").click();
+      const completedTrigger = page.locator(".agent-work-timeline").last().locator(".agent-work-trigger");
+      if (await completedTrigger.getAttribute("aria-expanded") !== "true") await completedTrigger.click();
       await expect(page.locator(".agent-work-steps").last()).toContainText("fixture");
+      const completedTimeline = page.locator(".agent-work-timeline").last();
+      if (await completedTrigger.getAttribute("aria-expanded") !== "true") await completedTrigger.click();
+      await expect(completedTimeline.locator(".agent-work-steps")).toBeVisible();
+      await completedTimeline.locator(".agent-work-trigger").click();
+      await expect(completedTimeline.locator(".agent-work-panel")).toBeHidden();
+      await page.emulateMedia({ reducedMotion: "reduce" });
+      await completedTimeline.locator(".agent-work-trigger").press("Enter");
+      await expect(completedTimeline.locator(".agent-work-steps")).toBeVisible();
+      await expect(completedTimeline.locator(".agent-work-panel")).toHaveCSS("transition-duration", "0s");
+      await page.emulateMedia({ reducedMotion: "no-preference" });
       expect(await transcriptNode!.evaluate(el => el.isConnected)).toBe(true);
       await expect(input).toHaveValue("");
       await expect(page.getByRole("heading", { name: "Start here" })).toHaveCount(1);
@@ -361,7 +379,7 @@ test("Agent formats Markdown and keeps composer controls usable across sizes and
       await expect(mini.getByRole("heading", { name: "Your next step" })).toBeVisible();
       await expect(mini.locator(".agent-message.agent strong")).toHaveText("one example");
       await expect(mini.getByText(/^Worked for/)).toBeVisible();
-      await expect(mini.locator(".agent-work-timeline > summary")).toHaveCSS("display", "flex");
+      await expect(mini.locator(".agent-work-trigger")).toHaveCSS("display", "flex");
       await expect(mini.getByRole("link", { name: "Open full Agent" })).toHaveAttribute("href", `/agent?conversation=${conversation.data.id}`);
       expect(new URL(page.url()).pathname).toBe("/home");
       expect(await mini.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
