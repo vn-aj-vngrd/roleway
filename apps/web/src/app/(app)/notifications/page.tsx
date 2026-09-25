@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import {
   ArrowRight,
   Bell,
@@ -39,6 +40,8 @@ const notificationTypeDetails = {
   pipeline: { label: "Opportunity", icon: GitBranch },
   task: { label: "Task", icon: SquareCheckBig },
 } as const;
+
+export const metadata: Metadata = { title: "Notifications" };
 
 export default async function NotificationsPage({ searchParams }: NotificationsPageProps) {
   const context = await requireSearchContext();

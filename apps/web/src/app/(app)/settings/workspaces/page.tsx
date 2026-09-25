@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { ChevronRight, Plus, RotateCcw, Search, X } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -8,6 +9,8 @@ import { CreateWorkspaceButton } from "@/components/workspace-create-form";
 import { WorkspaceMark } from "@/components/workspace-mark";
 import { restoreSearchProject } from "@/features/projects/actions";
 import { requireSearchContext, type SearchProject } from "@/features/projects/context";
+
+export const metadata: Metadata = { title: "Workspaces · Settings" };
 
 export default async function WorkspaceSettingsPage(props: { searchParams: Promise<{ create?: string; restored?: string; archived?: string; q?: string; error?: string }> }) {
   const [context, query] = await Promise.all([requireSearchContext(), props.searchParams]);

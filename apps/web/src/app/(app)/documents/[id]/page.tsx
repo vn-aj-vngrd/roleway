@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { formatOpportunityTicket } from "@roleway/core";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
@@ -19,6 +20,8 @@ type DocumentVersion = {
   status: string;
   created_at: string;
 };
+
+export const metadata: Metadata = { title: "Document details" };
 
 export default async function DocumentPage(props: {
   params: Promise<{ id: string }>;

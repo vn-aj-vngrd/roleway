@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { CircleAlert } from "lucide-react";
 import { Clock3, Inbox, Plus } from "lucide-react";
 import Link from "next/link";
@@ -14,6 +15,8 @@ import {
 } from "@/components/ui-primitives";
 import { requireSearchContext } from "@/features/projects/context";
 import { richTextToPlainText } from "@/lib/rich-text";
+
+export const metadata: Metadata = { title: "Inbox" };
 
 export default async function JobsPage(props: {
   searchParams: Promise<{

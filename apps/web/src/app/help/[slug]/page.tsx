@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+import { cache } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -8,6 +10,25 @@ import {
   topicForArticle,
 } from "@/features/help/catalog";
 
+const getArticle = cache(async (slug: string) => {
+  const supabase = await createClient();
+  return supabase
+    .from("help_articles")
+    .select("title,summary,body,updated_at")
+    .eq("slug", slug)
+    .eq("published", true)
+    .maybeSingle();
+});
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { data } = await getArticle((await params).slug);
+  return { title: data ? `${data.title} · Help Center` : "Help article" };
+}
+
 export default async function HelpArticlePage({
   params,
 }: {
@@ -16,12 +37,7 @@ export default async function HelpArticlePage({
   const [{ slug }, supabase] = await Promise.all([params, createClient()]);
   const topic = topicForArticle(slug);
   const [result, related] = await Promise.all([
-    supabase
-      .from("help_articles")
-      .select("title,summary,body,updated_at")
-      .eq("slug", slug)
-      .eq("published", true)
-      .maybeSingle(),
+    getArticle(slug),
     supabase
       .from("help_articles")
       .select("slug,title")

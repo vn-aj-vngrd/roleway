@@ -1,7 +1,10 @@
+import type { Metadata } from "next";
 import { NotificationPreferences } from "@/components/notification-preferences";
 import { SettingsNav } from "@/components/settings-nav";
 import { PageHeader } from "@/components/ui-primitives";
 import { requireUser } from "@/lib/supabase/server";
+
+export const metadata: Metadata = { title: "Notifications · Settings" };
 
 export default async function NotificationSettingsPage() {
   const auth = await requireUser();

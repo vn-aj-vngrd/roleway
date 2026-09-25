@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -19,6 +20,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
 import { SubmitButton } from "@/components/submit-button";
 import { Button } from "@/components/ui/button";
+export const metadata: Metadata = { title: "Plan & billing · Settings" };
+
 export default async function BillingPage({
   searchParams,
 }: {

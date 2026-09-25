@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { agentInterviewSchema, agentContactSchema } from "@roleway/schemas";
 import { agentContextPage, agentContextPages, type AgentContextPage } from "@/features/agent/scope";
 // OpenRouter free models may queue for minutes; leave time for bounded calls and persistence.
@@ -27,6 +28,8 @@ type Step = { id: string; run_id: string; label: string; status: "pending" | "ac
 type Proposal = { id: string; run_id: string; tool_name: string; target_id: string | null; destination_project_id: string | null; summary: string; arguments: Record<string, unknown>; status: string; created_at: string };
 
 type AgentQuery = { new?: string; workspace?: string; page?: string; draft?: string; conversation?: string; opportunity?: string; error?: string; decision?: string; record?: string; proposal?: string };
+
+export const metadata: Metadata = { title: "Agent" };
 
 export default async function AgentPage(props: { searchParams: Promise<AgentQuery> }) {
   const searchParams = await props.searchParams;
