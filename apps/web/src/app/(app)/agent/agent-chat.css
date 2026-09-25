@@ -417,7 +417,9 @@
   overscroll-behavior: contain;
   padding-block: 32px 20px;
 }
-.agent-native-page.has-conversation .agent-native-composer {
+/* Live messages already form a conversation before its saved route arrives. */
+.agent-native-page.has-conversation .agent-native-composer,
+.agent-native-page:has(.agent-transcript) .agent-native-composer {
   position: relative;
   inset: auto;
   margin: 0 auto 18px;
@@ -445,7 +447,8 @@
   .agent-message-actions { --agent-actions-enter: 0ms; --agent-actions-exit: 0ms; }
 }
 @media (max-width: 760px) {
-  .agent-native-page.has-conversation .agent-native-composer {
+  .agent-native-page.has-conversation .agent-native-composer,
+  .agent-native-page:has(.agent-transcript) .agent-native-composer {
     margin: 0 12px 12px;
   }
   .agent-native-page .agent-transcript {

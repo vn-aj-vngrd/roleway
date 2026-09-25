@@ -13,7 +13,8 @@ export function formatRunDuration(milliseconds: number) {
   return minutes < 60 ? `${minutes}m ${seconds % 60}s` : `${Math.floor(minutes / 60)}h ${minutes % 60}m`;
 }
 
-export function RunTimeline({ startedAt, endedAt, pending = false, failed = false, steps, model, awaitingApproval = false, recovering = false, statusUnknown = false }: {
+export function RunTimeline({ startedAt, endedAt, pending = false, failed = false, steps, model, awaitingApproval = false, recovering = false, statusUnknown = false, showCurrentStep = true }: {
+  showCurrentStep?: boolean;
   recovering?: boolean;
   statusUnknown?: boolean;
   startedAt: string;
@@ -63,5 +64,5 @@ export function RunTimeline({ startedAt, endedAt, pending = false, failed = fals
         </dl>
       </div> : null}
     </div>
-  </details>{pending ? <p className="agent-working-current" role="status">{current?.label ?? "Preparing the response…"}</p> : null}</>;
+  </details>{pending && showCurrentStep ? <p className="agent-working-current" role="status">{current?.label ?? "Preparing the response…"}</p> : null}</>;
 }

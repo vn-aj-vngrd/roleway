@@ -4,7 +4,6 @@ import {
   ArrowUp,
   Check,
   ChevronDown,
-  Copy,
   Cpu,
   Plus,
   Route,
@@ -32,7 +31,8 @@ import {
 import { useAgentLive } from "./live-chat";
 import { type AgentContextPage } from "./scope";
 import { matchingCapabilities } from "./capabilities";
-import { formatMessageTimestamp } from "./message-time";
+
+const subscribe = () => () => {};
 
 type ComposerProps = {
   connections: Array<{ id: string; label: string; model: string }>;
@@ -381,65 +381,6 @@ export function AgentMessageInput({
         </span>
       </footer>
     </div>
-  );
-}
-
-export function MessageActions({ content, timestamp }: { content: string; timestamp: string }) {
-  const [status, setStatus] = useState<"idle" | "copied" | "failed">("idle");
-  useEffect(() => {
-    if (status !== "copied") return;
-    const timer = window.setTimeout(() => setStatus("idle"), 2000);
-    return () => window.clearTimeout(timer);
-  }, [status]);
-  return (
-    <div className="agent-message-actions">
-      <MessageTimestamp value={timestamp} />
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon-sm"
-        aria-label={status === "copied" ? "Message copied" : "Copy message"}
-        data-tooltip={status === "copied" ? "Copied" : "Copy message"}
-        onClick={async () => {
-          try {
-            await navigator.clipboard.writeText(content);
-            setStatus("copied");
-          } catch {
-            setStatus("failed");
-          }
-        }}
-      >
-        {status === "copied" ? (
-          <Check aria-hidden="true" />
-        ) : (
-          <Copy aria-hidden="true" />
-        )}
-      </Button>
-      <span
-        className={status === "failed" ? undefined : "sr-only"}
-        role="status"
-      >
-        {status === "failed"
-          ? "Could not copy. Select the message text to copy it."
-          : status === "copied"
-            ? "Message copied"
-            : ""}
-      </span>
-    </div>
-  );
-}
-
-const subscribe = () => () => {};
-export function MessageTimestamp({ value }: { value: string }) {
-  const mounted = useSyncExternalStore(
-    subscribe,
-    () => true,
-    () => false,
-  );
-  return (
-    <time className="agent-message-timestamp" dateTime={value}>
-      {mounted ? formatMessageTimestamp(value) : ""}
-    </time>
   );
 }
 

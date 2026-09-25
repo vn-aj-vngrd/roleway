@@ -108,7 +108,7 @@ export function AgentPopoverLauncher({ pathname, projectId, projectName, breadcr
           const answer = item.parts.find(part => part.type === "data-answer");
           return <article className={`agent-message ${item.role === "user" ? "user" : "agent"}`} key={item.id}>
             {item.role === "user" ? <div className="agent-message-content"><p>{item.parts.flatMap(part => part.type === "text" ? [part.text] : []).join("")}</p></div> : <>
-              {item.id === messages.at(-1)?.id ? <RunTimeline startedAt={startedAt} endedAt={endedAt} pending={pending} failed={failed || Boolean(error)} steps={item.parts.flatMap(part => part.type === "data-progress" ? [part.data] : [])} /> : null}
+              {item.id === messages.at(-1)?.id ? <RunTimeline startedAt={startedAt} endedAt={endedAt} pending={pending} showCurrentStep={!answer?.data.text} failed={failed || Boolean(error)} steps={item.parts.flatMap(part => part.type === "data-progress" ? [part.data] : [])} /> : null}
               {answer?.type === "data-answer" ? <div className="agent-message-content"><AgentMarkdown content={answer.data.text} idPrefix={`mini-${item.id}`} /></div> : null}
             </>}
           </article>;
