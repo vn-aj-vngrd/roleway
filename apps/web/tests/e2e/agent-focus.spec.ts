@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { randomBytes } from "node:crypto";
 import { createFixtureAccount } from "./auth-fixture";
 
-test("saved Opportunity focus survives closure and ignores URL overrides", async ({ page }) => {
+test("saved focus survives closure, ignores URL overrides, and refreshes renamed Workspaces", async ({ page }) => {
   const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } });
   let userId = "";
   try {
@@ -38,6 +38,23 @@ test("saved Opportunity focus survives closure and ignores URL overrides", async
     await page.goto(`/agent?conversation=${unfocused.data.id}&opportunity=${opportunity.data.id}`);
     await expect(page.locator('input[name="opportunityId"]')).toHaveValue("");
     await expect(page.locator(".agent-native-scope")).not.toContainText("Closed focus company");
+    // Keep the account-layout session alive while a real Settings action revalidates it.
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.evaluate(() => { document.documentElement.dataset.agentFocusTest = "same-session"; });
+    await page.locator(".account-area > button").click();
+    await page.getByRole("menuitem", { name: "Workspaces", exact: true }).click();
+    await page.locator(`.workspace-directory-primary[href="/settings/workspaces/${ownership.project_id}"]`).click();
+    await page.locator(`a[href="/settings/workspaces/${ownership.project_id}/general"]`).click();
+    await page.getByLabel("Icon and name", { exact: true }).fill("Renamed focus workspace");
+    await page.getByRole("button", { name: "Save changes", exact: true }).click();
+    await expect(page).toHaveURL(/saved=true/);
+    await page.getByRole("link", { name: "Back to app", exact: true }).click();
+    await expect(page).toHaveURL(/\/home$/);
+    await page.getByRole("complementary", { name: "Main navigation" }).getByRole("link", { name: "Agent", exact: true }).click();
+    await expect(page.locator(".agent-native-scope")).toHaveText("Renamed focus workspace");
+    await expect(page.locator(".workspace-breadcrumb")).toContainText("Renamed focus workspace");
+    await expect(page.getByRole("button", { name: "Agent Opportunity focus", exact: true })).toHaveAttribute("data-tooltip", /Renamed focus workspace/);
+    expect(await page.evaluate(() => document.documentElement.dataset.agentFocusTest)).toBe("same-session");
   } finally {
     if (userId) {
       const { error } = await admin.auth.admin.deleteUser(userId);

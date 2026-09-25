@@ -128,6 +128,14 @@ export class AgentSessionStore {
     this.emit();
   }
 
+  syncSavedFocus(session: AgentSession, focus: AgentFocus) {
+    if (!session.conversationId) return;
+    const current = session.focus;
+    if (current?.workspaceId === focus.workspaceId && current.opportunityId === focus.opportunityId && current.workspaceLabel === focus.workspaceLabel && current.label === focus.label) return;
+    session.focus = focus;
+    this.emit();
+  }
+
   view(session: AgentSession, href: string) {
     const changed =
       this.viewing !== session || this.lastHref !== href || session.unread;

@@ -40,6 +40,9 @@ export function AgentLiveProvider({ children, pendingRunId, persistedRunIds, con
   const store = useAgentSessions();
   const session = store.get(conversationId || `draft:${draftId}`, conversationId, focus);
   const { messages, error } = useChat({ chat: session.chat });
+  useEffect(() => {
+    if (conversationId) store.syncSavedFocus(session, focus);
+  }, [conversationId, focus, session, store]);
   const [navigating, startNavigation] = useTransition();
   const [navigationLabel, setNavigationLabel] = useState("Loading conversation");
   const recovering = Boolean(pendingRunId && (pendingRunId !== session.runId || !session.endedAt));
@@ -57,7 +60,7 @@ export function AgentLiveProvider({ children, pendingRunId, persistedRunIds, con
     return () => store.leave(session);
   }, [store, session, conversationId, draftId, navigating]);
   return <LiveContext.Provider value={{
-    focus: session.focus,
+    focus: conversationId ? focus : session.focus,
     setFocus: focus => store.setFocus(session, focus),
     fixedFocus: Boolean(conversationId || session.conversationId),
     pending: session.pending || recovering, navigating, navigationLabel,

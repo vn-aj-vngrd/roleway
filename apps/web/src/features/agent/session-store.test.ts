@@ -199,6 +199,25 @@ describe("Agent conversation focus", () => {
     expect(store.get("saved-one").focus).toEqual(selected);
   });
 
+  it("refreshes saved labels for every subscriber without overwriting draft selections", () => {
+    const store = new AgentSessionStore();
+    const saved = store.get("saved-one", "saved-one", selected);
+    store.view(saved, "/agent?conversation=saved-one");
+    const changed = vi.fn();
+    store.subscribe(changed);
+    const renamed = { ...selected, workspaceLabel: "Renamed workspace", label: "Renamed workspace · Renamed role" };
+    store.syncSavedFocus(saved, renamed);
+    expect(saved.focus).toEqual(renamed);
+    expect(store.viewing?.focus).toEqual(renamed);
+    expect(changed).toHaveBeenCalledTimes(1);
+    store.syncSavedFocus(saved, { ...renamed });
+    expect(changed).toHaveBeenCalledTimes(1);
+    const draft = store.get("draft:new", "", all);
+    store.setFocus(draft, selected);
+    store.syncSavedFocus(draft, all);
+    expect(draft.focus).toEqual(selected);
+  });
+
   it("initializes saved scope when expanding a floating conversation", () => {
     const store = new AgentSessionStore();
     const session = store.get("saved-one", "saved-one");
