@@ -1458,6 +1458,8 @@ h3 {
   margin-top: 8px;
 }
 .form-alert {
+  min-width: 0;
+  overflow-wrap: anywhere;
   margin: 14px 0;
   padding: 10px 12px;
   border: 1px solid var(--line);
