@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Inbox, Plus, Target } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -5,6 +6,8 @@ import { CreateJobButton } from "@/components/app-shell";
 import { PipelineBoard, type PipelineFilter, type PipelineOpportunity } from "@/components/pipeline-board";
 import { EmptyState, WorkspaceHeader } from "@/components/ui-primitives";
 import { requireSearchContext } from "@/features/projects/context";
+
+export const metadata: Metadata = { title: "Opportunities" };
 
 export default async function OpportunitiesPage(props: { searchParams: Promise<{ error?: string; view?: string }> }) {
   const searchParams = await props.searchParams;

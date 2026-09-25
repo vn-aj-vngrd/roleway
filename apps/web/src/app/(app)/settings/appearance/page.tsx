@@ -1,7 +1,10 @@
+import type { Metadata } from "next";
 import { AppearanceControl } from "@/components/appearance-control";
 import { SettingsNav } from "@/components/settings-nav";
 import { PageHeader } from "@/components/ui-primitives";
 import { requireUser } from "@/lib/supabase/server";
+
+export const metadata: Metadata = { title: "Appearance · Settings" };
 
 export default async function AppearanceSettingsPage() {
   const auth = await requireUser();

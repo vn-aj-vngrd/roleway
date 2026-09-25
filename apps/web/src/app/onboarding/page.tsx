@@ -7,7 +7,7 @@ import { requireUser } from "@/lib/supabase/server";
 import { OnboardingWizard } from "./onboarding-wizard";
 
 export const metadata = {
-  title: "Set up your Roleway workspace",
+  title: "Set up your workspace",
   robots: { index: false, follow: false, nocache: true },
 };
 

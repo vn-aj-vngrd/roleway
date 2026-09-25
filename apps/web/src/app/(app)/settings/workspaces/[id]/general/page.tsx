@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
@@ -7,6 +8,8 @@ import { PageHeader } from "@/components/ui-primitives";
 import { WorkspaceSettingsFields } from "@/components/workspace-settings-fields";
 import { updateSearchProject } from "@/features/projects/actions";
 import { requireSearchContext } from "@/features/projects/context";
+
+export const metadata: Metadata = { title: "General · Workspace settings" };
 
 export default async function WorkspaceGeneralSettingsPage(props: { params: Promise<{ id: string }>; searchParams: Promise<{ saved?: string; focus?: string; section?: string; error?: string }> }) {
   const [context, params, query] = await Promise.all([requireSearchContext(), props.params, props.searchParams]);

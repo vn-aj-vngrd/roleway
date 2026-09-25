@@ -1,9 +1,12 @@
+import type { Metadata } from "next";
 import { signOut } from "@/app/auth/actions";
 import { DeleteAccountControl } from "@/components/delete-account-control";
 import { SettingsNav } from "@/components/settings-nav";
 import { SubmitButton } from "@/components/submit-button";
 import { PageHeader } from "@/components/ui-primitives";
 import { requireUser } from "@/lib/supabase/server";
+
+export const metadata: Metadata = { title: "Privacy & data · Settings" };
 
 export default async function PrivacyPage(props: {
   searchParams: Promise<{ error?: string }>;

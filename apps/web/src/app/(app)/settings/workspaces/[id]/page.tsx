@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Archive, ArrowLeft, BriefcaseBusiness, ChevronRight, ListChecks, MapPinned, Target } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
@@ -8,6 +9,8 @@ import { PageHeader } from "@/components/ui-primitives";
 import { WorkspaceMark } from "@/components/workspace-mark";
 import { archiveSearchProject } from "@/features/projects/actions";
 import { requireSearchContext } from "@/features/projects/context";
+
+export const metadata: Metadata = { title: "Workspace settings" };
 
 export default async function WorkspaceSettingsOverviewPage(props: { params: Promise<{ id: string }> }) {
   const [context, params] = await Promise.all([requireSearchContext(), props.params]);

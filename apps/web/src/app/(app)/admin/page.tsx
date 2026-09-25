@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { EmptyState } from "@/components/ui-primitives";
 import { AdminPlans, AdminBilling, AdminHelp } from "./plan-panels";
 import {
@@ -109,6 +110,8 @@ const adminViews: Array<{ id: AdminView; label: string }> = [
   { id: "audit", label: "Audit" },
   { id: "settings", label: "Settings" },
 ];
+
+export const metadata: Metadata = { title: "Admin" };
 
 export default async function AdminPage({
   searchParams,

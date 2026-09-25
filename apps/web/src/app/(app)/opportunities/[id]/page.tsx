@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 // OpenRouter free models may queue for minutes; leave time for bounded calls and persistence.
 export const maxDuration = 300;
 
@@ -46,6 +47,8 @@ type EventRow = { id: string; event_type: string; payload: Record<string, unknow
 type OpportunityTab = "overview" | "tasks" | "interviews" | "documents" | "people" | "activity";
 
 const opportunityTabs: readonly OpportunityTab[] = ["overview", "tasks", "interviews", "documents", "people", "activity"];
+
+export const metadata: Metadata = { title: "Opportunity details" };
 
 export default async function OpportunityPage(
   props: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string; apply?: string; contact?: string; applied?: string; assessmentSaved?: string; contactCreated?: string; contactSaved?: string; tab?: string }> }

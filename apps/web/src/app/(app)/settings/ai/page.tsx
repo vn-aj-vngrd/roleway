@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 // OpenRouter free models may queue for minutes; leave time for bounded calls and persistence.
 export const maxDuration = 300;
 
@@ -23,6 +24,8 @@ type AiQuery = {
   guidanceSaved?: string;
   error?: string;
 };
+
+export const metadata: Metadata = { title: "Agent · Settings" };
 
 export default async function AiSettingsPage(props: {
   searchParams: Promise<AiQuery>;

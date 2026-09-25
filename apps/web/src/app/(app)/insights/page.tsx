@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import type { CSSProperties } from "react";
 import {
   AlertCircle,
@@ -65,6 +66,8 @@ const RANGE_OPTIONS: Array<{ value: RangeKey; label: string }> = [
   { value: "180", label: "Last 6 months" },
   { value: "365", label: "Last 12 months" },
 ];
+
+export const metadata: Metadata = { title: "Insights" };
 
 export default async function InsightsPage({ searchParams }: InsightsPageProps) {
   const context = await requireSearchContext();

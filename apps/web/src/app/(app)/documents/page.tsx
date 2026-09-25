@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { CircleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatOpportunityTicket } from "@roleway/core";
@@ -56,6 +57,8 @@ const documentKinds = [
   { value: "research_note", label: "Research note" },
   { value: "interview_note", label: "Interview note" },
 ] as const;
+
+export const metadata: Metadata = { title: "Documents" };
 
 export default async function DocumentsPage(props: {
   searchParams: Promise<{
