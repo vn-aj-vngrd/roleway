@@ -1,7 +1,7 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { createContext, useContext, useEffect, useRef, useTransition, type ReactNode, type ComponentProps } from "react";
+import { createContext, useContext, useEffect, useRef, useState, useTransition, type ReactNode, type ComponentProps } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Spinner } from "@/components/ui/spinner";
@@ -13,7 +13,9 @@ import type { AgentUIMessage, RunProgress } from "./stream-types";
 const LiveContext = createContext<{
   pending: boolean;
   navigating: boolean;
-  navigate: (href: string) => void;
+  navigationLabel: string;
+  isEmptyConversation: boolean;
+  navigate: (href: string, newConversation?: boolean) => void;
   submit: (data: FormData) => void;
   submission: number;
   messages: AgentUIMessage[];
@@ -25,14 +27,15 @@ const LiveContext = createContext<{
 
 export function useAgentLive() { return useContext(LiveContext); }
 
-export function AgentLiveProvider({ children, pendingRunId, persistedRunIds, conversationId, draftId }: {
-  children: ReactNode; pendingRunId: string | undefined; persistedRunIds: string[]; conversationId: string; draftId: string;
+export function AgentLiveProvider({ children, pendingRunId, persistedRunIds, conversationId, draftId, canResetDraft = false }: {
+  children: ReactNode; pendingRunId: string | undefined; persistedRunIds: string[]; conversationId: string; draftId: string; canResetDraft?: boolean;
 }) {
   const router = useRouter();
   const store = useAgentSessions();
   const session = store.get(conversationId || `draft:${draftId}`, conversationId);
   const { messages, error } = useChat({ chat: session.chat });
   const [navigating, startNavigation] = useTransition();
+  const [navigationLabel, setNavigationLabel] = useState("Loading conversation");
   const recovering = Boolean(pendingRunId && (pendingRunId !== session.runId || !session.endedAt));
   const persisted = Boolean(session.runId && persistedRunIds.includes(session.runId));
   const refreshedRun = useRef("");
@@ -48,8 +51,10 @@ export function AgentLiveProvider({ children, pendingRunId, persistedRunIds, con
     return () => store.leave(session);
   }, [store, session, conversationId, draftId, navigating]);
   return <LiveContext.Provider value={{
-    pending: session.pending || recovering, navigating,
-    navigate: href => {
+    pending: session.pending || recovering, navigating, navigationLabel,
+    isEmptyConversation: !canResetDraft && !conversationId && !session.submission && !messages.length && !session.pending,
+    navigate: (href, newConversation = false) => {
+      setNavigationLabel(newConversation ? "Starting new conversation" : "Loading conversation");
       store.leave(session);
       startNavigation(() => router.push(href, { scroll: false }));
     },
@@ -68,10 +73,15 @@ export function AgentLiveProvider({ children, pendingRunId, persistedRunIds, con
 
 export function AgentConversationLink({ newConversation = false, href, ...props }: ComponentProps<typeof Link> & { newConversation?: boolean }) {
   const live = useAgentLive();
-  return <Link {...props} href={href} onNavigate={event => {
+  const disabled = Boolean(newConversation && (live?.isEmptyConversation || live?.navigating));
+  return <Link {...props} href={href} aria-label={newConversation ? "New conversation" : props["aria-label"]} aria-disabled={disabled || undefined} tabIndex={disabled ? -1 : props.tabIndex} onClick={event => {
+    if (disabled) event.preventDefault();
+    else props.onClick?.(event);
+  }} onNavigate={event => {
     if (!live) return;
     event.preventDefault();
-    live.navigate(newConversation ? `/agent?new=${crypto.randomUUID()}` : String(href));
+    if (disabled) return;
+    live.navigate(newConversation ? `/agent?new=${crypto.randomUUID()}` : String(href), newConversation);
   }} />;
 }
 
@@ -100,7 +110,7 @@ export function AgentTranscript({ children, emptyState, hasConversation }: { chi
   useEffect(() => {
     if (root.current && stickToBottom.current) root.current.scrollTop = root.current.scrollHeight;
   }, [live?.messages, children]);
-  if (live?.navigating) return <div className="agent-conversation-loading" role="status"><Spinner aria-hidden="true" /><span>Loading conversation…</span></div>;
+  if (live?.navigating) return <div className="agent-conversation-loading" role="status"><Spinner aria-hidden="true" /><span>{live.navigationLabel}…</span></div>;
   if (!hasConversation && !live?.messages.length) return emptyState;
   const assistant = live?.messages.filter(message => message.role === "assistant").at(-1);
   const answer = assistant?.parts.find(part => part.type === "data-answer");

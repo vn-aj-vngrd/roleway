@@ -368,9 +368,9 @@ export function AgentMessageInput({
             type="submit"
             size="icon"
             disabled={pending || !message.trim()}
-            aria-label={live?.navigating ? "Loading conversation" : pending ? "Agent is working" : "Send to Agent"}
+            aria-label={live?.navigating ? live.navigationLabel : pending ? "Agent is working" : "Send to Agent"}
             data-tooltip={
-              live?.navigating ? "Loading conversation…" : pending ? "Agent is working…" : "Send message (Enter)"
+              live?.navigating ? `${live.navigationLabel}…` : pending ? "Agent is working…" : "Send message (Enter)"
             }
           >
             {pending ? <Spinner /> : <ArrowUp aria-hidden="true" />}
