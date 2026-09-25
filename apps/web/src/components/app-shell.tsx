@@ -37,6 +37,7 @@ import {
   type ReactNode,
 } from "react";
 import { signOut } from "@/app/auth/actions";
+import { AgentActivityIndicator, useAgentSessions } from "@/features/agent/session-provider";
 import { AgentPopoverLauncher } from "@/components/agent-popover-launcher";
 import { CreateModal } from "@/components/create-modal";
 import { JobCreateForm } from "@/components/job-create-form";
@@ -386,13 +387,14 @@ function NavItem({
   pathname: string;
   badge?: number;
 }) {
+  const agentSessions = useAgentSessions();
   const active =
     pathname === item.href ||
     (item.href !== "/home" && pathname.startsWith(item.href));
   const Icon = item.icon;
   return (
     <Link
-      href={item.href}
+      href={item.href === "/agent" ? agentSessions.lastHref : item.href}
       data-tour={tourTargetByHref[item.href]}
       className={`nav-link ${active ? "active" : ""}`}
       aria-current={active ? "page" : undefined}
@@ -400,6 +402,7 @@ function NavItem({
     >
       <Icon aria-hidden="true" />
       <span>{item.label}</span>
+      {item.href === "/agent" ? <AgentActivityIndicator /> : null}
       {badge ? (
         <CountBadge
           className="nav-badge"
