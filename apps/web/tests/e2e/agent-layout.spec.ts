@@ -207,6 +207,37 @@ for (const width of [1440, 390]) {
           await page.screenshot({
             path: `/tmp/roleway-agent-layout-${width}-${theme}-${existing ? "existing" : "new"}.png`,
           });
+          if (!existing) {
+            let releaseNavigation = () => {};
+            const navigationGate = new Promise<void>((resolve) => {
+              releaseNavigation = resolve;
+            });
+            await page.route("**/agent?new=**", async (route) => {
+              const response = await route.fetch();
+              await navigationGate;
+              await route.fulfill({ response });
+            });
+            try {
+              const composer = page.locator(".agent-native-composer");
+              const beforeNavigation = await composer.boundingBox();
+              await page
+                .getByRole("link", { name: "New conversation", exact: true })
+                .click();
+              await expect(
+                page.locator(".agent-conversation-loading"),
+              ).toBeVisible();
+              expect(
+                Math.abs(
+                  (await composer.boundingBox())!.y - beforeNavigation!.y,
+                ),
+                "Composer moved while loading a conversation",
+              ).toBeLessThan(2);
+            } finally {
+              releaseNavigation();
+            }
+            await expect(page.locator(".agent-empty-state")).toBeVisible();
+            await page.unroute("**/agent?new=**");
+          }
           if (width === 1440 && !existing) {
             await page.goto("/home");
             await page
