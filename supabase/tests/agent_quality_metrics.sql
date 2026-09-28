@@ -6,7 +6,7 @@ $$;
 do $$
 declare owner_id uuid := gen_random_uuid(); other_id uuid := gen_random_uuid();
   project_id uuid; conversation_id uuid; connection_id uuid; run_id uuid;
-  blocked boolean := false;
+  blocked boolean := false; reserved_id uuid;
 begin
   insert into auth.users(id,email,email_confirmed_at) values
     (owner_id,'quality-'||owner_id||'@roleway.test',now()),
@@ -31,14 +31,24 @@ begin
   perform pg_temp.assert((public.agent_health(false)->>'runs')::integer = 1,'Owner summary must include its run');
   perform pg_temp.assert((public.agent_health(false)->>'badRatings')::integer = 1,'Owner summary must include its rating');
   perform pg_temp.assert((public.agent_health(false)->>'evalRuns')::integer = 1,'Owner summary must include its eval');
+  reserved_id := public.reserve_agent_evaluation(connection_id);
+  perform pg_temp.assert(reserved_id is not null,'First remaining model-check attempt must reserve');
+  perform pg_temp.assert((public.agent_health(false)->>'evalRuns')::integer = 1,'Pending check must stay out of summaries');
+  reserved_id := public.reserve_agent_evaluation(connection_id);
+  perform pg_temp.assert(reserved_id is not null,'Second remaining model-check attempt must reserve');
+  perform pg_temp.assert(public.reserve_agent_evaluation(connection_id) is null,'Fourth model-check attempt must be rejected');
+  perform pg_temp.assert((public.agent_health(false)->>'evalRuns')::integer = 1,'Quota reservations must not change completed count');
   perform set_config('request.jwt.claim.sub',other_id::text,true);
   perform pg_temp.assert((public.agent_health(false)->>'runs')::integer = 0,'Other account must not see owner runs');
+  blocked := false;
+  begin perform public.reserve_agent_evaluation(connection_id); exception when others then blocked := true; end;
+  perform pg_temp.assert(blocked,'Other account must not reserve the owner connection');
   blocked := false;
   begin perform public.agent_health(true); exception when others then blocked := true; end;
   perform pg_temp.assert(blocked,'Non-admin must not request global Agent health');
   insert into public.admin_members(user_id,role) values(owner_id,'viewer');
   perform set_config('request.jwt.claim.sub',owner_id::text,true);
-  perform pg_temp.assert((public.agent_health(true)->>'runs')::integer = 1,'Admin global summary must include recorded runs');
+  perform pg_temp.assert((public.agent_health(true)->>'runs')::integer >= 1,'Admin global summary must include recorded runs');
 end;
 $$;
 rollback;

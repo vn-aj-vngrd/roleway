@@ -27,29 +27,27 @@ export async function runAgentEvaluation(formData: FormData) {
     .maybeSingle();
   if (!connection || connection.status !== "connected")
     redirect("/settings/ai/usage?error=Connection%20unavailable.");
-  const { count, error: quotaError } = await admin
-    .from("agent_eval_runs")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", context.user.id)
-    .gte(
-      "created_at",
-      new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-    );
-  if (quotaError)
-    redirect(
-      "/settings/ai/usage?error=Model%20checks%20are%20unavailable.%20Try%20again.",
-    );
-  if ((count ?? 0) >= 3)
-    redirect(
-      "/settings/ai/usage?error=Three%20checks%20per%20day%20are%20available.",
-    );
   const started = Date.now();
   let apiKey: string;
   try {
     apiKey = decryptSecret(connection.encrypted_secret, connection.secret_iv);
   } catch {
-    redirect("/settings/ai/usage?error=Connection%20could%20not%20be%20opened.");
+    redirect(
+      "/settings/ai/usage?error=Connection%20could%20not%20be%20opened.",
+    );
   }
+  const { data: reservationId, error: reservationError } =
+    await context.supabase.rpc("reserve_agent_evaluation", {
+      input_connection_id: connection.id,
+    });
+  if (reservationError)
+    redirect(
+      "/settings/ai/usage?error=Model%20checks%20are%20unavailable.%20Try%20again.",
+    );
+  if (!reservationId)
+    redirect(
+      "/settings/ai/usage?error=Three%20checks%20per%2024%20hours%20are%20available.",
+    );
   const evaluation = await evaluateConnection(
     {
       provider: connection.provider as AiProviderKind,
@@ -59,18 +57,18 @@ export async function runAgentEvaluation(formData: FormData) {
     apiKey,
   );
   const passed = evaluation.checks.every((check) => check.status === "passed");
-  const { error } = await admin.from("agent_eval_runs").insert({
-    user_id: context.user.id,
-    connection_id: connection.id,
-    provider: connection.provider,
-    model: connection.model,
-    status: passed ? "passed" : "failed",
-    checks: evaluation.checks,
-    input_tokens: evaluation.inputTokens,
-    output_tokens: evaluation.outputTokens,
-    cost_usd_micros: evaluation.costUsdMicros,
-    duration_ms: Date.now() - started,
-  });
+  const { error } = await admin
+    .from("agent_eval_runs")
+    .update({
+      status: passed ? "passed" : "failed",
+      checks: evaluation.checks,
+      input_tokens: evaluation.inputTokens,
+      output_tokens: evaluation.outputTokens,
+      cost_usd_micros: evaluation.costUsdMicros,
+      duration_ms: Date.now() - started,
+    })
+    .eq("id", reservationId)
+    .eq("user_id", context.user.id);
   if (error)
     redirect(
       "/settings/ai/usage?error=Model%20checks%20could%20not%20be%20saved.",
