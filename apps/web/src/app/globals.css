@@ -2536,7 +2536,8 @@ h3 {
 .admin-agent-days span { display: block; width: 100%; background: var(--primary); min-height: 4px; }
 .admin-agent-check-form { margin: 20px 0 28px; }
 .admin-agent-check-form form { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
-.admin-agent-check-form select { min-height: 40px; max-width: 100%; padding: 6px 10px; color: var(--ink); background: var(--canvas); border: 1px solid var(--line); border-radius: 6px; }
+.admin-agent-check-form .custom-select { flex: 0 1 480px; width: 100%; max-width: 100%; }
+.admin-agent-check-form .custom-select-trigger { padding-right: 14px; }
 .admin-agent-evals { margin-top: 20px; }
 .admin-agent-evals h3 { font-size: 13px; }
 .admin-agent-evals p { display: flex; flex-wrap: wrap; gap: 12px; margin: 0; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 13px; }

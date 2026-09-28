@@ -8,6 +8,7 @@ import {
 import { requireSearchContext } from "@/features/projects/context";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { SubmitButton } from "@/components/submit-button";
+import { SelectField } from "@/components/form-controls";
 import { PageHeader } from "@/components/ui-primitives";
 import { runAgentEvaluation } from "./actions";
 
@@ -76,14 +77,16 @@ export default async function AgentUsagePage({
           {connections?.length ? (
             <form action={runAgentEvaluation}>
               <label htmlFor="eval-connection">Provider connection</label>
-              <select id="eval-connection" name="connectionId" required>
-                {connections.map((connection) => (
-                  <option value={connection.id} key={connection.id}>
-                    {connection.label} · {connection.provider} ·{" "}
-                    {connection.model}
-                  </option>
-                ))}
-              </select>
+              <SelectField
+                id="eval-connection"
+                name="connectionId"
+                required
+                defaultValue={connections[0]?.id ?? ""}
+                options={connections.map((connection) => ({
+                  value: connection.id,
+                  label: `${connection.label} · ${connection.provider} · ${connection.model}`,
+                }))}
+              />
               <SubmitButton pendingLabel="Checking model…">
                 Run model checks
               </SubmitButton>
