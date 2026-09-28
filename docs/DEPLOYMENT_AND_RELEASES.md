@@ -49,7 +49,7 @@ To evaluate native adapters, set `ROLEWAY_TEST_PROVIDER` to `openai`, `anthropic
 
 ### Agent quality rollout
 
-Apply `20260928210000_agent_quality_metrics.sql` before deploying Agent usage and quality views. It adds nullable measurements and reply ratings, plus account-scoped eval summaries and an authenticated aggregate function with an admin-only global mode. Optional OpenTelemetry export requires `AGENT_OTEL_ENABLED=true` and a protected collector configuration. Verify that traces contain no prompts, answers, tool arguments, record IDs, or credentials before enabling production export. See [Agent quality and observability](AGENT_QUALITY_AND_OBSERVABILITY.md) for evidence limits and checks.
+Apply `20260928210000_agent_quality_metrics.sql` and `20260928230000_agent_health_coverage.sql` before deploying Agent usage and quality views. The first adds nullable measurements and reply ratings, plus account-scoped eval summaries and an authenticated aggregate function with an admin-only global mode. The second recovers historical elapsed time from saved finish events and reports timing coverage; historical first-text time and provider charges remain unknown. Both migrations were applied to the configured Roleway Supabase project on 2026-09-28. Optional OpenTelemetry export requires `AGENT_OTEL_ENABLED=true` and a protected collector configuration. Verify that traces contain no prompts, answers, tool arguments, record IDs, or credentials before enabling production export. See [Agent quality and observability](AGENT_QUALITY_AND_OBSERVABILITY.md) for evidence limits and checks.
 
 ### Interview and contact Create rollout
 

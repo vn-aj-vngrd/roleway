@@ -10,10 +10,16 @@ import { agentSystemPolicy, safeCompatibleBaseUrl, type AiConnection } from "./p
 
 export async function streamAgentResponse(connection: AiConnection, apiKey: string, prompt: string, onText: (text: string) => void, signal?: AbortSignal, readTools?: AgentReadTools): Promise<{ output: ReturnType<typeof resolveAgentAnswer>; inputTokens: number | undefined; outputTokens: number | undefined; costUsdMicros?: number | null }> {
   // Keep provider requests on the validated endpoint and never follow redirects with credentials.
-  const safeFetch: typeof fetch = (input, init) => {
+  const generationIds: string[] = [];
+  const safeFetch: typeof fetch = async (input, init) => {
     const body = connection.provider === "openrouter" && typeof init?.body === "string"
       ? JSON.stringify({ ...JSON.parse(init.body), reasoning: { enabled: false } }) : init?.body;
-    return fetch(input, { ...init, ...(body !== undefined ? { body } : {}), redirect: "error", cache: "no-store" });
+    const response = await fetch(input, { ...init, ...(body !== undefined ? { body } : {}), redirect: "error", cache: "no-store" });
+    if (connection.provider === "openrouter" && response.ok) {
+      const id = response.headers.get("X-Generation-Id");
+      if (id && /^gen-[A-Za-z0-9_-]+$/.test(id)) generationIds.push(id);
+    }
+    return response;
   };
   const baseURL = connection.provider === "openai-compatible" ? await safeCompatibleBaseUrl(connection.base_url)
     : connection.provider === "openrouter" ? "https://openrouter.ai/api/v1" : undefined;
@@ -86,8 +92,10 @@ export async function streamAgentResponse(connection: AiConnection, apiKey: stri
   const usage = await result.totalUsage;
   let costUsdMicros: number | null = null;
   if (connection.provider === "openrouter") {
-    const ids = (await result.steps).map(step => step.response.id).filter((id): id is string => typeof id === "string" && /^gen-[A-Za-z0-9_-]+$/.test(id));
-    if (ids.length && ids.length === (await result.steps).length) {
+    const steps = await result.steps;
+    const ids = steps.map((step, index) => generationIds[index] ?? step.response.id)
+      .filter((id): id is string => typeof id === "string" && /^gen-[A-Za-z0-9_-]+$/.test(id));
+    if (ids.length && ids.length === steps.length) {
       try {
         const costs = await Promise.all(ids.map(async id => {
           const response = await fetch(`https://openrouter.ai/api/v1/generation?id=${encodeURIComponent(id)}`, {

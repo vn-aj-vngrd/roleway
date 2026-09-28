@@ -2,8 +2,10 @@ export type AgentHealth = {
   runs: number;
   failed: number;
   averageDurationMs: number | null;
+  durationCoverage: number;
   p95DurationMs: number | null;
   averageFirstTextMs: number | null;
+  firstTextCoverage: number;
   inputTokens: number;
   outputTokens: number;
   reportedCostMicros: number;
@@ -44,14 +46,15 @@ export type AgentHealth = {
 };
 
 function duration(value: number | null) {
-  return value == null ? "Unavailable" : `${(value / 1000).toFixed(1)}s`;
+  return value == null ? "Not recorded" : `${(value / 1000).toFixed(1)}s`;
 }
 
 function cost(micros: number, covered: number) {
-  return covered ? `$${(micros / 1_000_000).toFixed(4)}` : "Unavailable";
+  return covered ? `$${(micros / 1_000_000).toFixed(4)}` : "Not reported";
 }
 
 function label(value: string) {
+  if (value === "unclassified") return "No saved error code";
   return value
     .replaceAll("_", " ")
     .replace(/^./, (letter) => letter.toUpperCase());
@@ -96,6 +99,11 @@ export function AgentHealthDashboard({
           <span>Average first text</span>
         </article>
       </section>
+      <p className="muted admin-agent-coverage">
+        Run timing covers {data.durationCoverage} of {data.runs} runs. Earlier
+        runs use saved finish events. First-text timing covers {data.firstTextCoverage} of {data.runs};
+        it starts with newly measured runs.
+      </p>
       <div className="admin-agent-grid">
         <section className="admin-section">
           <header>
@@ -196,7 +204,7 @@ export function AgentHealthDashboard({
             </div>
           </dl>
           <p className="muted">
-            Provider charges can differ. Missing cost is unknown, not zero.
+            Costs appear only when a provider reports them. Earlier runs did not save charges; missing cost is unknown, not zero.
           </p>
         </section>
         <section className="admin-section">
