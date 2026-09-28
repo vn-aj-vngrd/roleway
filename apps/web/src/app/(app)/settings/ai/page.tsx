@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 // OpenRouter free models may queue for minutes; leave time for bounded calls and persistence.
 export const maxDuration = 300;
 
@@ -168,6 +169,16 @@ export default async function AiSettingsPage(props: {
             )}
           </div>
 
+        </section>
+
+        <section className="settings-group">
+          <header className="settings-group-header settings-group-header-action">
+            <div>
+              <h2>Usage & quality</h2>
+              <p>Review your Agent runs, reported cost, errors, feedback, and model checks.</p>
+            </div>
+            <Link className="button secondary" href="/settings/ai/usage">Open dashboard</Link>
+          </header>
         </section>
 
         <section className="settings-group agent-guidance-section">

@@ -12,7 +12,7 @@ import { RunTimeline } from "@/features/agent/run-timeline";
 import { AgentMarkdown } from "@/features/agent/markdown";
 import { AgentMessageInput, AgentHistoryMenu, AgentNotice, SavedResultFocus } from "@/features/agent/chat-controls";
 import { formatOpportunityTicket } from "@roleway/core";
-import { Archive, ArrowUpRight, BarChart3, Check, ChevronDown, Circle, CircleAlert, History, KeyRound, Navigation, Plus } from "lucide-react";
+import { Archive, ArrowUpRight, Check, ChevronDown, Circle, CircleAlert, History, KeyRound, Navigation, Plus } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { SubmitButton } from "@/components/submit-button";
@@ -98,7 +98,6 @@ export default async function AgentPage(props: { searchParams: Promise<AgentQuer
           <summary aria-label="Open Agent conversation history"><History aria-hidden="true" /><span>{activeConversation?.title ?? "New conversation"}</span><ChevronDown aria-hidden="true" /></summary>
           <div className="agent-history-popover floating-panel">
             <div className="agent-history-popover-head"><strong>Conversations</strong><AgentConversationLink href="/agent" newConversation><Plus aria-hidden="true" />New</AgentConversationLink></div>
-            <Link className="agent-history-usage" href="/agent/insights"><BarChart3 aria-hidden="true" />Usage & quality</Link>
             <div className="agent-history-list">
               {conversations.length ? conversations.map((conversation) => {
                 const active = conversation.id === activeConversation?.id;
@@ -113,7 +112,6 @@ export default async function AgentPage(props: { searchParams: Promise<AgentQuer
           </div>
         </AgentHistoryMenu>
         <AgentScopeLabel suffix={contextPage !== "agent" ? ` · ${agentContextPages[contextPage]}` : ""} />
-        <Link className="agent-new-chat agent-usage-link" href="/agent/insights"><BarChart3 aria-hidden="true" /><span>Usage & quality</span></Link>
         <AgentConversationLink className="agent-new-chat" href="/agent" newConversation><Plus aria-hidden="true" /><span>New conversation</span></AgentConversationLink>
       </header>
 

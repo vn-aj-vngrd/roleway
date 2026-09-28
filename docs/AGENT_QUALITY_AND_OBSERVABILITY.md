@@ -1,6 +1,6 @@
 # Agent quality and observability
 
-Agent → Usage & quality shows each account its own 30-day run metrics, provider/model breakdown, reported cost coverage, error categories, reply ratings, and synthetic model checks. Admin → Agent shows the same measures across accounts without prompts, answers, account identifiers, or credentials. A rating is user feedback, not a verified factual error.
+Settings → Agent → Usage & quality shows each account its own 30-day run metrics, provider/model breakdown, reported cost coverage, error categories, reply ratings, and synthetic model checks. Admin → Agent shows the same measures across accounts without prompts, answers, account identifiers, or credentials. A rating is user feedback, not a verified factual error.
 
 ## Evidence boundaries
 

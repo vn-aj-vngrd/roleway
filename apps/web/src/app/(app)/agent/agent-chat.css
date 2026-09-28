@@ -146,9 +146,6 @@
 .agent-message-actions [data-slot="button"] {
   color: var(--muted);
 }
-.agent-history-usage { display: flex; align-items: center; gap: 7px; padding: 9px 14px; color: var(--muted); font-size: 13px; border-bottom: 1px solid var(--line); }
-.agent-history-usage:hover { color: var(--ink); background: var(--surface); }
-.agent-history-usage svg { width: 14px; height: 14px; }
 .agent-message-actions [aria-pressed="true"] {
   color: var(--primary);
   background: color-mix(in oklch, var(--primary) 10%, var(--canvas));
@@ -471,7 +468,6 @@
   .agent-message-actions { --agent-actions-enter: 0ms; --agent-actions-exit: 0ms; }
 }
 @media (max-width: 760px) {
-  .agent-native-routebar .agent-usage-link { display: none; }
   .agent-native-page.is-empty .agent-native-composer,
   .agent-native-page.has-conversation .agent-native-composer,
   .agent-native-page:has(.agent-transcript) .agent-native-composer {

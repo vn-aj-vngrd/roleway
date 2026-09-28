@@ -12,7 +12,7 @@ import { evaluateConnection } from "@/features/agent/evaluate-connection";
 export async function runAgentEvaluation(formData: FormData) {
   const parsed = z.string().uuid().safeParse(formData.get("connectionId"));
   if (!parsed.success)
-    redirect("/agent/insights?error=Choose%20a%20connection.");
+    redirect("/settings/ai/usage?error=Choose%20a%20connection.");
   const context = await requireSearchContext();
   if (!context) redirect("/login");
   if (!context.project) redirect("/onboarding");
@@ -26,7 +26,7 @@ export async function runAgentEvaluation(formData: FormData) {
     .eq("user_id", context.user.id)
     .maybeSingle();
   if (!connection || connection.status !== "connected")
-    redirect("/agent/insights?error=Connection%20unavailable.");
+    redirect("/settings/ai/usage?error=Connection%20unavailable.");
   const { count, error: quotaError } = await admin
     .from("agent_eval_runs")
     .select("id", { count: "exact", head: true })
@@ -37,18 +37,18 @@ export async function runAgentEvaluation(formData: FormData) {
     );
   if (quotaError)
     redirect(
-      "/agent/insights?error=Model%20checks%20are%20unavailable.%20Try%20again.",
+      "/settings/ai/usage?error=Model%20checks%20are%20unavailable.%20Try%20again.",
     );
   if ((count ?? 0) >= 3)
     redirect(
-      "/agent/insights?error=Three%20checks%20per%20day%20are%20available.",
+      "/settings/ai/usage?error=Three%20checks%20per%20day%20are%20available.",
     );
   const started = Date.now();
   let apiKey: string;
   try {
     apiKey = decryptSecret(connection.encrypted_secret, connection.secret_iv);
   } catch {
-    redirect("/agent/insights?error=Connection%20could%20not%20be%20opened.");
+    redirect("/settings/ai/usage?error=Connection%20could%20not%20be%20opened.");
   }
   const evaluation = await evaluateConnection(
     {
@@ -73,8 +73,8 @@ export async function runAgentEvaluation(formData: FormData) {
   });
   if (error)
     redirect(
-      "/agent/insights?error=Model%20checks%20could%20not%20be%20saved.",
+      "/settings/ai/usage?error=Model%20checks%20could%20not%20be%20saved.",
     );
-  revalidatePath("/agent/insights");
-  redirect(`/agent/insights?check=${passed ? "passed" : "failed"}`);
+  revalidatePath("/settings/ai/usage");
+  redirect(`/settings/ai/usage?check=${passed ? "passed" : "failed"}`);
 }
