@@ -2511,6 +2511,40 @@ h3 {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
 }
+.admin-agent-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(145px, 1fr)); border-block: 1px solid var(--line); margin: 24px 0 36px; }
+.admin-agent-kpis article { display: grid; align-content: center; gap: 3px; min-height: 88px; padding: 14px; border-right: 1px solid var(--line); }
+.admin-agent-kpis strong { font-size: 20px; font-variant-numeric: tabular-nums; }
+.admin-agent-kpis span, .admin-agent-health .muted { color: var(--muted); font-size: 13px; }
+.admin-agent-health .admin-agent-coverage { margin: -24px 0 32px; }
+.admin-agent-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; }
+.admin-agent-grid .admin-section { min-width: 0; }
+.admin-agent-bar { height: 8px; overflow: hidden; background: var(--line); border-radius: 999px; }
+.admin-agent-bar span { display: block; height: 100%; background: var(--primary); }
+.admin-agent-list { margin: 0; }
+.admin-agent-list > div, .admin-agent-errors p { display: flex; justify-content: space-between; gap: 16px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.admin-agent-list dd { margin: 0; font-variant-numeric: tabular-nums; }
+.admin-agent-errors h3 { margin: 18px 0 4px; font-size: 13px; }
+.admin-agent-errors p { margin: 0; font-size: 13px; }
+.admin-agent-models, .admin-agent-trend { margin-top: 32px; }
+.admin-agent-model-list { border-top: 1px solid var(--line); }
+.admin-agent-model-list article { display: flex; justify-content: space-between; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.admin-agent-model-list article > div { display: grid; gap: 3px; min-width: 0; }
+.admin-agent-model-list article > div:last-child { text-align: right; }
+.admin-agent-model-list strong { overflow-wrap: anywhere; }
+.admin-agent-model-list span { color: var(--muted); font-size: 13px; }
+.admin-agent-days { height: 72px; display: flex; align-items: end; gap: 3px; padding-block: 4px; border-bottom: 1px solid var(--line); }
+.admin-agent-days > div { flex: 1; height: 100%; display: flex; align-items: end; }
+.admin-agent-days span { display: block; width: 100%; background: var(--primary); min-height: 4px; }
+.admin-agent-check-form { margin: 20px 0 28px; }
+.admin-agent-check-form form { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.admin-agent-check-form .custom-select { flex: 0 1 480px; width: 100%; max-width: 100%; }
+.admin-agent-check-form .custom-select-trigger { padding-right: 14px; }
+.admin-agent-evals { margin-top: 20px; }
+.admin-agent-evals h3 { font-size: 13px; }
+.admin-agent-evals p { display: flex; flex-wrap: wrap; gap: 12px; margin: 0; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+.admin-agent-evals p span { flex: 1; overflow-wrap: anywhere; }
+.admin-agent-evals p time { color: var(--muted); }
+@media (max-width: 760px) { .admin-agent-grid { grid-template-columns: 1fr; } }
 .admin-metric {
   min-height: 94px;
   padding: 18px;

@@ -97,6 +97,7 @@
 }
 .agent-message-actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   margin-top: 4px;
@@ -144,6 +145,25 @@
 }
 .agent-message-actions [data-slot="button"] {
   color: var(--muted);
+}
+.agent-message-actions [aria-pressed="true"] {
+  color: var(--primary);
+  background: color-mix(in oklch, var(--primary) 10%, var(--canvas));
+}
+.agent-rating-reason {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.agent-rating-reason select {
+  max-width: 100%;
+  min-height: 36px;
+  padding: 4px 8px;
+  color: var(--ink);
+  background: var(--canvas);
+  border: 1px solid var(--line);
+  border-radius: 6px;
 }
 .agent-message-body {
   min-width: 0;

@@ -3,6 +3,7 @@ import { tool } from "ai";
 import { agentSearchInputSchema, agentReadInputSchema } from "@roleway/schemas";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { richTextToPlainText } from "@/lib/rich-text";
+import { traceAgentDb } from "./telemetry";
 
 // The initial snapshot needs metadata only; full source text is read on demand.
 export const opportunitySnapshotFields =
@@ -54,7 +55,7 @@ export function createAgentReadContext({
     // or failing so a late active write cannot overwrite failure recovery.
     const [progress, source] = await Promise.allSettled([
       onRead?.(label, position, "active"),
-      load(),
+      traceAgentDb("tool_read", load),
     ]);
     if (progress.status === "rejected") throw progress.reason;
     if (source.status === "rejected") throw source.reason;

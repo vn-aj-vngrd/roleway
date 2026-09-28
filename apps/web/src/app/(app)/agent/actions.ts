@@ -12,6 +12,26 @@ import { recordSystemEvent } from "@/lib/observability";
 
 const proposalDecisionSchema = z.object({ proposalId: z.string().uuid(), decision: z.enum(["approve", "reject"]) });
 
+const ratingSchema = z.object({
+  messageId: z.string().uuid(),
+  rating: z.enum(["good", "bad"]),
+  reason: z.enum(["incorrect", "wrong_context", "unsafe", "unhelpful", "other"]).nullable(),
+});
+
+export async function rateAgentMessage(input: z.input<typeof ratingSchema>): Promise<{ ok: boolean }> {
+  const parsed = ratingSchema.safeParse(input);
+  if (!parsed.success) return { ok: false };
+  const auth = await authenticated();
+  if (!auth) return { ok: false };
+  const { data, error } = await auth.supabase.from("agent_messages")
+    .update({ rating: parsed.data.rating, rating_reason: parsed.data.rating === "bad" ? parsed.data.reason : null, rated_at: new Date().toISOString() })
+    .eq("id", parsed.data.messageId).eq("user_id", auth.user.id).eq("role", "agent")
+    .select("id").maybeSingle();
+  if (error || !data) return { ok: false };
+  revalidatePath("/agent");
+  return { ok: true };
+}
+
 async function authenticated() {
   const context = await requireSearchContext();
   if (!context) redirect("/login");

@@ -8,12 +8,18 @@ import { agentGenerationSchema } from "@roleway/schemas";
 import { resolveAgentAnswer } from "@/features/agent/answer-quality";
 import { agentSystemPolicy, safeCompatibleBaseUrl, type AiConnection } from "./providers";
 
-export async function streamAgentResponse(connection: AiConnection, apiKey: string, prompt: string, onText: (text: string) => void, signal?: AbortSignal, readTools?: AgentReadTools) {
+export async function streamAgentResponse(connection: AiConnection, apiKey: string, prompt: string, onText: (text: string) => void, signal?: AbortSignal, readTools?: AgentReadTools): Promise<{ output: ReturnType<typeof resolveAgentAnswer>; inputTokens: number | undefined; outputTokens: number | undefined; costUsdMicros?: number | null }> {
   // Keep provider requests on the validated endpoint and never follow redirects with credentials.
-  const safeFetch: typeof fetch = (input, init) => {
+  const generationIds: string[] = [];
+  const safeFetch: typeof fetch = async (input, init) => {
     const body = connection.provider === "openrouter" && typeof init?.body === "string"
       ? JSON.stringify({ ...JSON.parse(init.body), reasoning: { enabled: false } }) : init?.body;
-    return fetch(input, { ...init, ...(body !== undefined ? { body } : {}), redirect: "error", cache: "no-store" });
+    const response = await fetch(input, { ...init, ...(body !== undefined ? { body } : {}), redirect: "error", cache: "no-store" });
+    if (connection.provider === "openrouter" && response.ok) {
+      const id = response.headers.get("X-Generation-Id");
+      if (id && /^gen-[A-Za-z0-9_-]+$/.test(id)) generationIds.push(id);
+    }
+    return response;
   };
   const baseURL = connection.provider === "openai-compatible" ? await safeCompatibleBaseUrl(connection.base_url)
     : connection.provider === "openrouter" ? "https://openrouter.ai/api/v1" : undefined;
@@ -33,6 +39,12 @@ export async function streamAgentResponse(connection: AiConnection, apiKey: stri
     instructions: agentSystemPolicy,
     maxOutputTokens: 3000,
     maxRetries: 0,
+    telemetry: {
+      isEnabled: process.env.AGENT_OTEL_ENABLED === "true",
+      functionId: "roleway.agent",
+      recordInputs: false,
+      recordOutputs: false,
+    },
     tools: {
       ...readTools,
       roleway_agent: tool({
@@ -78,5 +90,28 @@ export async function streamAgentResponse(connection: AiConnection, apiKey: stri
   const parsed = resolveAgentAnswer(agentGenerationSchema.parse(output));
   if (parsed.message !== lastText) onText(parsed.message);
   const usage = await result.totalUsage;
-  return { output: parsed, inputTokens: usage.inputTokens, outputTokens: usage.outputTokens };
+  let costUsdMicros: number | null = null;
+  if (connection.provider === "openrouter") {
+    const steps = await result.steps;
+    const ids = steps.map((step, index) => generationIds[index] ?? step.response.id)
+      .filter((id): id is string => typeof id === "string" && /^gen-[A-Za-z0-9_-]+$/.test(id));
+    if (ids.length && ids.length === steps.length) {
+      try {
+        const costs = await Promise.all(ids.map(async id => {
+          const response = await fetch(`https://openrouter.ai/api/v1/generation?id=${encodeURIComponent(id)}`, {
+            headers: { Authorization: `Bearer ${apiKey}` }, redirect: "error", cache: "no-store", signal: AbortSignal.timeout(4000),
+          });
+          if (!response.ok) return null;
+          const payload: unknown = await response.json();
+          const data = payload && typeof payload === "object" && "data" in payload ? payload.data : null;
+          const amount = data && typeof data === "object" && "total_cost" in data ? data.total_cost : null;
+          return typeof amount === "number" && Number.isFinite(amount) && amount >= 0 && amount < 100 ? amount : null;
+        }));
+        if (costs.every((cost): cost is number => cost !== null)) costUsdMicros = Math.round(costs.reduce((total, cost) => total + cost, 0) * 1_000_000);
+      } catch {
+        // Provider billing metadata is optional; never fail a saved answer for it.
+      }
+    }
+  }
+  return { output: parsed, inputTokens: usage.inputTokens, outputTokens: usage.outputTokens, costUsdMicros };
 }

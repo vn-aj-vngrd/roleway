@@ -2,6 +2,7 @@
 import {
   ArrowLeft,
   Activity,
+  Bot,
   BookOpen,
   CreditCard,
   Database,
@@ -25,6 +26,7 @@ const sections = [
   { id: "help", label: "Help articles", icon: BookOpen },
   { id: "data", label: "Data", icon: Database },
   { id: "system", label: "System", icon: Activity },
+  { id: "agent", label: "Agent", icon: Bot },
   { id: "audit", label: "Audit log", icon: ShieldCheck },
   { id: "settings", label: "Registration", icon: Settings2 },
 ];
