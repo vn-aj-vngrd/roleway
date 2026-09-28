@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { EmptyState } from "@/components/ui-primitives";
+import { AgentHealthDashboard, type AgentHealth } from "@/features/agent/health-dashboard";
 import { AdminPlans, AdminBilling, AdminHelp } from "./plan-panels";
 import {
   Activity,
@@ -30,6 +31,7 @@ type AdminView =
   | "users"
   | "data"
   | "system"
+  | "agent"
   | "audit"
   | "settings"
   | "plans"
@@ -107,6 +109,7 @@ const adminViews: Array<{ id: AdminView; label: string }> = [
   { id: "users", label: "Users" },
   { id: "data", label: "Data" },
   { id: "system", label: "System" },
+  { id: "agent", label: "Agent" },
   { id: "audit", label: "Audit" },
   { id: "settings", label: "Settings" },
 ];
@@ -142,6 +145,7 @@ export default async function AdminPage({
     dashboardResult,
     usersResult,
     systemResult,
+    agentResult,
     auditResult,
     dataResult,
     admissionResult,
@@ -158,6 +162,9 @@ export default async function AdminPage({
     view === "system"
       ? auth.supabase.rpc("admin_system_health")
       : Promise.resolve({ data: null, error: null }),
+    view === "agent"
+      ? auth.supabase.rpc("agent_health", { input_global: true })
+      : Promise.resolve({ data: null, error: null }),
     view === "audit"
       ? auth.supabase.rpc("admin_audit_log_list", { input_limit: 100 })
       : Promise.resolve({ data: null, error: null }),
@@ -172,6 +179,7 @@ export default async function AdminPage({
     dashboardResult,
     usersResult,
     systemResult,
+    agentResult,
     auditResult,
     dataResult,
     admissionResult,
@@ -236,6 +244,7 @@ export default async function AdminPage({
       {view === "system" && systemResult.data ? (
         <AdminSystem data={systemResult.data as SystemHealth} />
       ) : null}
+      {view === "agent" && agentResult.data ? <AgentHealthDashboard data={agentResult.data as AgentHealth} global /> : null}
       {view === "audit" ? (
         <AdminAudit logs={(auditResult.data ?? []) as AuditLog[]} />
       ) : null}

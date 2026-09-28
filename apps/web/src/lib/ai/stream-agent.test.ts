@@ -10,10 +10,10 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { streamAgentResponse } from "./stream-agent";
 
 const reply = { message: "A **streamed** answer.", proposals: [], clarification: null };
-function streamResponse(value: unknown, finishReason = "tool_calls", toolName = "roleway_agent") {
+function streamResponse(value: unknown, finishReason = "tool_calls", toolName = "roleway_agent", responseId?: string) {
   const args = JSON.stringify(value);
   const chunks = [
-    { choices: [{ index: 0, delta: { tool_calls: [{ index: 0, id: "call-1", type: "function", function: { name: toolName, arguments: "" } }] } }] },
+    { id: responseId, choices: [{ index: 0, delta: { tool_calls: [{ index: 0, id: "call-1", type: "function", function: { name: toolName, arguments: "" } }] } }] },
     ...Array.from(args).map(character => ({ choices: [{ index: 0, delta: { tool_calls: [{ index: 0, function: { arguments: character } }] } }] })),
     { choices: [{ index: 0, delta: {}, finish_reason: finishReason }], usage: { prompt_tokens: 12, completion_tokens: 8, total_tokens: 20 } },
   ];
@@ -22,6 +22,15 @@ function streamResponse(value: unknown, finishReason = "tool_calls", toolName = 
 afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); vi.clearAllMocks(); });
 
 describe("Agent provider streaming", () => {
+  it("uses reported OpenRouter generation cost and leaves other prices unknown", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(streamResponse(reply, "tool_calls", "roleway_agent", "gen-fixture123"))
+      .mockResolvedValueOnce(Response.json({ data: { total_cost: 0.0015 } }));
+    vi.stubGlobal("fetch", fetchMock);
+    const result = await streamAgentResponse({ provider: "openrouter", model: "fixture", base_url: null }, "fixture-key", "Fixture prompt", () => {});
+    expect(result.costUsdMicros).toBe(1500);
+    expect(String(fetchMock.mock.calls[1]?.[0])).toContain("/api/v1/generation?id=gen-fixture123");
+  });
   it.each(["openai", "openrouter"] as const)("streams partial answer text and validates the final %s tool input", async provider => {
     let now = 0;
     vi.spyOn(performance, "now").mockImplementation(() => now += 60);

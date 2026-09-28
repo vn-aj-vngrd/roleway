@@ -14,12 +14,15 @@ export function formatRunDuration(milliseconds: number) {
   return minutes < 60 ? `${minutes}m ${seconds % 60}s` : `${Math.floor(minutes / 60)}h ${minutes % 60}m`;
 }
 
-export function RunTimeline({ startedAt, endedAt, pending = false, failed = false, steps, model, awaitingApproval = false, recovering = false, statusUnknown = false, showCurrentStep = true }: {
+export function RunTimeline({ startedAt, endedAt, durationMs, firstTextMs, costUsdMicros, pending = false, failed = false, steps, model, awaitingApproval = false, recovering = false, statusUnknown = false, showCurrentStep = true }: {
   showCurrentStep?: boolean;
   recovering?: boolean;
   statusUnknown?: boolean;
   startedAt: string;
   endedAt?: string | undefined;
+  durationMs?: number | null;
+  firstTextMs?: number | null;
+  costUsdMicros?: number | null;
   pending?: boolean;
   failed?: boolean;
   awaitingApproval?: boolean;
@@ -41,7 +44,7 @@ export function RunTimeline({ startedAt, endedAt, pending = false, failed = fals
     const timer = window.setInterval(() => setElapsed(Date.now() - Date.parse(startedAt)), 1000);
     return () => window.clearInterval(timer);
   }, [pending, startedAt]);
-  const duration = pending ? elapsed : endedAt ? Date.parse(endedAt) - Date.parse(startedAt) : undefined;
+  const duration = pending ? elapsed : durationMs ?? (endedAt ? Date.parse(endedAt) - Date.parse(startedAt) : undefined);
   const current = [...steps].reverse().find(step => step.status === "active");
   return <><Collapsible.Root className="agent-work-timeline">
     <Collapsible.Trigger className="agent-work-trigger">
@@ -63,6 +66,8 @@ export function RunTimeline({ startedAt, endedAt, pending = false, failed = fals
         <dl className="agent-run-tokens">
           {model.inputTokens !== null ? <div><dt><ArrowUpFromLine aria-hidden="true" />Input tokens</dt><dd>{model.inputTokens.toLocaleString("en-US")}</dd></div> : null}
           {model.outputTokens !== null ? <div><dt><ArrowDownToLine aria-hidden="true" />Output tokens</dt><dd>{model.outputTokens.toLocaleString("en-US")}</dd></div> : null}
+          {firstTextMs != null ? <div><dt>First text</dt><dd>{formatRunDuration(firstTextMs)}</dd></div> : null}
+          {!pending ? <div><dt>Provider cost</dt><dd>{costUsdMicros == null ? "Not reported" : `$${(costUsdMicros / 1_000_000).toFixed(4)}`}</dd></div> : null}
         </dl>
       </div> : null}
     </div>

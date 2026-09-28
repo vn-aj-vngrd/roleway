@@ -12,7 +12,7 @@ import { RunTimeline } from "@/features/agent/run-timeline";
 import { AgentMarkdown } from "@/features/agent/markdown";
 import { AgentMessageInput, AgentHistoryMenu, AgentNotice, SavedResultFocus } from "@/features/agent/chat-controls";
 import { formatOpportunityTicket } from "@roleway/core";
-import { Archive, ArrowUpRight, Check, ChevronDown, Circle, CircleAlert, History, KeyRound, Navigation, Plus } from "lucide-react";
+import { Archive, ArrowUpRight, BarChart3, Check, ChevronDown, Circle, CircleAlert, History, KeyRound, Navigation, Plus } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { SubmitButton } from "@/components/submit-button";
@@ -23,8 +23,8 @@ import { archiveAgentConversation, decideAgentProposal, sendAgentMessage, openAg
 type Connection = { id: string; label: string; provider: string; model: string; status: string };
 type Opportunity = { id: string; project_id: string; reference_number: number; next_action: string | null; jobs: { company: string; title: string } | null };
 type Conversation = { scope_mode: "account" | "workspace"; context_page: AgentContextPage; id: string; project_id: string; title: string; opportunity_id: string | null; updated_at: string };
-type Message = { id: string; role: "user" | "agent"; content: string; run_id: string | null; created_at: string };
-type Run = { id: string; provider: string; model: string; status: string; input_tokens: number | null; output_tokens: number | null; created_at: string };
+type Message = { id: string; role: "user" | "agent"; content: string; run_id: string | null; created_at: string; rating: "good" | "bad" | null };
+type Run = { id: string; provider: string; model: string; status: string; input_tokens: number | null; output_tokens: number | null; duration_ms: number | null; first_text_ms: number | null; cost_usd_micros: number | null; created_at: string };
 type Step = { id: string; run_id: string; label: string; status: "pending" | "active" | "completed" | "failed"; position: number; created_at: string };
 type Proposal = { id: string; run_id: string; tool_name: string; target_id: string | null; destination_project_id: string | null; summary: string; arguments: Record<string, unknown>; status: string; created_at: string };
 
@@ -60,8 +60,8 @@ export default async function AgentPage(props: { searchParams: Promise<AgentQuer
   let savedFocusedOpportunity: Opportunity | null = null;
   if (activeConversation) {
     const [messagesResult, runsResult, stepsResult, proposalsResult, focusedOpportunityResult] = await Promise.all([
-      context.supabase.from("agent_messages").select("id, role, content, run_id, created_at").eq("conversation_id", activeConversation.id).order("created_at", { ascending: false }).limit(200),
-      context.supabase.from("ai_runs").select("id, provider, model, status, input_tokens, output_tokens, created_at").eq("conversation_id", activeConversation.id).order("created_at", { ascending: false }).limit(100),
+      context.supabase.from("agent_messages").select("id, role, content, run_id, created_at, rating").eq("conversation_id", activeConversation.id).order("created_at", { ascending: false }).limit(200),
+      context.supabase.from("ai_runs").select("id, provider, model, status, input_tokens, output_tokens, duration_ms, first_text_ms, cost_usd_micros, created_at").eq("conversation_id", activeConversation.id).order("created_at", { ascending: false }).limit(100),
       context.supabase.from("agent_run_steps").select("id, run_id, label, status, position, created_at").eq("conversation_id", activeConversation.id).order("position", { ascending: true }).limit(300),
       context.supabase.from("agent_proposals").select("id, run_id, tool_name, target_id, destination_project_id, summary, arguments, status, created_at").eq("conversation_id", activeConversation.id).order("created_at", { ascending: false }).limit(100),
       activeConversation.opportunity_id && !opportunities.some(item => item.id === activeConversation.opportunity_id)
@@ -98,6 +98,7 @@ export default async function AgentPage(props: { searchParams: Promise<AgentQuer
           <summary aria-label="Open Agent conversation history"><History aria-hidden="true" /><span>{activeConversation?.title ?? "New conversation"}</span><ChevronDown aria-hidden="true" /></summary>
           <div className="agent-history-popover floating-panel">
             <div className="agent-history-popover-head"><strong>Conversations</strong><AgentConversationLink href="/agent" newConversation><Plus aria-hidden="true" />New</AgentConversationLink></div>
+            <Link className="agent-history-usage" href="/agent/insights"><BarChart3 aria-hidden="true" />Usage & quality</Link>
             <div className="agent-history-list">
               {conversations.length ? conversations.map((conversation) => {
                 const active = conversation.id === activeConversation?.id;
@@ -112,6 +113,7 @@ export default async function AgentPage(props: { searchParams: Promise<AgentQuer
           </div>
         </AgentHistoryMenu>
         <AgentScopeLabel suffix={contextPage !== "agent" ? ` · ${agentContextPages[contextPage]}` : ""} />
+        <Link className="agent-new-chat agent-usage-link" href="/agent/insights"><BarChart3 aria-hidden="true" /><span>Usage & quality</span></Link>
         <AgentConversationLink className="agent-new-chat" href="/agent" newConversation><Plus aria-hidden="true" /><span>New conversation</span></AgentConversationLink>
       </header>
 
@@ -138,7 +140,7 @@ export default async function AgentPage(props: { searchParams: Promise<AgentQuer
                 <div className="agent-message-content">{message.role === "agent" ? <AgentMarkdown content={message.content} idPrefix={message.id} /> : <p>{message.content}</p>}</div>
                 </div>
                 {(message.role === "agent" ? runProposals : []).map((proposal) => <ApprovalCard createdWorkspaceId={query.proposal === proposal.id && proposal.status === "applied" && projectMap.has(query.record ?? "") ? query.record : undefined} workspace={proposal.destination_project_id ? projectMap.get(proposal.destination_project_id)?.name ?? "Unavailable Workspace" : undefined} proposal={proposal} opportunity={proposal.target_id ? opportunityMap.get(proposal.target_id) : undefined} key={proposal.id} />)}
-                <MessageActions content={message.content} timestamp={message.created_at} />
+                <MessageActions content={message.content} timestamp={message.created_at} messageId={message.role === "agent" ? message.id : undefined} rating={message.rating} />
                 {run && (message.role === "user" && ["failed", "queued", "gathering_context", "generating"].includes(run.status)) ? <AgentRunDetails run={run} steps={runSteps} /> : null}
               </article></AgentPersistedMessage>
             );
@@ -181,7 +183,7 @@ function AgentRunDetails({ run, steps, endedAt }: { run: Run; steps: Step[]; end
   const active = ["queued", "gathering_context", "generating"].includes(run.status);
   const stale = active && Date.now() - Date.parse(run.created_at) >= 300_000;
   const visibleSteps = steps.some(step => step.position >= 10) ? steps.filter(step => step.position >= 10 || step.status === "failed") : steps;
-  return <RunTimeline recovering={active} pending={active && !stale} statusUnknown={stale} startedAt={run.created_at} endedAt={endedAt ?? steps.find(step => step.status === "failed")?.created_at}
+  return <RunTimeline recovering={active} pending={active && !stale} statusUnknown={stale} startedAt={run.created_at} endedAt={endedAt ?? steps.find(step => step.status === "failed")?.created_at} durationMs={run.duration_ms} firstTextMs={run.first_text_ms} costUsdMicros={run.cost_usd_micros}
     failed={run.status === "failed"} awaitingApproval={run.status === "awaiting_approval"}
     steps={visibleSteps.map(step => ({ id: step.id, label: step.label, status: step.status === "pending" ? "active" : step.status }))}
     model={{ provider: run.provider, name: run.model, inputTokens: run.input_tokens, outputTokens: run.output_tokens }} />;

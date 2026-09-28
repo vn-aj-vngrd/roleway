@@ -13,6 +13,7 @@ import { isUnfinishedIntroduction, answerRepairInstruction } from "./answer-qual
 import { createAgentReadContext, opportunitySnapshotFields, type AgentOpportunity } from "./read-context";
 import { agentContextPage, agentContextPages } from "./scope";
 import type { AgentStreamEvent } from "./stream-types";
+import { traceAgentDb } from "./telemetry";
 
 const sendSchema = z.object({
   conversationId: z.union([z.literal(""), z.string().uuid()]).default(""),
@@ -108,6 +109,8 @@ export async function runAgentRequest(formData: FormData, emit?: (event: AgentSt
     status: "gathering_context",
   }).select("id").single();
   if (runError || !run) return `/agent?conversation=${conversationId}&error=Agent%20could%20not%20start%20this%20run.`;
+  const runStartedAt = Date.now();
+  let firstTextMs: number | null = null;
 
   const ownership = { user_id: auth.user.id, project_id: conversationProjectId, conversation_id: conversationId, run_id: run.id };
   async function progress(position: number, label: string, status: "active" | "completed") {
@@ -124,7 +127,8 @@ export async function runAgentRequest(formData: FormData, emit?: (event: AgentSt
     const reader = createAgentReadContext({ supabase: auth.supabase, userId: auth.user.id, workspaceIds: scopeProjectIds, conversationId, onRead: (label, position, status) => progress(20 + position, label, status) });
     const focusedOpportunity = focusOpportunityId ? await reader.opportunity(focusOpportunityId) : null;
     if (focusOpportunityId && !focusedOpportunity) throw new Error("focused_opportunity_unavailable");
-    const [profileResult, preferencesResult, opportunitiesResult, tasksResult, jobsResult, interviewsResult, contactsResult, documentsResult, historyResult, guidanceResult, proposalHistoryResult] = await Promise.all([
+    const [profileResult, preferencesResult, opportunitiesResult, tasksResult, jobsResult, interviewsResult, contactsResult, documentsResult, historyResult, guidanceResult, proposalHistoryResult] = await traceAgentDb("context", async () => {
+      const results = await Promise.all([
       auth.supabase.from("profiles").select("full_name, headline, summary").eq("user_id", auth.user.id).maybeSingle(),
       auth.supabase.from("career_preferences").select("target_titles, preferred_technologies, allowed_locations, remote_preference, minimum_compensation, currency, excluded_criteria").eq("user_id", auth.user.id).maybeSingle(),
       auth.supabase.from("opportunities").select(opportunitySnapshotFields).eq("user_id", auth.user.id).in("project_id", scopeProjectIds).neq("stage", "closed").order("updated_at", { ascending: false }).limit(100),
@@ -136,11 +140,10 @@ export async function runAgentRequest(formData: FormData, emit?: (event: AgentSt
       auth.supabase.from("agent_messages").select("role, content, created_at").eq("conversation_id", conversationId).order("created_at", { ascending: false }).limit(12),
       auth.supabase.from("agent_preferences").select("guidance").eq("user_id", auth.user.id).maybeSingle(),
       auth.supabase.from("agent_proposals").select("id, tool_name, target_id, destination_project_id, summary, status, arguments").eq("conversation_id", conversationId).eq("user_id", auth.user.id).order("created_at", { ascending: false }).limit(20),
-    ]);
-
-    if ([profileResult, preferencesResult, opportunitiesResult, tasksResult, jobsResult, interviewsResult, contactsResult, documentsResult, historyResult, guidanceResult, proposalHistoryResult].some((result) => result.error)) {
-      throw new Error("context_read_failed");
-    }
+      ]);
+      if (results.some(result => result.error)) throw new Error("context_read_failed");
+      return results;
+    });
     const snapshot = (opportunitiesResult.data ?? []) as unknown as AgentOpportunity[];
     const opportunities = [...(focusedOpportunity ? [focusedOpportunity] : []), ...snapshot.filter(item => item.id !== focusOpportunityId)].map((opportunity) => {
       const jobs = opportunity.jobs as unknown as { company?: string; title?: string; description?: string; location?: string; compensation?: string; remote_policy?: string } | null;
@@ -203,6 +206,7 @@ export async function runAgentRequest(formData: FormData, emit?: (event: AgentSt
     let receiving = false;
     const generate = (requestPrompt: string) => emit
       ? streamAgentResponse(provider, apiKey, requestPrompt, (text) => {
+          if (text && firstTextMs === null) firstTextMs = Date.now() - runStartedAt;
           if (!receiving) {
             receiving = true;
             emit({ type: "progress", data: { id: "20", label: "Receiving the answer", status: "active" } });
@@ -211,11 +215,14 @@ export async function runAgentRequest(formData: FormData, emit?: (event: AgentSt
         }, generationSignal, reader.tools)
       : generateAgentResponse(provider, apiKey, requestPrompt, generationSignal, reader.tools);
     let result = await generate(prompt);
+    let reportedCost = "costUsdMicros" in result && typeof result.costUsdMicros === "number" ? result.costUsdMicros : null;
     if (isUnfinishedIntroduction(result.output)) {
       generationSignal.throwIfAborted();
       await progress(20, "Completing the answer", "active");
       emit?.({ type: "answer", text: "" });
       const retry = await generate(`${prompt}\n\n${answerRepairInstruction}`);
+      const retryCost = "costUsdMicros" in retry && typeof retry.costUsdMicros === "number" ? retry.costUsdMicros : null;
+      reportedCost = reportedCost === null || retryCost === null ? null : reportedCost + retryCost;
       result = {
         ...retry,
         inputTokens: result.inputTokens == null || retry.inputTokens == null ? undefined : result.inputTokens + retry.inputTokens,
@@ -257,13 +264,16 @@ export async function runAgentRequest(formData: FormData, emit?: (event: AgentSt
     }
     emit?.({ type: "progress", data: { id: "90", label: "Saving the answer", status: "active" } });
     failureCode = "run_save_failed";
-    const { error: completionError } = await admin.rpc("complete_agent_run", {
-      input_run_id: run.id,
-      input_output: { ...result.output, proposals: validProposals },
-      input_tokens: result.inputTokens ?? null,
-      output_tokens: result.outputTokens ?? null,
+    await traceAgentDb("complete", async () => {
+      const { error } = await admin.rpc("complete_agent_run", {
+        input_run_id: run.id,
+        input_output: { ...result.output, proposals: validProposals },
+        input_tokens: result.inputTokens ?? null,
+        output_tokens: result.outputTokens ?? null,
+      });
+      if (error) throw new Error("run_save_failed");
     });
-    if (completionError) throw new Error("run_save_failed");
+    await admin.from("ai_runs").update({ duration_ms: Date.now() - runStartedAt, first_text_ms: firstTextMs, cost_usd_micros: reportedCost }).eq("id", run.id).eq("user_id", auth.user.id);
     emit?.({ type: "progress", data: { id: "90", label: "Answer saved", status: "completed" } });
   } catch (error) {
     emit?.({ type: "progress", data: { id: "error", label: signal?.aborted ? "Request interrupted" : "Run failed safely", status: "failed" } });
@@ -272,7 +282,7 @@ export async function runAgentRequest(formData: FormData, emit?: (event: AgentSt
     const providerStatus = error && typeof error === "object" && "statusCode" in error ? error.statusCode : null;
     const emptyProviderStream = error instanceof Error && error.name === "AI_ToolChoiceViolationError" && "finishReason" in error && error.finishReason === "other";
     const code = providerStatus === 429 ? "provider_rate_limited" : providerStatus === 503 || emptyProviderStream ? "provider_unavailable" : error instanceof Error && error.name === "TimeoutError" ? "provider_timeout" : error instanceof z.ZodError || error instanceof SyntaxError ? "invalid_provider_output" : failureCode;
-    await admin.from("ai_runs").update({ status: "failed", error_message: "Agent could not complete this run." }).eq("id", run.id).eq("user_id", auth.user.id);
+    await admin.from("ai_runs").update({ status: "failed", error_message: "Agent could not complete this run.", error_code: code, duration_ms: Date.now() - runStartedAt, first_text_ms: firstTextMs }).eq("id", run.id).eq("user_id", auth.user.id);
     await admin.from("agent_run_steps").insert({ user_id: auth.user.id, project_id: conversationProjectId, conversation_id: conversationId, run_id: run.id, label: "Agent run failed safely", status: "failed", position: 1 });
     await recordSystemEvent({ category: "ai", code, userId: auth.user.id, metadata: { provider: connection.provider, model: connection.model } });
     revalidatePath("/agent");

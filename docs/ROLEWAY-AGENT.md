@@ -1,5 +1,7 @@
 # Roleway Agent: Create and Explore
 
+For run metrics, reply ratings, provider cost coverage, synthetic model checks, and opt-in tracing, see [Agent quality and observability](AGENT_QUALITY_AND_OBSERVABILITY.md).
+
 This is the implementation contract and audit for the current Agent version. For the concise technical flow, packages, and diagrams, see [How Roleway Agent works](HOW_ROLEWAY_AGENT_WORKS.md). Read this contract when changing chat, context gathering, provider instructions, capability discovery, or approvals. Domain language lives in [CONTEXT.md](../CONTEXT.md); ownership rules live in [PLANNING.md](PLANNING.md).
 
 ## User journey

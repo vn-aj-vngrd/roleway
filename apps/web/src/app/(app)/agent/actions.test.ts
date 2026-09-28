@@ -26,6 +26,7 @@ const client = {
     let operation = "read";
     const result = () => {
       if (table === "ai_connections") return { data: {id: record,provider:"openai",model:"fixture",status:"connected"},error:null };
+      if (table === "agent_messages" && operation === "update") return {data:{id:record},error:null};
       if (table === "opportunities") return {data:fixtures.opportunities,error:null};
       if (operation === "insert") return {data:{id:record},error:null};
       if (table in fixtures.contextRows) return {data:fixtures.contextRows[table],error:null};
@@ -45,7 +46,7 @@ const client = {
   },
 };
 
-import { sendAgentMessage, openAgentResult } from "./actions";
+import { sendAgentMessage, openAgentResult, rateAgentMessage } from "./actions";
 function request(timeZone = "Asia/Manila", message = "What happens next?") {
   const data = new FormData();
   data.set("timeZone",timeZone);data.set("connectionId",record);data.set("message",message);
@@ -59,6 +60,18 @@ beforeEach(() => {
   fixtures.contextError=false;fixtures.updates.length=0;
   fixtures.generate.mockReset().mockResolvedValue({output:{message:"A grounded answer",proposals:[]},inputTokens:10,outputTokens:20});
   fixtures.rpc.mockReset().mockResolvedValue({error:null});
+});
+describe("Agent reply ratings", () => {
+  it("binds feedback to an owned Agent message and stores only a reason code", async () => {
+    expect(await rateAgentMessage({ messageId: record, rating: "bad", reason: "wrong_context" })).toEqual({ ok: true });
+    expect(fixtures.filters).toContainEqual(["agent_messages", "user_id", owner]);
+    expect(fixtures.filters).toContainEqual(["agent_messages", "role", "agent"]);
+    expect(fixtures.updates).toContainEqual(expect.objectContaining({table:"agent_messages", values:expect.objectContaining({rating:"bad", rating_reason:"wrong_context"})}));
+  });
+  it("rejects malformed message ids before a database write", async () => {
+    expect(await rateAgentMessage({ messageId: "invalid", rating: "good", reason: null })).toEqual({ ok: false });
+    expect(fixtures.updates).toHaveLength(0);
+  });
 });
 describe("Agent result persistence", () => {
   it("retries an introduction-only answer once and saves only the complete answer with combined usage", async () => {
